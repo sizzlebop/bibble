@@ -1,0 +1,40 @@
+{
+  "name": "@pinkpixel/bibble",
+  "version": "1.2.1",
+  "description": "CLI chatbot application with MCP support",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "bibble": "./bin/bibble-cli.cjs"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --external commander,chalk,inquirer,markdown-it,openai,boxen,uuid,child_process,cross-spawn,@anthropic-ai/sdk",
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "start": "node dist/index.js",
+    "prepare": "npm run build",
+    "postinstall": "node -e \"try { require('fs').chmodSync('./bin/bibble.js', '755'); require('fs').chmodSync('./bin/bibble-cli.js', '755'); require('fs').chmodSync('./bin/bibble-cli.cjs', '755'); } catch (e) { console.error(e) }\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "chatbot",
+    "mcp",
+    "ai",
+    "llm"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "boxen": "^8.0.1",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "inquirer": "^12.6.1",
+    "markdown-it": "^14.1.0",
+    "openai": "^4.102.0",
+    "typescript": "^5.8.3",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}
