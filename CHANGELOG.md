@@ -2,6 +2,70 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.3.4] - 2025-05-23
+
+### Added
+- Added support for new Claude models: Claude Opus 4 and Claude Sonnet 4
+- Updated default Anthropic model to Claude Opus 4
+
+### Removed
+- Removed deprecated Claude 3 Opus model
+
+### Fixed
+- Fixed Anthropic API tool handling to properly process tool calls
+- Fixed tool name formatting in Anthropic client to match the expected format (serverName_toolName)
+- Improved error handling for Anthropic tool calls
+- Enhanced streaming implementation for Anthropic responses
+- Removed hardcoded model in Anthropic client, now using user-configured model from config.json
+
+## [1.3.3] - 2025-05-23
+
+### Fixed
+- Fixed Anthropic API streaming response handling to properly stream text in real-time
+- Removed excessive logging messages for cleaner terminal output
+- Removed debug message "Using Anthropic model..." that was appearing in chat responses
+- Improved error handling in Anthropic client
+
+## [1.3.2] - 2025-05-23
+
+### Fixed
+- Fixed Anthropic API error with custom tools by properly handling tool definitions
+- Updated AnthropicClient to use "custom" type for MCP tools
+- Modified Agent class to handle Anthropic's tool limitations
+- Added proper error handling for tool conversion in Anthropic client
+- Improved stream response handling in Anthropic client
+
+## [1.3.1] - 2025-05-24
+
+### Fixed
+- Fixed Anthropic API error with tool_result blocks by ensuring they're only included in user messages
+- Improved tool name handling to prevent duplicate tool names in Anthropic API calls
+- Enhanced system prompt with clearer instructions on tool usage format
+- Added explicit examples of proper tool calling format in system prompt
+- Reduced debug logging for cleaner output and better readability
+- Fixed tool name normalization to properly extract tool names from server_tool format
+- Improved error handling for tool calls with incorrect formats
+
+### Added
+- Dynamic tool list generation in system prompt with detailed usage instructions
+- Added example usage for each tool in the system prompt
+- Enhanced tool name formatting with server name prefixes
+
+## [1.3.0] - 2025-05-23
+
+### Added
+- Reimplemented Anthropic integration with support for Claude models
+- Created new `AnthropicClient` class in `src/llm/anthropic.ts` with proper tool handling
+- Added support for Anthropic-specific features:
+  - Chain-of-thought prompting with `<thinking>...</thinking>` blocks
+  - Parameter validation for tool call arguments
+  - Support for both serial and parallel tool invocations
+  - Comprehensive error handling
+- Updated LlmClient to support Anthropic as a provider
+- Restored Anthropic configuration from backup files
+- Added test script for Anthropic integration
+- Added `@anthropic-ai/sdk` dependency
+
 ## [1.2.2] - 2025-05-22
 
 ### Removed

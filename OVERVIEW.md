@@ -3,7 +3,7 @@
 Bibble is a command-line interface (CLI) chatbot application that integrates with language models and supports the Model Context Protocol (MCP) for enhanced functionality through external tools.
 
 
-*Last updated: May 22, 2025*
+*Last updated: May 23, 2025*
 
 ## Project Overview
 
@@ -11,7 +11,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
 
 - Chat sessions with multiple LLM providers:
   - OpenAI models (GPT-4.1, o4-mini, etc.)
-
+  - Anthropic models (Claude 3.7 Sonnet, Claude 3.5 Sonnet, etc.)
   - OpenAI-compatible endpoints for third-party services
 - Tool use through the Model Context Protocol (MCP)
 - Configuration management with dot-notation access
@@ -45,13 +45,14 @@ Bibble follows a modular architecture with clear separation of concerns:
 │   │   └── history.ts    # History command implementation
 │   ├── config/           # Configuration management
 │   │   ├── config.ts     # Config class for managing settings
+│   │   ├── setup.ts      # Setup wizard for first-time configuration
 │   │   └── storage.ts    # Configuration storage utilities
 │   ├── mcp/              # MCP client implementation
 │   │   ├── agent.ts      # Agent class for managing conversations with tools
 │   │   └── client.ts     # MCP client for connecting to servers
 │   ├── llm/              # LLM integration
-│   │   ├── client.ts     # LLM client for multiple providers
-
+│   │   ├── anthropic.ts  # Anthropic client for Claude models
+│   │   └── client.ts     # LLM client for multiple providers
 │   ├── ui/               # Terminal UI components
 │   │   ├── chat.ts       # Chat UI for interactive sessions
 │   │   ├── colors.ts     # Terminal color utilities
@@ -61,7 +62,15 @@ Bibble follows a modular architecture with clear separation of concerns:
 │   ├── index.ts          # Main entry point
 │   └── types.ts          # TypeScript type definitions
 ├── bin/                  # Binary executable
-│   └── bibble.js         # Entry script
+│   ├── bibble.js         # Main ESM entry script
+│   ├── bibble-cli.js     # ESM compatibility wrapper
+│   ├── bibble-cli.cjs    # CommonJS compatibility wrapper
+│   └── bibble.cmd        # Windows command file
+├── PLAN/                 # Planning documentation
+│   ├── ANTHROPIC-REIMPLEMENTATION-PLAN.md  # Plan for Anthropic integration
+│   ├── CLAUDE_AGENTS.md  # Guidelines for Claude agents
+│   ├── CLAUDE_EXAMPLE_AGENT.md  # Example of Claude agent implementation
+│   └── CLAUDE_OVERVIEW.md  # Overview of Claude agents mechanism
 ├── reference/            # Reference documentation
 ├── package.json          # NPM package definition
 └── tsconfig.json         # TypeScript configuration
@@ -76,6 +85,8 @@ Bibble uses Commander.js to create a command-line interface with several command
 - `bibble chat` - Start a chat session with an AI model
 - `bibble config` - Manage configuration settings
 - `bibble history` - Manage chat history
+- `bibble setup` - Run the setup wizard
+- `bibble system-prompt` - View the system prompt with tools list
 
 ### Configuration Management
 
@@ -111,6 +122,16 @@ The application supports both traditional OpenAI models and the newer o-series m
 - Traditional models use `temperature` and `maxTokens` parameters
 - O-series models use `reasoningEffort` and `maxCompletionTokens` parameters
 
+#### Anthropic Integration
+
+The application supports Anthropic's Claude models through the `AnthropicClient` class, which:
+- Handles tool definitions with the `mcp__<serverName>__<toolName>` naming convention
+- Implements the agent loop structure for tool calls and responses
+- Supports chain-of-thought prompting with `<thinking>...</thinking>` blocks
+- Provides parameter validation for tool call arguments
+- Supports both serial and parallel tool invocations
+- Includes comprehensive error handling
+
 #### OpenAI-Compatible Endpoints
 
 For third-party services that implement the OpenAI API, Bibble provides:
@@ -130,6 +151,7 @@ The `Agent` class is the core component that manages conversations and tool usag
 - Provides built-in control flow tools:
   - `task_complete`: Called when the task is complete
   - `ask_question`: Called when the agent needs more information
+- Generates dynamic tool documentation for the system prompt
 
 ### MCP Client
 
@@ -234,6 +256,38 @@ Bibble implements comprehensive tool documentation and validation to improve too
 
 Bibble uses the `@modelcontextprotocol/sdk` package to connect to MCP servers via the `StdioClientTransport` interface. This allows it to communicate with servers that implement the MCP protocol, regardless of the programming language they're written in.
 
+## Anthropic Integration
+
+Bibble's Anthropic integration follows specific guidelines for building Claude agents with MCP tools:
+
+1. **Tool Definitions**:
+   - Uses the `mcp__<serverName>__<toolName>` naming convention (double underscores)
+   - Each tool requires a name, description, and strict JSON Schema for input
+   - Tools are supplied on every request to Claude
+
+2. **Agent Loop Structure**:
+   - Sends a user prompt with tools and tool_choice settings
+   - Checks for tool_use blocks in Claude's response
+   - Executes tools and sends results back to Claude
+   - Repeats until Claude responds with no new tool_use blocks
+
+3. **Serial vs. Parallel Tool Invocations**:
+   - Controls whether Claude can request several tools per turn via the `disable_parallel_tool_use` setting
+   - In parallel mode, runs all requested tool calls simultaneously and returns all results
+   - In sequential mode, handles one tool call at a time
+
+4. **Chain-of-Thought Prompting**:
+   - Uses `<thinking>...</thinking>` blocks to improve reliability
+   - Encourages Claude to check all required parameters before calling tools
+   - Helps prevent missing parameter errors
+
+5. **Error Handling**:
+   - Validates tool call arguments against JSON schemas
+   - Handles missing parameters with clear user prompts
+   - Monitors `stop_reason` for early terminations
+
+The implementation is based on the plan outlined in `PLAN/ANTHROPIC-REIMPLEMENTATION-PLAN.md` and follows the guidelines in `PLAN/CLAUDE_AGENTS.md`.
+
 ## Build System
 
 Bibble uses:
@@ -312,6 +366,9 @@ bibble chat
 
 # Use a specific model
 bibble chat --model gpt-4
+
+# Use a Claude model
+bibble chat --model claude-3-7-sonnet-20250219
 
 # Continue the most recent chat
 bibble chat --continue

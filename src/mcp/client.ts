@@ -1,11 +1,14 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Config } from "../config/config.js";
+import { ListToolsRequest, ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { BibbleConfig } from "../config/storage.js";
 
 // Tool types
+export type ServerName = string;
 export type ToolName = string;
-export type ToolParameter = Record<string, unknown>;
+export type ToolDescription = string;
+export type ToolParameter = Record<string, any>;
 
 export interface ChatCompletionInputTool {
   type: "function";
@@ -33,6 +36,7 @@ export interface McpClientOptions {
 export class McpClient {
   protected clients: Map<ToolName, Client> = new Map();
   public readonly availableTools: ChatCompletionInputTool[] = [];
+  public readonly toolToServerMap: Map<string, string> = new Map();
   private config = Config.getInstance();
 
   constructor(options: McpClientOptions = {}) {
@@ -46,8 +50,8 @@ export class McpClient {
     // Use provided servers or get them from config
     const mcpServers = servers || this.config.getMcpServers();
 
-    // Log servers for debugging
-    console.log(`Initializing ${mcpServers.length} MCP servers`);
+    // Initialize servers
+    // No logging needed
   }
 
   /**
@@ -66,7 +70,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.0.0"
+        version: "1.3.4"
       });
 
       // Connect to server
@@ -74,14 +78,15 @@ export class McpClient {
 
       // Get available tools
       const toolsResult = await mcp.listTools();
-      console.log(
-        `Connected to MCP server "${server.name}" with tools:`,
-        toolsResult.tools.map(({ name }) => name)
-      );
+
+      // Only log the connection, not the tools list
+      console.log(`Connected to MCP server "${server.name}"`);
 
       // Register tools with client map
       for (const tool of toolsResult.tools) {
         this.clients.set(tool.name, mcp);
+        // Map tool name to server name
+        this.toolToServerMap.set(tool.name, server.name);
       }
 
       // Add tools to available tools list
@@ -122,13 +127,44 @@ export class McpClient {
     );
   }
 
-  /**
-   * Call a tool with arguments
-   * @param toolName Tool name
-   * @param toolArgs Tool arguments
+   /**
+   * List available tools from configured servers
    */
-  async callTool(toolName: string, toolArgs: any): Promise<{ content: string }> {
-    // Handle built-in tools
+  async listTools(client: Client): Promise<void> {
+    try {
+        const toolsRequest: ListToolsRequest = {
+            method: 'tools/list',
+            params: {}
+        };
+        const toolsResult = await client.request(toolsRequest, ListToolsResultSchema);
+
+        console.log('Available tools:');
+        if (toolsResult.tools.length === 0) {
+            console.log('  No tools available');
+        } else {
+            for (const tool of toolsResult.tools) {
+                console.log(`  - ${tool.name}: ${tool.description}`);
+            }
+        }
+    } catch (error) {
+        console.log(`Tools not supported by this server: ${error}`);
+    }
+  }
+    /**
+     * Get the server name for a given tool
+     * @param toolName Tool name
+     * @returns Server name or undefined
+     */
+
+    /**
+     * Call a tool with arguments
+     * @param toolName Tool name
+     * @param toolArgs Tool arguments
+     */
+
+    async callTool(toolName: string, toolArgs: any): Promise<{ content: string }> {
+        // Handle built-in tools
+
     if (toolName === "task_complete") {
       return this.handleTaskComplete();
     }
@@ -213,4 +249,13 @@ export class McpClient {
     await Promise.all(closePromises);
     this.clients.clear();
   }
+}
+
+// Singleton instance for convenience
+const mcpClientInstance = new McpClient();
+
+// Export a function to load and get tools
+export async function getAllTools(): Promise<ChatCompletionInputTool[]> {
+    await mcpClientInstance.loadTools();
+    return mcpClientInstance.availableTools;
 }

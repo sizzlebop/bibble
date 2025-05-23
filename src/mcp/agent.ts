@@ -1,5 +1,7 @@
-﻿import { McpClient, ChatCompletionInputTool } from "./client.js";
+﻿import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { McpClient, ChatCompletionInputTool } from "./client.js";
 import { Config } from "../config/config.js";
+import { ListToolsRequest, ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { BibbleConfig } from "../config/storage.js";
 import { LlmClient } from "../llm/client.js";
 import { ChatMessage, MessageRole } from "../types.js";
@@ -23,6 +25,62 @@ When using tools, follow these strict guidelines:
 3. Format parameters correctly according to their type (string, number, boolean, etc.).
 
 ## How to Use MCP Tools
+
+You must call the tools with the server name and tool name together in the following format:
+
+mcp_SERVERNAME_TOOLNAME
+
+Example: The plan_task tool would be called using the name mcp_taskflow_plan_task
+
+Each tool has specific parameters that are defined in the tool's schema. You must provide these parameters in the correct format. Some of these parameters are optional, but some are required. If you fail to provide a required parameter, the tool will return an error.
+
+IMPORTANT - YOU MUST PROVIDE ALL THE REQUIRED PARAMETERS AND THEY MUST BE FORMATTED CORRECTLY! USE PROPER JSON SYNTAX FOR OBJECTS, STRINGS AND ARRAYS. PAY ATTENTION TO ERROR MESSAGES AND LEARN FROM YOUR MISTAKES BEFORE TRYING AGAIN. YOU ARE ENCOURAGED TO MAKE MULTIPLE ATTEMPTS TO GET THE TOOL CALL RIGHT, BUT YOU MUST PROVIDE ALL REQUIRED PARAMETERS AND FORMAT THEM CORRECTLY. DO NOT END YOUR TURN WITHOUT SUCCESSFULLY MAKING THE TOOL CALL.
+
+SOME TOOLS MAY HAVE ADDITIONAL PARAMETERS THAT ARE NOT REQUIRED BUT ARE USEFUL FOR THE TOOL TO WORK PROPERLY. YOU SHOULD PROVIDE THESE PARAMETERS AS WELL.
+
+THESE ARE YOUR AVAILABLE FILE SYSTEM AND TERMINAL TOOLS:
+Note that these are not all the tools available to you, but only the ones that are relevant to file system and terminal operations.
+
+File system tools:
+mcp_desktop-commander_list_directory - Get detailed listing of files and directories
+mcp_desktop-commander_move_file - Move or rename files and directories
+mcp_desktop_commander_search_files - Find files by name using case-insensitive substring matching
+mcp_desktop_commander_search_code - Search for text/code patterns within file contents using ripgrep
+mcp_desktop-commander_read_file - Read contents from local filesystem or URLs with line-based pagination (supports offset and length parameters) - USE TO READ ONE FILE AT A TIME
+mcp_desktop-commander_read_multiple_files - Read multiple files simultaneously - USE TO READ MULTIPLE FILES AT THE SAME TIME
+mcp_desktop_commander_write_file - Write file contents with options for rewrite or append mode (uses line limits that can be user configured IF the user chooses to do so)
+mcp_desktop-commander_create_directory - Create a new directory or ensure it exists
+mcp_desktop_commander_get_file_info - Retrieve detailed metadata about a file or directory
+mcp_desktop-commander_edit_block - Apply targeted text replacements with enhanced prompting for smaller edits (includes character-level diff feedback)
+
+Terminal tools:
+mcp_desktop-commander_execute_command - Execute a terminal command with configurable timeout and shell selection
+mcp_desktop-commander_read_output - Read new output from a running terminal session
+mcp_desktop-commander_force_terminate - Force terminate a running terminal session
+mcp_desktop-commander_list_sessions - List all active terminal sessions
+mcp_desktop-commander_list_processes - List all running processes with detailed information
+mcp_desktop-commander_kill_process - Terminate a running process by PID
+
+Tool Usage Examples:
+
+Search/Replace Block Format:
+
+filepath.ext
+<<<<<<< SEARCH
+content to find
+=======
+new content
+>>>>>>> REPLACE
+Example:
+
+src/main.js
+<<<<<<< SEARCH
+console.log("old message");
+=======
+console.log("new message");
+>>>>>>> REPLACE
+Enhanced Edit Block Features
+The edit_block tool includes several enhancements for better reliability:
 
 ## Structure
 
@@ -78,12 +136,14 @@ OR
 |/antml:function_calls|
 
 Important guidelines:
-1. Always provide ALL required parameters
+1. Always provide ALL required parameters for each tool call - do NOT skip any parameters
 2. Format parameters correctly according to their type
-3. Use proper JSON syntax for objects and arrays
-4. Wait for the tool's response before proceeding
+3. Use the correct parameter names as defined in the tool's schema
+4. IMPORTANT - Use proper JSON syntax for objects and arrays
+5. Provide additional parameters that are not required but are useful for the tool to work properly
+6. Wait for the tool's response before proceeding
 
-If you receive an error about missing parameters, carefully read the error message and try again with ALL required parameters.
+If you receive an error about missing parameters, carefully read the error message and try again with ALL required parameters. DO NOT END YOUR TURN without successfully making the tool call. It is okay to make multiple attempts to get the tool call right, but you MUST provide all required parameters and format them correctly.
 
 You MUST plan extensively before each function call, and reflect extensively on the outcomes of the previous function calls. DO NOT do this entire process by making function calls only, as this can impair your ability to solve the problem and think insightfully.
 
@@ -207,22 +267,196 @@ export class Agent extends McpClient {
   protected configInstance = Config.getInstance();
   private messages: ChatMessage[] = [];
   private model: string;
-  private exitLoopTools = [taskCompletionTool, askQuestionTool];
+    private exitLoopTools = [taskCompletionTool, askQuestionTool];
+
+   async listTools(client: Client): Promise<void> {
+     try {
+         const toolsRequest: ListToolsRequest = {
+             method: 'tools/list',
+             params: {}
+         };
+         const toolsResult = await client.request(toolsRequest, ListToolsResultSchema);
+
+         console.log('Available tools:');
+         if (toolsResult.tools.length === 0) {
+             console.log('  No tools available');
+         } else {
+             for (const tool of toolsResult.tools) {
+                 console.log(`  - ${tool.name}: ${tool.description}`);
+             }
+         }
+     } catch (error) {
+         console.log(`Tools not supported by this server: ${error}`);
+     }
+ }
+
+  /**
+   * Generate a formatted list of available tools for the system prompt
+   * @returns Formatted tool list as a string
+   */
+  private generateToolsList(): string {
+    let toolsList = "# Available MCP Tools\n\n";
+    toolsList += "## IMPORTANT: Tool Calling Instructions\n\n";
+    toolsList += "When calling any tool, you MUST use the exact format: `serverName_toolName`\n";
+    toolsList += "For example:\n";
+    toolsList += "- To use the 'read_file' tool from 'desktop-commander' server, call it as: `desktop-commander_read_file`\n";
+    toolsList += "- To use the 'plan_task' tool from 'taskflow' server, call it as: `taskflow_plan_task`\n\n";
+    toolsList += "NEVER call a tool using just the tool name (e.g., 'task', 'read_file'). Always include the server name prefix.\n\n";
+
+    // Group tools by server
+    const toolsByServer = new Map<string, any[]>();
+
+    for (const tool of this.availableTools) {
+      const serverName = this.toolToServerMap.get(tool.function.name) || "unknown";
+
+      if (!toolsByServer.has(serverName)) {
+        toolsByServer.set(serverName, []);
+      }
+
+      toolsByServer.get(serverName)?.push(tool);
+    }
+
+    // Generate formatted list
+    for (const [serverName, tools] of toolsByServer.entries()) {
+      toolsList += `## Server: ${serverName}\n\n`;
+
+      for (const tool of tools) {
+        const { name, description, parameters } = tool.function;
+
+        // Format tool name with server prefix for Anthropic
+        const formattedName = `${serverName}_${name}`;
+
+        toolsList += `### ${formattedName}\n`;
+        toolsList += `${description || "No description provided."}\n\n`;
+
+        // Add parameters section with detailed information
+        if (parameters && parameters.properties) {
+          toolsList += "**Parameters:**\n\n";
+          toolsList += "```json\n";
+          toolsList += JSON.stringify(parameters, null, 2);
+          toolsList += "\n```\n\n";
+
+          // Add a more readable version of parameters
+          toolsList += "**Parameter Details:**\n\n";
+
+          for (const [paramName, paramDetails] of Object.entries(parameters.properties)) {
+            const required = parameters.required?.includes(paramName) ? " (required)" : "";
+            toolsList += `- **${paramName}${required}**: ${(paramDetails as any).description || "No description"}\n`;
+
+            // Add parameter type information
+            if ((paramDetails as any).type) {
+              toolsList += `  - Type: \`${(paramDetails as any).type}\`\n`;
+            }
+
+            // Add enum values if available
+            if ((paramDetails as any).enum) {
+              toolsList += `  - Allowed values: ${(paramDetails as any).enum.map((v: any) => `\`${v}\``).join(", ")}\n`;
+            }
+
+            // Add default value if available
+            if ((paramDetails as any).default !== undefined) {
+              toolsList += `  - Default: \`${JSON.stringify((paramDetails as any).default)}\`\n`;
+            }
+          }
+
+          toolsList += "\n";
+        }
+
+        // Add example usage with a complete example
+        toolsList += "**Example Usage:**\n\n";
+        toolsList += "```\n";
+        toolsList += `<function_calls>\n`;
+        toolsList += `<invoke name="${serverName}_${name}">\n`;
+
+        // Generate example parameters
+        if (parameters && parameters.properties) {
+          for (const [paramName, paramDetails] of Object.entries(parameters.properties)) {
+            if (parameters.required?.includes(paramName)) {
+              const exampleValue = this.generateExampleValue(paramName, paramDetails as any);
+              toolsList += `  <parameter name="${paramName}">${exampleValue}</parameter>\n`;
+            }
+          }
+        }
+
+        toolsList += `</invoke>\n`;
+        toolsList += `</function_calls>\n`;
+        toolsList += "```\n\n";
+      }
+    }
+
+    return toolsList;
+  }
+
+  /**
+   * Generate an example value for a parameter based on its type
+   * @param paramName Parameter name
+   * @param paramDetails Parameter details
+   * @returns Example value as a string
+   */
+  private generateExampleValue(paramName: string, paramDetails: any): string {
+    // If there's a default value, use it
+    if (paramDetails.default !== undefined) {
+      return JSON.stringify(paramDetails.default);
+    }
+
+    // If there are enum values, use the first one
+    if (paramDetails.enum && paramDetails.enum.length > 0) {
+      return JSON.stringify(paramDetails.enum[0]);
+    }
+
+    // Generate based on type
+    switch (paramDetails.type) {
+      case "string":
+        // Generate a meaningful example based on parameter name
+        if (paramName.includes("path") || paramName.includes("file")) {
+          return '"path/to/file.txt"';
+        } else if (paramName.includes("url")) {
+          return '"https://example.com"';
+        } else if (paramName.includes("name")) {
+          return '"example_name"';
+        } else if (paramName.includes("id")) {
+          return '"example_id"';
+        } else if (paramName.includes("query")) {
+          return '"example query"';
+        } else {
+          return '"example_value"';
+        }
+      case "number":
+        return "42";
+      case "boolean":
+        return "true";
+      case "array":
+        return "[]";
+      case "object":
+        return "{}";
+      default:
+        return '"example_value"';
+    }
+  }
 
   constructor(options: AgentOptions = {}) {
     super(options);
 
     // Initialize LLM client
-    this.llmClient = new LlmClient();
+
+    this.llmClient = new LlmClient({
+      toolToServerMap: this.toolToServerMap
+    });
 
     // Set model
     this.model = options.model || this.configInstance.getDefaultModel();
 
-    // Initialize messages with hardcoded system prompt
+    // Generate dynamic tool list for system prompt
+    const toolsList = this.generateToolsList();
+
+    // Combine default system prompt with tool list
+    const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${toolsList}`;
+
+    // Initialize messages with system prompt
     this.messages = [
       {
         role: MessageRole.System,
-        content: DEFAULT_SYSTEM_PROMPT,
+        content: systemPrompt,
       },
     ];
 
@@ -243,7 +477,7 @@ export class Agent extends McpClient {
     await this.loadTools();
 
     // We don't add exit loop tools to availableTools to avoid including them in the context
-    // They are handled separately in the processTurn method
+    // They are handled separately
   }
 
   /**
@@ -354,13 +588,19 @@ export class Agent extends McpClient {
 
     const modelConfig = models.find(m => m.id.toLowerCase() === options.model.toLowerCase());
 
+    // Check if this is an Anthropic model
+    const isAnthropicModel = modelConfig?.provider === "anthropic" || options.model.toLowerCase().includes("claude");
+
     // Prepare chat completion parameters
     const chatParams = {
       model: options.model,
       messages: this.messages,
-      tools,
       abortSignal: options.abortSignal,
     } as any;
+
+    // Include tools for all models
+    // For Anthropic models, the AnthropicClient will handle the conversion
+    chatParams.tools = tools;
 
     // Add model-specific parameters
     if (modelConfig) {

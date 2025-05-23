@@ -5,7 +5,7 @@
   saveConfig,
   getValueByPath,
   setValueByPath
-} from "./storage.js";
+} from "../config/storage.js";
 
 /**
  * Config manager class for bibble

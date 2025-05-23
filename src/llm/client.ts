@@ -1,6 +1,7 @@
 ﻿
-import { Config } from "../config/config.js"; // Adjust the path if needed
+import { Config } from "../config/config.js";
 import OpenAI from "openai"; // Add this import for OpenAI
+import { AnthropicClient } from "./anthropic.js"; // Import AnthropicClient
 
 // Import ChatMessage and other related types
 import type { ChatMessage, StreamChunk, ChatCompletionParams } from "../types.js";
@@ -11,9 +12,8 @@ interface LlmClientOptions {
   apiKey?: string;
   baseURL?: string;
   provider?: string;
+  toolToServerMap?: Map<string, string>;
 }
-
-
 
 /**
  * LLM Client for interacting with language models
@@ -21,7 +21,8 @@ interface LlmClientOptions {
 export class LlmClient {
   private config = Config.getInstance();
   private openaiClient: OpenAI | null = null;
-  
+  private anthropicClient: AnthropicClient | null = null;
+
   private provider: string = "openai";
 
   constructor(options: LlmClientOptions = {}) {
@@ -29,7 +30,24 @@ export class LlmClient {
     this.provider = options.provider || this.config.getDefaultProvider();
 
     // Initialize the appropriate client based on the provider
-    if (this.provider === "openaiCompatible") {
+    if (this.provider === "anthropic") {
+      // Get API key from options or config
+      const apiKey = options.apiKey || this.config.getApiKey("anthropic");
+
+      if (!apiKey) {
+        throw new Error("Anthropic API key is required. Please set it in the configuration or provide it in the options.");
+      }
+
+      // Get base URL from options or config
+        const baseURL = options.baseURL || this.config.get("apis.anthropic.baseUrl");
+
+      // Create Anthropic client
+      this.anthropicClient = new AnthropicClient({
+        apiKey,
+        baseURL,
+        toolToServerMap: options.toolToServerMap,
+      });
+    } else if (this.provider === "openaiCompatible") {
       // Get base URL from options or config
       const baseURL = options.baseURL || this.config.get("apis.openaiCompatible.baseUrl", "");
       const requiresApiKey = this.config.get("apis.openaiCompatible.requiresApiKey", true);
@@ -126,8 +144,37 @@ export class LlmClient {
    */
   async chatCompletion(params: ChatCompletionParams): Promise<AsyncGenerator<StreamChunk>> {
     // Use the appropriate client based on the provider
+    if (this.provider === "anthropic" && this.anthropicClient) {
+      // Get model configuration
+      const modelConfig = this.getModelConfig(params.model);
 
-    if (this.openaiClient) {
+      // Prepare Anthropic-specific parameters
+      const anthropicParams: any = {
+        model: params.model,
+        messages: params.messages,
+        tools: params.tools,
+        maxTokens: params.maxTokens || modelConfig?.maxTokens || 4096,
+        temperature: params.temperature || modelConfig?.temperature,
+        topP: params.topP || modelConfig?.topP,
+        topK: params.topK || modelConfig?.topK,
+        stopSequences: params.stopSequences,
+        abortSignal: params.abortSignal,
+        stream: true,
+      };
+
+      // Add thinking parameter if provided
+      if (params.thinking !== undefined) {
+        anthropicParams.thinking = params.thinking;
+      }
+
+      // Send request to Anthropic
+                // Send request to Anthropic
+                // Send request to Anthropic
+                if (!this.anthropicClient) {
+                  throw new Error("Anthropic client is not initialized");
+                }
+                return this.anthropicClient.chatCompletion(anthropicParams);
+      } else if (this.openaiClient) {
       // Convert messages to OpenAI format
       const openaiMessages = this.convertMessagesToOpenAIFormat(params.messages);
 
@@ -195,6 +242,19 @@ export class LlmClient {
     const modelConfig = models.find((m) => m.id.toLowerCase() === normalizedModelId);
 
     return isOSeries || (modelConfig?.isReasoningModel === true);
+  }
+
+  /**
+   * Get model configuration from config
+   * @param modelId Model ID to get configuration for
+   * @returns Model configuration or undefined if not found
+   */
+  private getModelConfig(modelId: string): any {
+    // Get models from config
+    const models = this.config.get("models", []);
+
+    // Find model configuration
+    return models.find((m: any) => m.id.toLowerCase() === modelId.toLowerCase());
   }
 
   /**

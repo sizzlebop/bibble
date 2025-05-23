@@ -1,0 +1,369 @@
+﻿﻿import Anthropic from "@anthropic-ai/sdk";
+import type {
+  MessageParam,
+  ToolUnion,
+  ContentBlock,
+  ToolUseBlock,
+  MessageCreateParamsBase
+} from "@anthropic-ai/sdk/resources/messages";
+import { ChatMessage, MessageRole, StreamChunk } from "../types.js";
+import { getAllTools } from "../mcp/client.js";
+
+export interface AnthropicClientOptions {
+    apiKey?: string;
+    baseURL?: string;
+    toolToServerMap?: Map<string, string>;
+}
+
+export class AnthropicClient {
+    private client: Anthropic;
+    private toolToServerMap: Map<string, string>;
+
+    constructor(options: AnthropicClientOptions) {
+        if (!options.apiKey) throw new Error("Anthropic API key is required");
+
+        this.client = new Anthropic({
+            apiKey: options.apiKey,
+            baseURL: options.baseURL
+        });
+
+        this.toolToServerMap = options.toolToServerMap || new Map();
+    }
+
+    public async runAgentLoop(McpClient: any, userRequest: string, model?: string) {
+        const availableTools = await getAllTools();
+        let messages: ChatMessage[] = [{
+            role: MessageRole.User,
+            content: userRequest
+        }];
+
+        // Get the default model from config if not provided
+        if (!model) {
+            try {
+                // Import Config dynamically to avoid circular dependency
+                const { Config } = await import("../config/config.js");
+                const config = Config.getInstance();
+                model = config.getDefaultModel("anthropic");
+            } catch (error) {
+                // Fallback to a reasonable default if config can't be loaded
+                model = "claude-sonnet-4-20250514";
+                console.warn("Could not load config, using default model:", model);
+            }
+        }
+
+        while (true) {
+            const anthropicMessages: MessageParam[] = messages.map((msg: ChatMessage) => ({
+                role: msg.role === MessageRole.User ? "user" : "assistant",
+                content: msg.content
+            }));
+
+            // Convert OpenAI-style function tools to Anthropic custom tools
+            let anthropicTools: ToolUnion[] = [];
+
+            try {
+                // Try to convert the tools to Anthropic format
+                anthropicTools = this.anthropicTools(availableTools);
+            } catch (error) {
+                // If conversion fails, use an empty array
+                anthropicTools = [];
+            }
+
+            // Log the request for debugging
+            console.log(`Sending request to Anthropic with model ${model} and ${anthropicTools.length} tools`);
+
+            const resp = await this.client.messages.create({
+                model: model,
+                messages: anthropicMessages,
+                tools: anthropicTools,
+                tool_choice: { type: "auto", disable_parallel_tool_use: true },
+                max_tokens: 4096
+            });
+
+            const blocks: ContentBlock[] = resp.content;
+            const toolBlocks: ToolUseBlock[] = blocks.filter((b): b is ToolUseBlock => b.type === "tool_use");
+
+            // Log tool blocks for debugging
+            console.log(`Received ${toolBlocks.length} tool blocks from Anthropic`);
+
+            if(toolBlocks.length === 0) {
+                // No tool calls, we're done
+                break;
+            }
+
+            const results: string[] = [];
+            for (const block of toolBlocks) {
+                // Log the tool call for debugging
+                console.log(`Calling tool: ${block.name} with input:`, block.input);
+
+                try {
+                    // Call the tool and get the result
+                    const result = await McpClient.callTool(block.name, block.input);
+
+                    // Log the tool result for debugging
+                    console.log(`Tool result:`, result);
+
+                    // Format the result as a tool_result message
+                    results.push(JSON.stringify({
+                        type: "tool_result",
+                        tool_use_id: block.id,
+                        content: result
+                    }));
+                } catch (error: any) {
+                    // Log the error and add an error message to the results
+                    console.error(`Error calling tool ${block.name}:`, error);
+                    results.push(JSON.stringify({
+                        type: "tool_result",
+                        tool_use_id: block.id,
+                        content: { error: `Error calling tool: ${error.message || String(error)}` }
+                    }));
+                }
+            }
+
+            // Add the tool results as a user message
+            messages.push({ role: MessageRole.User, content: results.join("\n") });
+        }
+    }
+            private formatToolName(name: string): string {
+                // For Anthropic's tool schema, we need to use a unique name format
+                // But we should preserve the original format for tool calling
+
+                // If the name is already in the Anthropic format, return it as is
+                if (name.startsWith("mcp__") && name.indexOf("__", 5) > 0) return name;
+
+                // If the name is in the serverName_toolName format (which is what we want for tool calling),
+                // we'll use it as is for the schema but preserve the original for calling
+                const match = name.match(/^([^_]+)_(.+)$/);
+                if (match) {
+                    // This is the format we want for tool calling
+                    return name;
+                }
+
+                // If we have a server mapping for this tool, use serverName_toolName format
+                const serverName = this.toolToServerMap.get(name);
+                if (serverName) return `${serverName}_${name}`;
+
+                // Fallback - just return the original name
+                return name;
+            }
+
+            private anthropicTools(tools: any[]): ToolUnion[] {
+                // Anthropic only supports specific tool types
+                // For custom tools, we need to use the "custom" type
+                // For built-in tools, we need to use the appropriate tag
+
+                // Anthropic only supports specific tool tags like:
+                // "computer_20241022", "bash_20241022", "text_editor_20241022", etc.
+
+                // If we have built-in Anthropic tools, return them directly
+                if (tools.length > 0 && typeof tools[0] === "string") {
+                    // These are already Anthropic tool tags
+                    return tools.map(tag => ({ type: tag })) as ToolUnion[];
+                }
+
+                // For custom MCP tools, convert to Anthropic's "custom" type
+                const uniqueToolNames = new Set<string>();
+                const uniqueTools: ToolUnion[] = [];
+
+                for (const tool of tools) {
+                    if (!tool.function) continue;
+
+                    const { name, description, parameters } = tool.function;
+                    const formattedName = this.formatToolName(name);
+
+                    if (uniqueToolNames.has(formattedName)) continue;
+                    uniqueToolNames.add(formattedName);
+
+                    uniqueTools.push({
+                        type: "custom", // Always use "custom" for MCP tools
+                        name: formattedName,
+                        description: description || "",
+                        input_schema: {
+                            type: "object",
+                            ...(parameters || {})
+                        }
+                    });
+                }
+
+                return uniqueTools;
+            }
+
+            public async *chatCompletion(params: {
+                model: string;
+                messages: ChatMessage[];
+                tools?: any[];
+                maxTokens?: number;
+                temperature?: number;
+                topP?: number;
+                topK?: number;
+                thinking?: any;
+                stopSequences?: string[];
+                abortSignal?: AbortSignal;
+                stream: boolean;
+            }): AsyncGenerator<StreamChunk> {
+                if (!params.model) throw new Error("Model is required for Anthropic chat completion");
+                if (!params.messages || params.messages.length === 0) throw new Error("At least one message is required");
+
+                const anthropicMessages: MessageParam[] = params.messages.map((msg) => ({
+                    role: msg.role === MessageRole.User ? "user" : "assistant",
+                    content: msg.content
+                }));
+
+                // Get the model from params or fall back to default
+                let model = params.model;
+                if (!model) {
+                    try {
+                        // Import Config dynamically to avoid circular dependency
+                        const { Config } = await import("../config/config.js");
+                        const config = Config.getInstance();
+                        model = config.getDefaultModel("anthropic");
+                    } catch (error) {
+                        // Fallback to a reasonable default if config can't be loaded
+                        model = "claude-sonnet-4-20250514";
+                        console.warn("Could not load config, using default model:", model);
+                    }
+                }
+
+                const requestParams: MessageCreateParamsBase & { [key: string]: any } = {
+                    model: model,
+                    messages: anthropicMessages,
+                    max_tokens: params.maxTokens ?? 4096,
+                    stream: true
+                };
+
+                if (params.temperature !== undefined) {
+                    requestParams.temperature = Math.max(0, Math.min(1, params.temperature));
+                }
+
+                if (params.topP !== undefined) {
+                    requestParams.top_p = Math.max(0, Math.min(1, params.topP));
+                }
+
+                if (params.topK !== undefined && Number.isInteger(params.topK) && params.topK > 0) {
+                    requestParams.top_k = params.topK;
+                }
+
+                if (params.stopSequences) {
+                    requestParams.stop_sequences = params.stopSequences;
+                }
+
+                if (params.thinking) {
+                    requestParams.thinking = typeof params.thinking === "boolean"
+                        ? { type: params.thinking ? "enabled" : "disabled", budget_tokens: 1024 }
+                        : params.thinking;
+                }
+
+                // Handle tools for Anthropic
+                if (params.tools && Array.isArray(params.tools)) {
+                    // Check if these are Anthropic's built-in tools (strings) or custom tools (objects)
+                    const isBuiltInTools = params.tools.length > 0 && typeof params.tools[0] === "string";
+
+                    if (isBuiltInTools) {
+                        // These are Anthropic's built-in tools, pass them directly
+                        requestParams.tools = params.tools;
+                    } else {
+                        // These are custom tools, filter and convert them
+                        const validTools = params.tools.filter(
+                            (tool: any) => tool.function?.name && tool.function?.parameters
+                        );
+
+                        if (validTools.length > 0) {
+                            try {
+                                // Convert to Anthropic's format with "custom" type
+                                requestParams.tools = this.anthropicTools(validTools);
+                            } catch (error) {
+                                console.warn("Error converting tools for Anthropic:", error);
+                                // If conversion fails, don't include tools
+                                console.warn("Continuing without tools due to conversion error");
+                            }
+                        }
+                    }
+
+                    // Set tool_choice if we have tools
+                    if (requestParams.tools && requestParams.tools.length > 0) {
+                        requestParams.tool_choice = {
+                            type: "auto",
+                            disable_parallel_tool_use: params.thinking?.disableParallelToolUse === false ? false : true
+                        };
+                    }
+                }
+
+                // Use streaming for real-time response
+                try {
+                    const stream = this.client.messages.stream(requestParams);
+
+                    // Process the stream
+                    for await (const chunk of stream) {
+                        if (chunk.type === 'content_block_delta') {
+                            if (chunk.delta.type === 'text_delta') {
+                                // Text content
+                                yield { type: "text", text: chunk.delta.text };
+                            }
+                            // Note: Anthropic's streaming API doesn't currently support tool_use_delta
+                            // in the same way as OpenAI. We'll handle tool calls via content_block_start
+                        } else if (chunk.type === 'message_delta' && chunk.delta.stop_reason === 'tool_use') {
+                            // Message stopped for tool use - we'll handle this with content_block_start
+                            console.log("Message stopped for tool use");
+                        } else if (chunk.type === 'content_block_start' && chunk.content_block.type === 'tool_use') {
+                            // Beginning of a tool use block
+                            const toolBlock = chunk.content_block as any; // Type assertion for TS
+                            if (toolBlock.id && toolBlock.name && toolBlock.input) {
+                                yield {
+                                    type: "tool_call",
+                                    toolCall: {
+                                        id: toolBlock.id,
+                                        name: toolBlock.name,
+                                        args: toolBlock.input
+                                    }
+                                };
+                            }
+                        }
+                    }
+                } catch (error) {
+                    // Fallback to non-streaming if streaming fails
+                    try {
+                        const response = await this.client.messages.create({
+                            ...requestParams,
+                            stream: false
+                        });
+
+                        if ("content" in response && Array.isArray(response.content)) {
+                            // First check for tool use blocks
+                            const toolBlocks = response.content.filter((b: any) => b.type === "tool_use");
+
+                            if (toolBlocks.length > 0) {
+                                // Process tool blocks first
+                                for (const block of toolBlocks) {
+                                    // Use type assertion to handle the tool use block
+                                    const toolBlock = block as any;
+                                    yield {
+                                        type: "tool_call",
+                                        toolCall: {
+                                            id: toolBlock.id,
+                                            name: toolBlock.name,
+                                            args: toolBlock.input
+                                        }
+                                    };
+                                }
+                            }
+
+                            // Then process text blocks
+                            const textBlocks = response.content
+                                .filter((b: any) => b.type === "text")
+                                .map((b: any) => b.text);
+
+                            if (textBlocks.length > 0) {
+                                yield { type: "text", text: textBlocks.join("") };
+                            } else if (toolBlocks.length === 0) {
+                                // Only yield this if we didn't have tool blocks
+                                yield { type: "text", text: "No response from Anthropic." };
+                            }
+                        } else {
+                            yield { type: "text", text: "Unexpected response format from Anthropic." };
+                        }
+                    } catch (fallbackError) {
+                        yield { type: "text", text: "Failed to get response from Anthropic." };
+                    }
+                }
+
+         }
+   }

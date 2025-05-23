@@ -64,11 +64,6 @@ export interface BibbleConfig {
     maxCompletionTokens?: number;
     reasoningEffort?: "low" | "medium" | "high";
     isReasoningModel?: boolean;
-    thinking?: boolean | {
-      type: "enabled";
-      budget_tokens: number;
-    };
-    thinkingBudgetTokens?: number;
     topP?: number;
     topK?: number;
   }>;
@@ -81,7 +76,7 @@ export const defaultConfig: BibbleConfig = {
     openai: {
       apiKey: undefined,
       baseUrl: "https://api.openai.com/v1",
-      defaultModel: "o4-mini"
+      defaultModel: "gpt-4.1"
     },
     openaiCompatible: {
       apiKey: undefined,
@@ -92,7 +87,7 @@ export const defaultConfig: BibbleConfig = {
     anthropic: {
       apiKey: undefined,
       baseUrl: "https://api.anthropic.com",
-      defaultModel: "claude-3-7-sonnet-20250219"
+        defaultModel: "claude-sonnet-4-20250514"
     }
   },
   ui: {
@@ -198,16 +193,29 @@ export const defaultConfig: BibbleConfig = {
 
     // Anthropic models
     {
+      id: "claude-opus-4-20250514",
+      provider: "anthropic",
+      name: "Claude Opus 4",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "claude-sonnet-4-20250514",
+      provider: "anthropic",
+      name: "Claude Sonnet 4",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
       id: "claude-3-7-sonnet-20250219",
       provider: "anthropic",
       name: "Claude 3.7 Sonnet",
       maxTokens: 4096,
       temperature: 0.7,
-      thinking: {
-        type: "enabled",
-        budget_tokens: 16000
-      },
-      thinkingBudgetTokens: 16000,
       topP: 0.9,
       topK: 40
     },
@@ -217,6 +225,8 @@ export const defaultConfig: BibbleConfig = {
       name: "Claude 3.5 Sonnet",
       maxTokens: 4096,
       temperature: 0.7,
+      topP: 0.9,
+      topK: 40
     },
     {
       id: "claude-3-5-haiku-20241022",
@@ -224,13 +234,8 @@ export const defaultConfig: BibbleConfig = {
       name: "Claude 3.5 Haiku",
       maxTokens: 4096,
       temperature: 0.7,
-    },
-    {
-      id: "claude-3-opus-20240229",
-      provider: "anthropic",
-      name: "Claude 3 Opus",
-      maxTokens: 4096,
-      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
     }
   ]
 };

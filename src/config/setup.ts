@@ -13,9 +13,9 @@ import { CONFIG_FILE } from "./storage.js";
  */
 export async function runSetupWizard(): Promise<void> {
   const config = Config.getInstance();
-  
+
   console.log(terminal.info("Welcome to Bibble! Let's set up your configuration."));
-  
+
   // Step 1: Choose default provider
   const { provider } = await inquirer.prompt([
     {
@@ -24,26 +24,28 @@ export async function runSetupWizard(): Promise<void> {
       message: "Select your default AI provider:",
       choices: [
         { name: "OpenAI", value: "openai" },
-        
+        { name: "Anthropic", value: "anthropic" },
         { name: "OpenAI-compatible endpoint", value: "openaiCompatible" }
       ],
       default: "openai"
     }
   ]);
-  
+
   // Set default provider
   config.setDefaultProvider(provider);
-  
+
   // Step 2: Configure provider-specific settings
   if (provider === "openai") {
     await setupOpenAI(config);
+  } else if (provider === "anthropic") {
+    await setupAnthropic(config);
   } else if (provider === "openaiCompatible") {
     await setupOpenAICompatible(config);
   }
-  
+
   // Step 3: Configure UI preferences
   await setupUIPreferences(config);
-  
+
   console.log(terminal.success("Setup complete! You can now start using Bibble."));
   console.log(terminal.info("To start a chat session, run: bibble chat"));
   console.log(terminal.info("To modify configuration, run: bibble config"));
@@ -62,10 +64,10 @@ async function setupOpenAI(config: Config): Promise<void> {
       validate: (input) => input.trim().length > 0 || "API key is required"
     }
   ]);
-  
+
   // Save API key
   config.setApiKey("openai", apiKey);
-  
+
   // Choose default model
   const { model } = await inquirer.prompt([
     {
@@ -88,7 +90,7 @@ async function setupOpenAI(config: Config): Promise<void> {
       default: "o4-mini"
     }
   ]);
-  
+
   // Save default model
   config.setDefaultModel(model, "openai");
 }
@@ -106,10 +108,10 @@ async function setupAnthropic(config: Config): Promise<void> {
       validate: (input) => input.trim().length > 0 || "API key is required"
     }
   ]);
-  
+
   // Save API key
   config.setApiKey("anthropic", apiKey);
-  
+
   // Choose default model
   const { model } = await inquirer.prompt([
     {
@@ -125,7 +127,7 @@ async function setupAnthropic(config: Config): Promise<void> {
           default: "claude-3-7-sonnet-20250219"
     }
   ]);
-  
+
   // Save default model
   config.setDefaultModel(model, "anthropic");
 }
@@ -143,7 +145,7 @@ async function setupOpenAICompatible(config: Config): Promise<void> {
       validate: (input) => input.trim().length > 0 || "Base URL is required"
     }
   ]);
-  
+
   // Ask if API key is required
   const { requiresApiKey } = await inquirer.prompt([
     {
@@ -153,7 +155,7 @@ async function setupOpenAICompatible(config: Config): Promise<void> {
       default: false
     }
   ]);
-  
+
   // If API key is required, ask for it
   let apiKey;
   if (requiresApiKey) {
@@ -167,7 +169,7 @@ async function setupOpenAICompatible(config: Config): Promise<void> {
     ]);
     apiKey = response.apiKey;
   }
-  
+
   // Ask for default model
   const { model } = await inquirer.prompt([
     {
@@ -178,7 +180,7 @@ async function setupOpenAICompatible(config: Config): Promise<void> {
       validate: (input) => input.trim().length > 0 || "Model ID is required"
     }
   ]);
-  
+
   // Save configuration
   config.set("apis.openaiCompatible.baseUrl", baseUrl);
   config.set("apis.openaiCompatible.requiresApiKey", requiresApiKey);
@@ -206,7 +208,7 @@ async function setupUIPreferences(config: Config): Promise<void> {
       default: true
     }
   ]);
-  
+
   // Save UI preferences
   config.set("ui.colorOutput", colorOutput);
   config.set("ui.useMarkdown", useMarkdown);

@@ -20,7 +20,7 @@ interface ChatUIOptions {
 export class ChatUI {
   private agent: Agent | null = null;
   private rl: readline.Interface;
-  private model: string;
+  private model?: string;
   private historyId?: string;
   private abortController = new AbortController();
 

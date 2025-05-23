@@ -58,6 +58,7 @@ export interface ChatCompletionParams {
   thinking?: boolean | {
     type: "enabled";
     budget_tokens: number;
+    disableParallelToolUse?: boolean;
   };
   thinkingBudgetTokens?: number;
   topP?: number;

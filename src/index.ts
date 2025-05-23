@@ -10,6 +10,9 @@ import { setupHistoryCommand } from "./commands/history.js";
 import { ensureConfigDirExists } from "./config/storage.js";
 import { isSetupNeeded, runSetupWizard } from "./config/setup.js";
 
+// Import Agent for system prompt command
+import { Agent } from "./mcp/agent.js";
+
 // Create CLI program
 const program = new Command();
 
@@ -17,7 +20,7 @@ const program = new Command();
 program
   .name("bibble")
   .description("CLI chatbot with MCP support")
-  .version("1.2.1");
+  .version("1.3.4");
 
 // Initialize configuration
 ensureConfigDirExists();
@@ -33,6 +36,22 @@ program
   .description("Run the setup wizard")
   .action(async () => {
     await runSetupWizard();
+  });
+
+// System prompt command
+program
+  .command("system-prompt")
+  .description("View the system prompt with tools list")
+  .action(async () => {
+    try {
+      // Create an agent instance to generate the system prompt
+      new Agent(); // Agent constructor will log the system prompt
+
+      // The system prompt has been logged by the Agent constructor
+      console.log(chalk.green("System prompt generated successfully."));
+    } catch (error) {
+      console.error(chalk.red("Error generating system prompt:"), error instanceof Error ? error.message : String(error));
+    }
   });
 
 // Default command (chat with no subcommand)

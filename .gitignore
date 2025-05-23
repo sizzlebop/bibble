@@ -31,6 +31,7 @@ lerna-debug.log*
 
 # Editor directories and files
 .idea/
+.vs/
 .vscode/
 *.swp
 *.swo
@@ -44,12 +45,13 @@ config.json
 # Test coverage
 coverage/
 .nyc_output/
+test/
 
 # Other
-reference/
 .backup/
-PLAN.md
-FEATURE_DUAL_DEFAULT_MODELS.md
-ANTHROPIC-REIMPLEMENTATION-PLAN.md
-CLAUDE_AGENTS.md
-CLAUDE_OVERVIEW.md
+reference/
+PLAN/
+PLAN/ANTHROPIC-REIMPLEMENTATION-PLAN.md
+PLAN/CLAUDE_AGENTS.md
+PLAN/CLAUDE_EXAMPLE_AGENT.md
+PLAN/CLAUDE_OVERVIEW.md
