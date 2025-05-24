@@ -226,6 +226,15 @@ current = (current as any)[k];
         }
 
         return config;
+      } else if (modelId.startsWith("gemini-")) {
+        // For Google Gemini models, return default configuration
+        return {
+          provider: "google",
+          maxTokens: 8192,
+          temperature: 0.7,
+          topP: 0.9,
+          topK: 40
+        };
       } else if (modelId.startsWith("o")) {
         // For OpenAI o-series models, return default configuration
         return {

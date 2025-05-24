@@ -2,7 +2,7 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.3.4
+**Version**: 1.3.6
 **Author**: Pink Pixel
 **NPM Package**: @pinkpixel/bibble
 *Last updated: May 24, 2025*
@@ -15,6 +15,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
   - **OpenAI models**: GPT-4.1, GPT-4o, GPT-4.1 mini/nano, ChatGPT-4o, GPT-4o mini
   - **OpenAI o-series (reasoning models)**: o1, o1-pro, o3, o3-mini, o4-mini
   - **Anthropic Claude models**: Claude Opus 4, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku
+  - **Google Gemini models**: Gemini 2.5 Flash Preview, Gemini 2.5 Pro Preview, Gemini 2.0 Flash, Gemini 2.0 Flash Lite, Gemini 1.5 Flash, Gemini 1.5 Pro
   - **OpenAI-compatible endpoints** for third-party services
 - **Tool use** through the Model Context Protocol (MCP) with comprehensive external tool integration
 - **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
@@ -290,6 +291,17 @@ Bibble implements comprehensive tool documentation and validation to improve too
 
 Bibble uses the `@modelcontextprotocol/sdk` package to connect to MCP servers via the `StdioClientTransport` interface. This allows it to communicate with servers that implement the MCP protocol, regardless of the programming language they're written in.
 
+**Currently Configured MCP Servers:**
+- **desktop-commander**: File system operations, command execution, and system interaction
+- **taskflow**: Task and project management with structured workflows
+- **web-scout**: Web search and content extraction capabilities
+- **datetime**: Date and time utilities and calculations
+- **context7**: Advanced context and documentation retrieval
+- **github**: GitHub repository management and API integration
+- **sequential-thinking**: Structured reasoning and problem-solving workflows
+
+These servers provide comprehensive tool coverage for development, research, task management, and system operations.
+
 ## Anthropic Integration
 
 Bibble's Anthropic integration follows specific guidelines for building Claude agents with MCP tools:
@@ -323,6 +335,55 @@ Bibble's Anthropic integration follows specific guidelines for building Claude a
 The implementation is based on the plan outlined in `PLAN/ANTHROPIC-REIMPLEMENTATION-PLAN.md` and follows the guidelines in `PLAN/CLAUDE_AGENTS.md`.
 
 ## Recent Development & Research
+
+### Google Gemini Integration (v1.3.6) - May 24, 2025
+
+Version 1.3.6 introduces **COMPLETE GOOGLE GEMINI SUPPORT** with comprehensive MCP integration:
+
+**New Google Gemini Models:**
+- **Gemini 2.5 Flash Preview** (`gemini-2.5-flash-preview-05-20`)
+- **Gemini 2.5 Pro Preview** (`gemini-2.5-pro-preview-05-06`)
+- **Gemini 2.0 Flash** (`gemini-2.0-flash`) - Default model
+- **Gemini 2.0 Flash Lite** (`gemini-2.0-flash-lite`)
+- **Gemini 1.5 Flash** (`gemini-1.5-flash`)
+- **Gemini 1.5 Pro** (`gemini-1.5-pro`)
+
+**Technical Implementation:**
+- **GoogleClient Class**: Modular implementation following the same pattern as AnthropicClient
+- **MCP-Unified Tool Support**: All MCP tools work seamlessly with Google models without conversion
+- **JSON Schema Cleaning**: Recursive cleaning of tool schemas to remove metadata fields Google API rejects
+- **Streaming Support**: Real-time response streaming with proper chunk handling
+- **Function Calling**: Full support for Google's `functionDeclarations` and `functionCall`/`functionResponse` format
+- **Configuration Integration**: Complete setup wizard and configuration management
+
+**Key Benefits:**
+- **No Tool Conversion**: MCP tools work directly with Google API after schema cleaning
+- **Modular Architecture**: Separate GoogleClient maintains code organization
+- **Consistent Experience**: Same tool calling and streaming experience across all providers
+- **Easy Setup**: Integrated into existing configuration system with setup wizard
+
+### Major Anthropic Tool Calling Fix (v1.3.5) - May 24, 2025
+
+Version 1.3.5 includes a **CRITICAL FIX** for Anthropic tool calling that resolves major issues with Claude models:
+
+**Key Fixes:**
+- **MAJOR FIX**: Fixed Anthropic tool calling by implementing direct MCP approach following Anthropic's official example
+- **CRITICAL**: Fixed streaming tool input handling - tool arguments now properly accumulate from `input_json_delta` chunks
+- Fixed tool result format to match Anthropic's expected structure
+- Removed unnecessary tool argument processing that was causing empty parameters
+- Simplified tool conversion to use MCP tools directly as Anthropic expects them
+- Fixed tool input handling to pass Claude's arguments directly to MCP tools without conversion
+- Updated both streaming and non-streaming tool call handling to follow Anthropic's recommended pattern
+- Removed complex tool schema conversions in favor of direct MCP format usage
+- Fixed tool result message format in agent loop to properly send results back to Claude
+
+**Technical Improvements:**
+- Updated AnthropicClient to follow Anthropic's official MCP integration example exactly
+- Simplified tool calling logic throughout the Anthropic integration
+- Improved tool argument logging for better debugging
+- Enhanced streaming implementation to properly handle `content_block_start`, `input_json_delta`, and `content_block_stop` events
+
+This release represents a major milestone in the project's stability and functionality, making Bibble ready for public release.
 
 ### Anthropic Integration Overhaul (v1.3.x)
 

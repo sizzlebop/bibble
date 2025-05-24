@@ -37,6 +37,11 @@ export interface BibbleConfig {
       apiKey?: string;
       baseUrl: string;
       defaultModel: string;
+    },
+    google?: {
+      apiKey?: string;
+      baseUrl: string;
+      defaultModel: string;
     }
   };
   ui: {
@@ -88,6 +93,11 @@ export const defaultConfig: BibbleConfig = {
       apiKey: undefined,
       baseUrl: "https://api.anthropic.com",
         defaultModel: "claude-sonnet-4-20250514"
+    },
+    google: {
+      apiKey: undefined,
+      baseUrl: "https://generativelanguage.googleapis.com",
+      defaultModel: "gemini-2.0-flash"
     }
   },
   ui: {
@@ -233,6 +243,62 @@ export const defaultConfig: BibbleConfig = {
       provider: "anthropic",
       name: "Claude 3.5 Haiku",
       maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+
+    // Google models
+    {
+      id: "gemini-2.5-flash-preview-05-20",
+      provider: "google",
+      name: "Gemini 2.5 Flash Preview",
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "gemini-2.5-pro-preview-05-06",
+      provider: "google",
+      name: "Gemini 2.5 Pro Preview",
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "gemini-2.0-flash",
+      provider: "google",
+      name: "Gemini 2.0 Flash",
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "gemini-2.0-flash-lite",
+      provider: "google",
+      name: "Gemini 2.0 Flash Lite",
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "gemini-1.5-flash",
+      provider: "google",
+      name: "Gemini 1.5 Flash",
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "gemini-1.5-pro",
+      provider: "google",
+      name: "Gemini 1.5 Pro",
+      maxTokens: 8192,
       temperature: 0.7,
       topP: 0.9,
       topK: 40

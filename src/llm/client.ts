@@ -2,6 +2,7 @@
 import { Config } from "../config/config.js";
 import OpenAI from "openai"; // Add this import for OpenAI
 import { AnthropicClient } from "./anthropic.js"; // Import AnthropicClient
+import { GoogleClient } from "./google.js"; // Import GoogleClient
 
 // Import ChatMessage and other related types
 import type { ChatMessage, StreamChunk, ChatCompletionParams } from "../types.js";
@@ -21,6 +22,7 @@ export class LlmClient {
   private config = Config.getInstance();
   private openaiClient: OpenAI | null = null;
   private anthropicClient: AnthropicClient | null = null;
+  private googleClient: GoogleClient | null = null;
 
   private provider: string = "openai";
 
@@ -42,6 +44,22 @@ export class LlmClient {
 
       // Create Anthropic client
       this.anthropicClient = new AnthropicClient({
+        apiKey,
+        baseURL,
+      });
+    } else if (this.provider === "google") {
+      // Get API key from options or config
+      const apiKey = options.apiKey || this.config.getApiKey("google");
+
+      if (!apiKey) {
+        throw new Error("Google API key is required. Please set it in the configuration or provide it in the options.");
+      }
+
+      // Get base URL from options or config
+      const baseURL = options.baseURL || this.config.get("apis.google.baseUrl");
+
+      // Create Google client
+      this.googleClient = new GoogleClient({
         apiKey,
         baseURL,
       });
@@ -172,6 +190,29 @@ export class LlmClient {
                   throw new Error("Anthropic client is not initialized");
                 }
                 return this.anthropicClient.chatCompletion(anthropicParams);
+    } else if (this.provider === "google" && this.googleClient) {
+      // Get model configuration
+      const modelConfig = this.getModelConfig(params.model);
+
+      // Prepare Google-specific parameters
+      const googleParams: ChatCompletionParams = {
+        model: params.model,
+        messages: params.messages,
+        tools: params.tools,
+        maxTokens: params.maxTokens || modelConfig?.maxTokens || 8192,
+        temperature: params.temperature || modelConfig?.temperature,
+        topP: params.topP || modelConfig?.topP,
+        topK: params.topK || modelConfig?.topK,
+        stopSequences: params.stopSequences,
+        abortSignal: params.abortSignal,
+        stream: true,
+      };
+
+      // Send request to Google
+      if (!this.googleClient) {
+        throw new Error("Google client is not initialized");
+      }
+      return this.googleClient.chatCompletion(googleParams);
       } else if (this.openaiClient) {
       // Convert messages to OpenAI format
       const openaiMessages = this.convertMessagesToOpenAIFormat(params.messages);

@@ -25,6 +25,7 @@ export async function runSetupWizard(): Promise<void> {
       choices: [
         { name: "OpenAI", value: "openai" },
         { name: "Anthropic", value: "anthropic" },
+        { name: "Google Gemini", value: "google" },
         { name: "OpenAI-compatible endpoint", value: "openaiCompatible" }
       ],
       default: "openai"
@@ -39,6 +40,8 @@ export async function runSetupWizard(): Promise<void> {
     await setupOpenAI(config);
   } else if (provider === "anthropic") {
     await setupAnthropic(config);
+  } else if (provider === "google") {
+    await setupGoogle(config);
   } else if (provider === "openaiCompatible") {
     await setupOpenAICompatible(config);
   }
@@ -130,6 +133,45 @@ async function setupAnthropic(config: Config): Promise<void> {
 
   // Save default model
   config.setDefaultModel(model, "anthropic");
+}
+
+/**
+ * Setup Google Gemini provider
+ */
+async function setupGoogle(config: Config): Promise<void> {
+  // Ask for API key
+  const { apiKey } = await inquirer.prompt([
+    {
+      type: "password",
+      name: "apiKey",
+      message: "Enter your Google AI API key:",
+      validate: (input) => input.trim().length > 0 || "API key is required"
+    }
+  ]);
+
+  // Save API key
+  config.setApiKey("google", apiKey);
+
+  // Choose default model
+  const { model } = await inquirer.prompt([
+    {
+      type: "list",
+      name: "model",
+      message: "Select your default model:",
+      choices: [
+        { name: "Gemini 2.0 Flash", value: "gemini-2.0-flash" },
+        { name: "Gemini 2.0 Flash Lite", value: "gemini-2.0-flash-lite" },
+        { name: "Gemini 1.5 Flash", value: "gemini-1.5-flash" },
+        { name: "Gemini 1.5 Pro", value: "gemini-1.5-pro" },
+        { name: "Gemini 2.5 Flash Preview", value: "gemini-2.5-flash-preview-05-20" },
+        { name: "Gemini 2.5 Pro Preview", value: "gemini-2.5-pro-preview-05-06" }
+      ],
+      default: "gemini-2.0-flash"
+    }
+  ]);
+
+  // Save default model
+  config.setDefaultModel(model, "google");
 }
 
 /**

@@ -2,6 +2,26 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.3.6] - 2025-05-24
+
+### Added
+- **Google Gemini Integration**: Complete support for Google Gemini models with MCP tool integration
+  - Added 6 Google Gemini models: gemini-2.5-flash-preview-05-20, gemini-2.5-pro-preview-05-06, gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-flash, gemini-1.5-pro
+  - Implemented GoogleClient class following MCP-unified approach with proper tool calling and streaming support
+  - Added Google provider configuration to setup wizard and configuration system
+  - Integrated Google client with LlmClient for seamless multi-provider support
+- **Enhanced Tool Schema Handling**: Added JSON Schema cleaning for Google API compatibility
+  - Implemented recursive schema cleaning to remove metadata fields ($schema, additionalProperties, etc.)
+  - Maintains MCP tool compatibility while adapting to provider-specific requirements
+- **Modular Provider Architecture**: Google integration follows the same modular pattern as AnthropicClient
+  - Separate GoogleClient maintains code organization and avoids disrupting existing functionality
+  - Consistent error handling and parameter validation across all providers
+
+### Fixed
+- **Google API Compatibility**: Resolved JSON Schema validation errors by properly cleaning tool schemas
+  - Removed unsupported JSON Schema metadata fields that Google API rejects
+  - Ensured proper tool calling functionality with Google's functionDeclarations format
+
 ## [1.3.5] - 2025-05-24
 
 ### Fixed
