@@ -2,7 +2,7 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.3.6
+**Version**: 1.3.7
 **Author**: Pink Pixel
 **NPM Package**: @pinkpixel/bibble
 *Last updated: May 24, 2025*
@@ -173,7 +173,7 @@ The `Agent` class is the sophisticated core component that orchestrates conversa
 - **Inheritance**: Extends `McpClient` to inherit comprehensive tool management capabilities
 - **System Prompt**: Uses a comprehensive, non-configurable `DEFAULT_SYSTEM_PROMPT` for consistent behavior
 - **User Guidelines**: Supports configurable user guidelines as additional instructions layered on top
-- **Conversation Management**: Implements a robust conversation loop with safety limits (MAX_NUM_TURNS = 10)
+- **Conversation Management**: Implements a robust conversation loop with safety limits (MAX_NUM_TURNS = 25)
 - **Tool Orchestration**: Handles complex tool calls and responses with proper error handling
 - **Dynamic Documentation**: Generates comprehensive tool documentation with parameter details and examples
 
@@ -336,9 +336,25 @@ The implementation is based on the plan outlined in `PLAN/ANTHROPIC-REIMPLEMENTA
 
 ## Recent Development & Research
 
+### OpenAI Integration Optimization (v1.3.7) - May 24, 2025
+
+Version 1.3.7 introduces **OPENAI INTEGRATION OPTIMIZATION** and enhanced agent capabilities:
+
+**OpenAI Integration Improvements:**
+- **Simplified Tool Handling**: Added `convertMcpToolsToOpenAIFormat()` method for clean, direct MCP → OpenAI functions conversion
+- **Removed Complex Conversions**: Eliminated overcomplicated tool conversion and manual JSON parsing that could cause tool calling issues
+- **Unified Approach**: OpenAI integration now follows the same clean, efficient pattern as Google Gemini integration
+- **Improved Reliability**: Enhanced tool calling reliability by simplifying conversion logic
+
+**Enhanced Agent Loop Capability:**
+- **Increased Conversation Turns**: Raised `MAX_NUM_TURNS` from 10 to 25 in both main agent and Anthropic agent loop
+- **Complex Task Support**: Allows for more complex multi-step workflows with extensive tool usage
+- **Better Research Tasks**: Improved support for research tasks, code projects, and comprehensive information gathering
+- **Task Completion**: Complex tasks no longer prematurely terminated due to turn limits
+
 ### Google Gemini Integration (v1.3.6) - May 24, 2025
 
-Version 1.3.6 introduces **COMPLETE GOOGLE GEMINI SUPPORT** with comprehensive MCP integration:
+Version 1.3.6 introduced **COMPLETE GOOGLE GEMINI SUPPORT** with comprehensive MCP integration:
 
 **New Google Gemini Models:**
 - **Gemini 2.5 Flash Preview** (`gemini-2.5-flash-preview-05-20`)
