@@ -6,6 +6,16 @@
 
 [![npm version](https://img.shields.io/npm/v/@pinkpixel/bibble.svg)](https://www.npmjs.com/package/@pinkpixel/bibble)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-green.svg)](https://openai.com/)
+[![Anthropic](https://img.shields.io/badge/Anthropic-Claude-orange.svg)](https://www.anthropic.com/)
+[![CLI Tool](https://img.shields.io/badge/CLI-Tool-yellow.svg)](https://github.com/sizzlebop/bibble)
+[![Streaming](https://img.shields.io/badge/Real--time-Streaming-red.svg)](https://github.com/sizzlebop/bibble)
+[![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-pink.svg)](https://pinkpixel.dev)
+[![GitHub Stars](https://img.shields.io/github/stars/sizzlebop/bibble?style=social)](https://github.com/sizzlebop/bibble/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/sizzlebop/bibble?style=social)](https://github.com/sizzlebop/bibble/network/members)
 
 Bibble is a command-line interface (CLI) chatbot application built in TypeScript that runs directly in your terminal. It supports OpenAI, Anthropic, and OpenAI-compatible API endpoints, implements real-time response streaming, maintains chat memory, and functions as an MCP (Model Context Protocol) client.
 
