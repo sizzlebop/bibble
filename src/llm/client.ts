@@ -3,6 +3,7 @@ import { Config } from "../config/config.js";
 import OpenAI from "openai"; // Add this import for OpenAI
 import { AnthropicClient } from "./anthropic.js"; // Import AnthropicClient
 import { GoogleClient } from "./google.js"; // Import GoogleClient
+import { OpenRouterClient } from "./openrouter.js"; // Import OpenRouterClient
 
 // Import ChatMessage and other related types
 import type { ChatMessage, StreamChunk, ChatCompletionParams } from "../types.js";
@@ -23,6 +24,7 @@ export class LlmClient {
   private openaiClient: OpenAI | null = null;
   private anthropicClient: AnthropicClient | null = null;
   private googleClient: GoogleClient | null = null;
+  private openrouterClient: OpenRouterClient | null = null;
 
   private provider: string = "openai";
 
@@ -60,6 +62,22 @@ export class LlmClient {
 
       // Create Google client
       this.googleClient = new GoogleClient({
+        apiKey,
+        baseURL,
+      });
+    } else if (this.provider === "openrouter") {
+      // Get API key from options or config
+      const apiKey = options.apiKey || this.config.getApiKey("openrouter");
+
+      if (!apiKey) {
+        throw new Error("OpenRouter API key is required. Please set it in the configuration or provide it in the options.");
+      }
+
+      // Get base URL from options or config
+      const baseURL = options.baseURL || this.config.get("apis.openrouter.baseUrl");
+
+      // Create OpenRouter client
+      this.openrouterClient = new OpenRouterClient({
         apiKey,
         baseURL,
       });
@@ -230,6 +248,30 @@ export class LlmClient {
         throw new Error("Google client is not initialized");
       }
       return this.googleClient.chatCompletion(googleParams);
+    } else if (this.provider === "openrouter" && this.openrouterClient) {
+      // Get model configuration
+      const modelConfig = this.getModelConfig(params.model);
+
+      // Prepare OpenRouter-specific parameters
+      const openrouterParams: ChatCompletionParams = {
+        model: params.model,
+        messages: params.messages,
+        tools: params.tools,
+        maxTokens: params.maxTokens || modelConfig?.maxTokens || 4096,
+        temperature: params.temperature || modelConfig?.temperature,
+        topP: params.topP || modelConfig?.topP,
+        topK: params.topK || modelConfig?.topK,
+        maxCompletionTokens: params.maxCompletionTokens || modelConfig?.maxCompletionTokens,
+        reasoningEffort: params.reasoningEffort || modelConfig?.reasoningEffort,
+        abortSignal: params.abortSignal,
+        stream: true,
+      };
+
+      // Send request to OpenRouter
+      if (!this.openrouterClient) {
+        throw new Error("OpenRouter client is not initialized");
+      }
+      return this.openrouterClient.chatCompletion(openrouterParams);
       } else if (this.openaiClient) {
       // Convert messages to OpenAI format
       const openaiMessages = this.convertMessagesToOpenAIFormat(params.messages);

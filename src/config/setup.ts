@@ -26,6 +26,7 @@ export async function runSetupWizard(): Promise<void> {
         { name: "OpenAI", value: "openai" },
         { name: "Anthropic", value: "anthropic" },
         { name: "Google Gemini", value: "google" },
+        { name: "OpenRouter", value: "openrouter" },
         { name: "OpenAI-compatible endpoint", value: "openaiCompatible" }
       ],
       default: "openai"
@@ -42,6 +43,8 @@ export async function runSetupWizard(): Promise<void> {
     await setupAnthropic(config);
   } else if (provider === "google") {
     await setupGoogle(config);
+  } else if (provider === "openrouter") {
+    await setupOpenRouter(config);
   } else if (provider === "openaiCompatible") {
     await setupOpenAICompatible(config);
   }
@@ -172,6 +175,45 @@ async function setupGoogle(config: Config): Promise<void> {
 
   // Save default model
   config.setDefaultModel(model, "google");
+}
+
+/**
+ * Setup OpenRouter provider
+ */
+async function setupOpenRouter(config: Config): Promise<void> {
+  // Ask for API key
+  const { apiKey } = await inquirer.prompt([
+    {
+      type: "password",
+      name: "apiKey",
+      message: "Enter your OpenRouter API key:",
+      validate: (input) => input.trim().length > 0 || "API key is required"
+    }
+  ]);
+
+  // Save API key
+  config.setApiKey("openrouter", apiKey);
+
+  // Choose default model
+  const { model } = await inquirer.prompt([
+    {
+      type: "list",
+      name: "model",
+      message: "Select your default model:",
+      choices: [
+        { name: "Claude Sonnet 4 (OpenRouter)", value: "anthropic/claude-sonnet-4" },
+        { name: "GPT-4.1 (OpenRouter)", value: "openai/gpt-4.1" },
+        { name: "Gemini 2.5 Flash Preview (OpenRouter)", value: "google/gemini-2.5-flash-preview-05-20" },
+        { name: "DeepSeek Chat v3 (Free)", value: "deepseek/deepseek-chat-v3-0324:free" },
+        { name: "Phi-4 Reasoning (Free)", value: "microsoft/phi-4-reasoning:free" },
+        { name: "Qwen3 32B (Free)", value: "qwen/qwen3-32b:free" }
+      ],
+      default: "anthropic/claude-sonnet-4"
+    }
+  ]);
+
+  // Save default model
+  config.setDefaultModel(model, "openrouter");
 }
 
 /**

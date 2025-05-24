@@ -29,6 +29,8 @@ export interface ChatMessage {
 // Stream chunk types
 export type StreamChunk =
   | { type: "text"; text: string }
+  | { type: "content"; content: string }
+  | { type: "done"; content: string }
   | {
       type: "tool_call";
       toolCall: {

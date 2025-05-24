@@ -2,6 +2,38 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.3.8] - 2025-05-24
+
+### Added
+- **OpenRouter Integration**: Complete multi-provider support via OpenRouter API
+  - Added OpenRouter client implementation (`src/llm/openrouter.ts`)
+  - Support for 6 OpenRouter models including Claude Sonnet 4, GPT-4.1, Gemini, DeepSeek, Phi-4, and Qwen3
+  - OpenAI-compatible API integration with MCP tool calling
+  - Reasoning model detection for Phi-4 and other reasoning models
+  - Streaming support with proper tool calling workflow
+
+### Enhanced
+- **Configuration System**: Extended to support OpenRouter provider
+  - Added OpenRouter API key management
+  - Updated setup wizard with OpenRouter provider option
+  - Added OpenRouter models to default configuration
+  - Enhanced model detection for OpenRouter provider patterns
+
+### Fixed
+- **Type Safety**: Resolved all TypeScript compilation errors
+  - Enhanced `StreamChunk` type with `content` and `done` variants
+  - Fixed tool call ID requirements in streaming responses
+  - Improved async iterator type handling for streaming
+
+### Technical
+- **Multi-Provider Architecture**: Now supports 4 major providers
+  - OpenAI (direct API)
+  - Anthropic (Claude models)
+  - Google (Gemini models)
+  - OpenRouter (multi-provider access)
+- **Unified MCP Integration**: Consistent tool calling across all providers
+- **Comprehensive Testing**: Added OpenRouter integration and unit tests
+
 ## [1.3.7] - 2025-05-24
 
 ### Improved

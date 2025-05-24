@@ -42,6 +42,11 @@ export interface BibbleConfig {
       apiKey?: string;
       baseUrl: string;
       defaultModel: string;
+    },
+    openrouter?: {
+      apiKey?: string;
+      baseUrl: string;
+      defaultModel: string;
     }
   };
   ui: {
@@ -98,6 +103,11 @@ export const defaultConfig: BibbleConfig = {
       apiKey: undefined,
       baseUrl: "https://generativelanguage.googleapis.com",
       defaultModel: "gemini-2.0-flash"
+    },
+    openrouter: {
+      apiKey: undefined,
+      baseUrl: "https://openrouter.ai/api/v1",
+      defaultModel: "anthropic/claude-sonnet-4"
     }
   },
   ui: {
@@ -299,6 +309,109 @@ export const defaultConfig: BibbleConfig = {
       provider: "google",
       name: "Gemini 1.5 Pro",
       maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+
+    // OpenRouter models
+    {
+      id: "anthropic/claude-sonnet-4",
+      provider: "openrouter",
+      name: "Claude Sonnet 4 (OpenRouter)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "openai/gpt-4.1",
+      provider: "openrouter",
+      name: "GPT-4.1 (OpenRouter)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "google/gemini-2.5-flash-preview-05-20",
+      provider: "openrouter",
+      name: "Gemini 2.5 Flash Preview (OpenRouter)",
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "deepseek/deepseek-chat-v3-0324:free",
+      provider: "openrouter",
+      name: "DeepSeek Chat v3 (Free)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "microsoft/phi-4-reasoning:free",
+      provider: "openrouter",
+      name: "Phi-4 Reasoning (Free)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40,
+      isReasoningModel: true
+    },
+    {
+      id: "qwen/qwen3-32b:free",
+      provider: "openrouter",
+      name: "Qwen3 32B (Free)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "openai/gpt-4.1",
+      provider: "openrouter",
+      name: "GPT-4.1 (OpenRouter)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "google/gemini-2.5-flash-preview-05-20",
+      provider: "openrouter",
+      name: "Gemini 2.5 Flash Preview (OpenRouter)",
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "deepseek/deepseek-chat-v3-0324:free",
+      provider: "openrouter",
+      name: "DeepSeek Chat v3 (Free)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40
+    },
+    {
+      id: "microsoft/phi-4-reasoning:free",
+      provider: "openrouter",
+      name: "Phi-4 Reasoning (Free)",
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40,
+      isReasoningModel: true
+    },
+    {
+      id: "qwen/qwen3-32b:free",
+      provider: "openrouter",
+      name: "Qwen3 32B (Free)",
+      maxTokens: 4096,
       temperature: 0.7,
       topP: 0.9,
       topK: 40

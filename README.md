@@ -12,18 +12,19 @@
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT-green.svg)](https://openai.com/)
 [![Anthropic](https://img.shields.io/badge/Anthropic-Claude-orange.svg)](https://www.anthropic.com/)
 [![Google](https://img.shields.io/badge/Google-Gemini-blue.svg)](https://ai.google.dev/)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-Multi--Provider-purple.svg)](https://openrouter.ai/)
 [![CLI Tool](https://img.shields.io/badge/CLI-Tool-yellow.svg)](https://github.com/pinkpixel-dev/bibble)
 [![Streaming](https://img.shields.io/badge/Real--time-Streaming-red.svg)](https://github.com/pinkpixel-dev/bibble)
 [![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-pink.svg)](https://pinkpixel.dev)
 [![GitHub Stars](https://img.shields.io/github/stars/sizzlebop/bibble?style=social)](https://github.com/pinkpixel-dev/bibble/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/sizzlebop/bibble?style=social)](https://github.com/pinkpixel-dev/bibble/network/members)
 
-Bibble is a command-line interface (CLI) chatbot application built in TypeScript that runs directly in your terminal. It supports OpenAI, Anthropic, Google Gemini, and OpenAI-compatible API endpoints, implements real-time response streaming, maintains chat memory, and functions as an MCP (Model Context Protocol) client.
+Bibble is a command-line interface (CLI) chatbot application built in TypeScript that runs directly in your terminal. It supports OpenAI, Anthropic, Google Gemini, OpenRouter, and OpenAI-compatible API endpoints, implements real-time response streaming, maintains chat memory, and functions as an MCP (Model Context Protocol) client.
 
 ## Features
 
 - Launch as a chat instance via the CLI command `bibble`
-- Support for OpenAI, Anthropic (Claude models), Google Gemini, and OpenAI-compatible API endpoints
+- Support for OpenAI, Anthropic (Claude models), Google Gemini, OpenRouter, and OpenAI-compatible API endpoints
 - Real-time response streaming of model output
 - Contextual multi-turn conversations with chat memory
 - MCP client functionality for connecting to MCP-compatible servers
