@@ -1,8 +1,10 @@
 # Bibble - CLI Chatbot with MCP Support
 
-Bibble is a command-line interface (CLI) chatbot application that integrates with language models and supports the Model Context Protocol (MCP) for enhanced functionality through external tools.
+Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-
+**Version**: 1.3.4
+**Author**: Pink Pixel
+**NPM Package**: @pinkpixel/bibble
 *Last updated: May 24, 2025*
 
 ## Project Overview
@@ -10,29 +12,41 @@ Bibble is a command-line interface (CLI) chatbot application that integrates wit
 Bibble provides a terminal-based interface for interacting with AI language models, with support for:
 
 - Chat sessions with multiple LLM providers:
-  - OpenAI models (GPT-4.1, o4-mini, etc.)
-  - Anthropic models (Claude Opus 4, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, etc.)
-  - OpenAI-compatible endpoints for third-party services
-- Tool use through the Model Context Protocol (MCP)
-- Configuration management with dot-notation access
-- Chat history tracking, export, and import
-- Markdown rendering in the terminal
-- Colored text output with customizable settings
-- Real-time response streaming
-- Contextual multi-turn conversations
-- Multiple model support with model-specific parameters
-- User guidelines for customizing AI behavior
-- Built-in control flow tools (task_complete, ask_question)
+  - **OpenAI models**: GPT-4.1, GPT-4o, GPT-4.1 mini/nano, ChatGPT-4o, GPT-4o mini
+  - **OpenAI o-series (reasoning models)**: o1, o1-pro, o3, o3-mini, o4-mini
+  - **Anthropic Claude models**: Claude Opus 4, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku
+  - **OpenAI-compatible endpoints** for third-party services
+- **Tool use** through the Model Context Protocol (MCP) with comprehensive external tool integration
+- **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
+- **Chat history** tracking, export, and import with persistent storage
+- **Rich terminal UI** with markdown rendering and colored text output
+- **Real-time streaming** responses from all supported LLM providers
+- **Contextual multi-turn conversations** with sophisticated agent loop management
+- **Model-specific parameters** including support for reasoning models (o-series)
+- **User guidelines** for customizing AI behavior on top of system prompts
+- **Built-in control flow tools** (task_complete, ask_question) for conversation management
+- **Dynamic tool documentation** generation with comprehensive parameter validation
+- **Safety features** including conversation turn limits and error handling
+- **Anthropic integration** following official best practices with chain-of-thought prompting
 
 ## Architecture
 
-Bibble follows a modular architecture with clear separation of concerns:
+Bibble follows a sophisticated modular architecture with clear separation of concerns:
 
+### Design Patterns
 - **Command Pattern**: Uses Commander.js to define and handle CLI commands
 - **Singleton Pattern**: For configuration and service management (Config class)
-- **Factory Pattern**: For creating and managing instances
-- **Stream Processing**: For handling real-time responses from LLMs
-- **Adapter Pattern**: For converting between different message formats
+- **Factory Pattern**: For creating and managing LLM client instances
+- **Stream Processing**: For handling real-time responses from LLMs with async generators
+- **Adapter Pattern**: For converting between different message formats (OpenAI ↔ Anthropic)
+- **Agent Pattern**: Sophisticated conversation management with tool calling capabilities
+
+### Core Architecture Principles
+- **Provider Abstraction**: Unified interface for multiple LLM providers
+- **Tool Integration**: Seamless MCP server integration with dynamic tool discovery
+- **Configuration Management**: Centralized, type-safe configuration with validation
+- **Error Resilience**: Comprehensive error handling with graceful degradation
+- **Streaming First**: Real-time response processing with backpressure handling
 
 ## Project Structure
 
@@ -66,12 +80,12 @@ Bibble follows a modular architecture with clear separation of concerns:
 │   ├── bibble-cli.js     # ESM compatibility wrapper
 │   ├── bibble-cli.cjs    # CommonJS compatibility wrapper
 │   └── bibble.cmd        # Windows command file
-├── PLAN/                 # Planning documentation
-│   ├── ANTHROPIC-REIMPLEMENTATION-PLAN.md  # Plan for Anthropic integration
-│   ├── CLAUDE_AGENTS.md  # Guidelines for Claude agents
-│   ├── CLAUDE_EXAMPLE_AGENT.md  # Example of Claude agent implementation
-│   └── CLAUDE_OVERVIEW.md  # Overview of Claude agents mechanism
-├── reference/            # Reference documentation
+├── PLAN/                 # Research and planning documentation
+│   ├── ANTHROPIC-REIMPLEMENTATION-PLAN.md  # Comprehensive plan for Anthropic integration
+│   ├── CLAUDE_AGENTS.md  # Guidelines for building Claude agents with MCP tools
+│   ├── CLAUDE_EXAMPLE_AGENT.md  # Concrete examples and troubleshooting guide
+│   └── CLAUDE_OVERVIEW.md  # Overview of Claude agents mechanism and best practices
+├── reference/            # Reference implementations and examples
 ├── package.json          # NPM package definition
 └── tsconfig.json         # TypeScript configuration
 ```
@@ -124,13 +138,24 @@ The application supports both traditional OpenAI models and the newer o-series m
 
 #### Anthropic Integration
 
-The application supports Anthropic's Claude models through the `AnthropicClient` class, which:
-- Handles tool definitions with the `mcp__<serverName>__<toolName>` naming convention
-- Implements the agent loop structure for tool calls and responses
-- Supports chain-of-thought prompting with `<thinking>...</thinking>` blocks
-- Provides parameter validation for tool call arguments
-- Supports both serial and parallel tool invocations
-- Includes comprehensive error handling
+The application supports Anthropic's Claude models through a sophisticated `AnthropicClient` class that follows official Anthropic best practices:
+
+**Key Features:**
+- **Tool Calling**: Implements the exact tool naming convention and schema requirements
+- **Agent Loop**: Sophisticated conversation loop with tool_use and tool_result handling
+- **Chain-of-Thought**: Supports `<thinking>...</thinking>` blocks for improved reasoning
+- **Parameter Validation**: Comprehensive validation of tool call arguments with error recovery
+- **Streaming Support**: Real-time response streaming with proper chunk handling
+- **Safety Features**: Maximum iteration limits to prevent infinite loops
+- **Error Handling**: Robust error handling with fallback mechanisms
+
+**Implementation Details:**
+- Follows the research and guidelines documented in the PLAN/ directory
+- Uses the official @anthropic-ai/sdk with proper message formatting
+- Converts OpenAI-style tools to Anthropic format automatically
+- Supports both streaming and non-streaming responses
+- Handles tool_result blocks correctly (only in user messages)
+- Implements proper turn management and conversation flow
 
 #### OpenAI-Compatible Endpoints
 
@@ -141,17 +166,26 @@ For third-party services that implement the OpenAI API, Bibble provides:
 
 ### Agent Implementation
 
-The `Agent` class is the core component that manages conversations and tool usage:
+The `Agent` class is the sophisticated core component that orchestrates conversations and tool usage:
 
-- Extends the `McpClient` class to inherit tool management capabilities
-- Uses a hardcoded `DEFAULT_SYSTEM_PROMPT` for consistent behavior
-- Supports configurable user guidelines as additional instructions
-- Implements a conversation loop with a maximum number of turns
-- Handles tool calls and responses
-- Provides built-in control flow tools:
-  - `task_complete`: Called when the task is complete
-  - `ask_question`: Called when the agent needs more information
-- Generates dynamic tool documentation for the system prompt
+**Core Capabilities:**
+- **Inheritance**: Extends `McpClient` to inherit comprehensive tool management capabilities
+- **System Prompt**: Uses a comprehensive, non-configurable `DEFAULT_SYSTEM_PROMPT` for consistent behavior
+- **User Guidelines**: Supports configurable user guidelines as additional instructions layered on top
+- **Conversation Management**: Implements a robust conversation loop with safety limits (MAX_NUM_TURNS = 10)
+- **Tool Orchestration**: Handles complex tool calls and responses with proper error handling
+- **Dynamic Documentation**: Generates comprehensive tool documentation with parameter details and examples
+
+**Built-in Control Flow Tools:**
+- `task_complete`: Signals when the requested task is fully completed
+- `ask_question`: Requests additional information from the user when needed
+
+**Advanced Features:**
+- **Turn Management**: Sophisticated logic for determining when to continue or end conversations
+- **Tool Validation**: Comprehensive parameter validation with helpful error messages
+- **Streaming Integration**: Seamless integration with streaming LLM responses
+- **Provider Agnostic**: Works consistently across OpenAI, Anthropic, and compatible providers
+- **Safety Features**: Multiple safety mechanisms to prevent infinite loops and resource exhaustion
 
 ### MCP Client
 
@@ -288,14 +322,55 @@ Bibble's Anthropic integration follows specific guidelines for building Claude a
 
 The implementation is based on the plan outlined in `PLAN/ANTHROPIC-REIMPLEMENTATION-PLAN.md` and follows the guidelines in `PLAN/CLAUDE_AGENTS.md`.
 
-## Build System
+## Recent Development & Research
 
-Bibble uses:
+### Anthropic Integration Overhaul (v1.3.x)
 
-- TypeScript with strict typing
-- ESM modules
-- tsup for bundling
-- Node.js v18+ compatibility
+The recent versions of Bibble feature a comprehensive reimplementation of Anthropic Claude integration based on extensive research documented in the PLAN/ directory:
+
+**Research Foundation:**
+- **CLAUDE_AGENTS.md**: Comprehensive guidelines for building Claude agents with MCP tools
+- **ANTHROPIC-REIMPLEMENTATION-PLAN.md**: Detailed implementation plan following Anthropic best practices
+- **CLAUDE_EXAMPLE_AGENT.md**: Concrete examples and troubleshooting guide
+- **CLAUDE_OVERVIEW.md**: Overview of the Claude agents mechanism
+
+**Key Improvements:**
+- **Tool Calling**: Fixed tool name formatting to match Anthropic's expected format
+- **Streaming**: Enhanced streaming implementation for real-time responses
+- **Error Handling**: Improved error handling for tool calls and API failures
+- **Model Support**: Added support for new Claude models (Opus 4, Sonnet 4)
+- **Safety Features**: Added safety limits to prevent infinite loops in agent conversations
+- **Parameter Handling**: Fixed tool parameter handling to ensure proper schema formatting
+- **Logging**: Reduced excessive logging for cleaner terminal output
+
+**Technical Achievements:**
+- Successfully implemented the agent loop pattern recommended by Anthropic
+- Proper handling of tool_use and tool_result blocks in conversation flow
+- Chain-of-thought prompting integration for improved reasoning
+- Comprehensive tool schema conversion between OpenAI and Anthropic formats
+- Dynamic model configuration from user settings rather than hardcoded values
+
+## Dependencies & Technology Stack
+
+### Core Dependencies
+- **@anthropic-ai/sdk** (^0.51.0): Official Anthropic SDK for Claude models
+- **openai** (^4.102.0): OpenAI SDK for GPT models and compatible endpoints
+- **@modelcontextprotocol/sdk** (^1.11.5): Official MCP SDK for tool integration
+- **commander** (^14.0.0): CLI framework for command handling
+- **inquirer** (^12.6.1): Interactive command-line prompts
+- **typescript** (^5.8.3): TypeScript compiler and type definitions
+
+### UI & Formatting
+- **chalk** (^5.4.1): Terminal string styling and colors
+- **markdown-it** (^14.1.0): Markdown parsing and rendering
+- **boxen** (^8.0.1): Terminal box drawing for formatted output
+- **uuid** (^11.1.0): UUID generation for unique identifiers
+
+### Build System
+- **tsup** (^8.5.0): Fast TypeScript bundler
+- **TypeScript** with strict typing and ESM modules
+- **Node.js v18+** compatibility
+- **NPM** package management
 
 ## Getting Started
 

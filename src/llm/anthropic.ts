@@ -254,10 +254,52 @@ export class AnthropicClient {
                 if (!params.model) throw new Error("Model is required for Anthropic chat completion");
                 if (!params.messages || params.messages.length === 0) throw new Error("At least one message is required");
 
-                const anthropicMessages: MessageParam[] = params.messages.map((msg) => ({
-                    role: msg.role === MessageRole.User ? "user" : "assistant",
-                    content: msg.content
-                }));
+                const anthropicMessages: MessageParam[] = params.messages
+                    .filter(msg => msg.role !== MessageRole.System) // Filter out system messages
+                    .map((msg) => {
+                        if (msg.role === MessageRole.User) {
+                            return {
+                                role: "user" as const,
+                                content: msg.content
+                            };
+                        } else if (msg.role === MessageRole.Assistant) {
+                            // Handle assistant messages with tool calls
+                            if (msg.toolCalls && msg.toolCalls.length > 0) {
+                                const content: any[] = [];
+
+                                // Add text content if present
+                                if (msg.content && msg.content.trim()) {
+                                    content.push({
+                                        type: "text",
+                                        text: msg.content
+                                    });
+                                }
+
+                                // Add tool use blocks
+                                for (const toolCall of msg.toolCalls) {
+                                    content.push({
+                                        type: "tool_use",
+                                        id: toolCall.id,
+                                        name: toolCall.name,
+                                        input: toolCall.args
+                                    });
+                                }
+
+                                return {
+                                    role: "assistant" as const,
+                                    content: content
+                                };
+                            } else {
+                                return {
+                                    role: "assistant" as const,
+                                    content: msg.content
+                                };
+                            }
+                        }
+                        // Skip tool messages as they're handled differently in Anthropic
+                        return null;
+                    })
+                    .filter(msg => msg !== null) as MessageParam[];
 
                 // Get the model from params or fall back to default
                 let model = params.model;
@@ -274,12 +316,20 @@ export class AnthropicClient {
                     }
                 }
 
+                // Extract system message for Anthropic
+                const systemMessage = params.messages.find(msg => msg.role === MessageRole.System);
+
                 const requestParams: MessageCreateParamsBase & { [key: string]: any } = {
                     model: model,
                     messages: anthropicMessages,
                     max_tokens: params.maxTokens ?? 4096,
                     stream: true
                 };
+
+                // Add system prompt if present
+                if (systemMessage && systemMessage.content) {
+                    requestParams.system = systemMessage.content;
+                }
 
                 if (params.temperature !== undefined) {
                     requestParams.temperature = Math.max(0, Math.min(1, params.temperature));
@@ -357,6 +407,9 @@ export class AnthropicClient {
                                     }
                                 };
                             }
+                        } else if (chunk.type === 'message_stop') {
+                            // Stream has ended - this is important for proper turn completion
+                            break;
                         }
                     }
                 } catch (error) {

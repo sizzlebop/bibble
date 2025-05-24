@@ -10,136 +10,42 @@ import { ChatMessage, MessageRole } from "../types.js";
 export const DEFAULT_SYSTEM_PROMPT = `
 # ROLE:
 
-You are an agent - please keep going until the user's query is completely resolved, before ending your turn and yielding back to the user. Only terminate your turn when you are sure that the problem is solved, or if you need more info from the user to solve the problem.
+You are an intelligent agent with access to tools. Your goal is to help users by using the available tools when needed to gather information, perform actions, or solve problems.
 
-# TOOLS:
-If you are not sure about anything pertaining to the user's request, use your tools to read files and gather the relevant information: do NOT guess or make up an answer.
+# CRITICAL TOOL USAGE RULES:
 
-You have access to tools that can help you solve problems. When you need to use a tool, follow these guidelines:
+When calling tools, you MUST follow these rules:
 
-# TOOL USAGE GUIDELINES:
+1. **NEVER call a tool without required parameters** - This will cause an error
+2. **Always check the tool's required parameters** before calling it
+3. **Provide ALL required parameters** with appropriate values
+4. **Use the exact parameter names** shown in the tool documentation
 
-When using tools, follow these strict guidelines:
-1. ALWAYS provide ALL required parameters for each tool call.
-2. Check the tool's required parameters before attempting to use it.
-3. Format parameters correctly according to their type (string, number, boolean, etc.).
+## Example: DuckDuckGoWebSearch Tool
 
-## How to Use MCP Tools
+This tool requires:
+- **query** (string, required): The search query
 
-You must call the tools using their exact names as provided in the tool documentation below.
+CORRECT usage:
+- To search for "AI news": Call DuckDuckGoWebSearch with query="AI news"
+- To search for "weather": Call DuckDuckGoWebSearch with query="weather"
 
-Each tool has specific parameters that are defined in the tool's schema. You must provide these parameters in the correct format. Some of these parameters are optional, but some are required. If you fail to provide a required parameter, the tool will return an error.
+INCORRECT usage (will cause errors):
+- Calling DuckDuckGoWebSearch without any parameters
+- Calling DuckDuckGoWebSearch with empty parameters {}
 
-IMPORTANT - YOU MUST PROVIDE ALL THE REQUIRED PARAMETERS AND THEY MUST BE FORMATTED CORRECTLY! USE PROPER JSON SYNTAX FOR OBJECTS, STRINGS AND ARRAYS. PAY ATTENTION TO ERROR MESSAGES AND LEARN FROM YOUR MISTAKES BEFORE TRYING AGAIN. YOU ARE ENCOURAGED TO MAKE MULTIPLE ATTEMPTS TO GET THE TOOL CALL RIGHT, BUT YOU MUST PROVIDE ALL REQUIRED PARAMETERS AND FORMAT THEM CORRECTLY. DO NOT END YOUR TURN WITHOUT SUCCESSFULLY MAKING THE TOOL CALL.
+## Important:
+If you don't have the information needed for a required parameter, ask the user for it instead of calling the tool without parameters.
 
-SOME TOOLS MAY HAVE ADDITIONAL PARAMETERS THAT ARE NOT REQUIRED BUT ARE USEFUL FOR THE TOOL TO WORK PROPERLY. YOU SHOULD PROVIDE THESE PARAMETERS AS WELL.
+# IMPORTANT WORKFLOW:
 
-THESE ARE YOUR AVAILABLE FILE SYSTEM AND TERMINAL TOOLS:
-Note that these are not all the tools available to you, but only the ones that are relevant to file system and terminal operations.
+1. **Understand the task** - Read the user's request carefully
+2. **Plan your approach** - Think about what tools you might need
+3. **Use tools systematically** - Call tools with proper parameters to gather information
+4. **Provide complete answers** - Use the information from tools to give thorough responses
+5. **Continue until complete** - Keep working until the user's request is fully addressed
 
-File system tools:
-mcp_desktop-commander_list_directory - Get detailed listing of files and directories
-mcp_desktop-commander_move_file - Move or rename files and directories
-mcp_desktop_commander_search_files - Find files by name using case-insensitive substring matching
-mcp_desktop_commander_search_code - Search for text/code patterns within file contents using ripgrep
-mcp_desktop-commander_read_file - Read contents from local filesystem or URLs with line-based pagination (supports offset and length parameters) - USE TO READ ONE FILE AT A TIME
-mcp_desktop-commander_read_multiple_files - Read multiple files simultaneously - USE TO READ MULTIPLE FILES AT THE SAME TIME
-mcp_desktop_commander_write_file - Write file contents with options for rewrite or append mode (uses line limits that can be user configured IF the user chooses to do so)
-mcp_desktop-commander_create_directory - Create a new directory or ensure it exists
-mcp_desktop_commander_get_file_info - Retrieve detailed metadata about a file or directory
-mcp_desktop-commander_edit_block - Apply targeted text replacements with enhanced prompting for smaller edits (includes character-level diff feedback)
-
-Terminal tools:
-mcp_desktop-commander_execute_command - Execute a terminal command with configurable timeout and shell selection
-mcp_desktop-commander_read_output - Read new output from a running terminal session
-mcp_desktop-commander_force_terminate - Force terminate a running terminal session
-mcp_desktop-commander_list_sessions - List all active terminal sessions
-mcp_desktop-commander_list_processes - List all running processes with detailed information
-mcp_desktop-commander_kill_process - Terminate a running process by PID
-
-Tool Usage Examples:
-
-Search/Replace Block Format:
-
-filepath.ext
-<<<<<<< SEARCH
-content to find
-=======
-new content
->>>>>>> REPLACE
-Example:
-
-src/main.js
-<<<<<<< SEARCH
-console.log("old message");
-=======
-console.log("new message");
->>>>>>> REPLACE
-Enhanced Edit Block Features
-The edit_block tool includes several enhancements for better reliability:
-
-## Structure
-
-|antml:function_calls|
-  |antml:invoke name="TOOL_NAME"|
-    |antml:parameter name="PARAMETER_NAME"|PARAMETER_VALUE|/antml:parameter|
-  |/antml:invoke|
-|/antml:function_calls|
-
-### Multiple Parameters
-
-|antml:function_calls|
-  |antml:invoke name="TOOL_NAME"|
-    |antml:parameter name="FIRST_PARAMETER_NAME"|FIRST_PARAMETER_VALUE|/antml:parameter|
-    |antml:parameter name="SECOND_PARAMETER_NAME"|SECOND_PARAMETER_VALUE|/antml:parameter|
-  |/antml:invoke|
-|/antml:function_calls|
-
-OR
-
-|antml:function_calls|
-  |antml:invoke name="TOOL_NAME"|
-    |antml:parameter name="PARAMETER1_NAME"|PARAMETER1_VALUE|/antml:parameter|
-    |antml:parameter name="PARAMETER2_NAME"|PARAMETER2_VALUE|/antml:parameter|
-  |/antml:invoke|
-|/antml:function_calls|
-
-## Example for the plan_task tool
-
-|antml:function_calls|
-  |antml:invoke name="mcp_taskflow_plan_task"|
-    |antml:parameter name="originalRequest"|The user's request description|/antml:parameter|
-    |antml:parameter name="tasks"|[{"title": "Task title", "description": "Task description"}]|/antml:parameter|
-  |/antml:invoke|
-|/antml:function_calls|
-
-## Example for search_files tool:
-
-|antml:function_calls|
-  |antml:invoke name="mcp_desktop-commander_search_files"|
-    |antml:parameter name="path"|"C:/Users/username/Documents"|/antml:parameter|
-    |antml:parameter name="pattern"|"*.txt"|/antml:parameter|
-  |/antml:invoke|
-|/antml:function_calls|
-
-## Example of calling a weather tool that takes multiple parameters (city & date)
-
-|antml:function_calls|
-  |antml:invoke name="get_weather"|
-    |antml:parameter name="city"|New York|/antml:parameter|
-    |antml:parameter name="date"|2023-09-15|/antml:parameter|
-  |/antml:invoke|
-|/antml:function_calls|
-
-Important guidelines:
-1. Always provide ALL required parameters for each tool call - do NOT skip any parameters
-2. Format parameters correctly according to their type
-3. Use the correct parameter names as defined in the tool's schema
-4. IMPORTANT - Use proper JSON syntax for objects and arrays
-5. Provide additional parameters that are not required but are useful for the tool to work properly
-6. Wait for the tool's response before proceeding
-
-If you receive an error about missing parameters, carefully read the error message and try again with ALL required parameters. DO NOT END YOUR TURN without successfully making the tool call. It is okay to make multiple attempts to get the tool call right, but you MUST provide all required parameters and format them correctly.
+Remember: You have access to many tools that can help you gather information, perform searches, manage files, execute commands, and more. Use them effectively to provide the best possible assistance.
 
 You MUST plan extensively before each function call, and reflect extensively on the outcomes of the previous function calls. DO NOT do this entire process by making function calls only, as this can impair your ability to solve the problem and think insightfully.
 
@@ -284,11 +190,9 @@ export class Agent extends McpClient {
    * @returns Formatted tool list as a string
    */
   private generateToolsList(): string {
-    let toolsList = "# Available MCP Tools\n\n";
-    toolsList += "## IMPORTANT: Tool Calling Instructions\n\n";
-    toolsList += "When calling any tool, you MUST use the exact tool name as listed below.\n";
-    toolsList += "For example, if a tool is listed as 'read_file', call it as 'read_file'.\n\n";
-    toolsList += "ALWAYS provide ALL required parameters for each tool call.\n\n";
+    let toolsList = "# Available Tools\n\n";
+    toolsList += "You have access to the following tools. Each tool has specific parameters that you MUST provide when calling it.\n\n";
+    toolsList += "**CRITICAL**: Always check the required parameters before calling any tool. Never call a tool without providing all required parameters.\n\n";
 
     // Group tools by server
     const toolsByServer = new Map<string, any[]>();
@@ -347,25 +251,19 @@ export class Agent extends McpClient {
           toolsList += "\n";
         }
 
-        // Add example usage with a complete example
-        toolsList += "**Example Usage:**\n\n";
-        toolsList += "```\n";
-        toolsList += `<function_calls>\n`;
-        toolsList += `<invoke name="${serverName}_${name}">\n`;
-
-        // Generate example parameters
-        if (parameters && parameters.properties) {
-          for (const [paramName, paramDetails] of Object.entries(parameters.properties)) {
-            if (parameters.required?.includes(paramName)) {
-              const exampleValue = this.generateExampleValue(paramName, paramDetails as any);
-              toolsList += `  <parameter name="${paramName}">${exampleValue}</parameter>\n`;
-            }
+        // Add required parameters summary
+        if (parameters && parameters.required && parameters.required.length > 0) {
+          toolsList += "**Required Parameters:**\n";
+          for (const requiredParam of parameters.required) {
+            const paramDetails = parameters.properties[requiredParam] as any;
+            const paramType = paramDetails?.type || "unknown";
+            const paramDesc = paramDetails?.description || "No description";
+            toolsList += `- **${requiredParam}** (${paramType}): ${paramDesc}\n`;
           }
+          toolsList += "\n";
+        } else {
+          toolsList += "**Required Parameters:** None\n\n";
         }
-
-        toolsList += `</invoke>\n`;
-        toolsList += `</function_calls>\n`;
-        toolsList += "```\n\n";
       }
     }
 
@@ -529,14 +427,11 @@ export class Agent extends McpClient {
         return;
       }
 
-      // After a tool call, Claude should get a chance to respond to the tool result
-      // Don't exit immediately if no tools were called after a tool result
-      if (currentLast.role !== MessageRole.Tool && nextTurnShouldCallTools && numOfTurns > 1) {
-        // Only exit if this is not the first turn after a tool call
-        const secondToLast = this.messages[this.messages.length - 2];
-        if (secondToLast && secondToLast.role !== MessageRole.Tool) {
-          return;
-        }
+      // Simple and reliable turn ending logic
+      // If the last message is from the assistant (not a tool result),
+      // and we expected tools but didn't get any, then end the conversation
+      if (currentLast.role === MessageRole.Assistant && nextTurnShouldCallTools) {
+        return;
       }
 
       // Toggle tool call expectation
@@ -629,24 +524,51 @@ export class Agent extends McpClient {
 
           const toolResult = await this.callTool(name, processedArgs);
 
-          // Add assistant message with tool call
-          this.messages.push({
-            role: MessageRole.Assistant,
-            content: responseText,
-            toolCalls: [{
-              id: chunk.toolCall.id,
-              name,
-              args: processedArgs,
-            }],
-          });
+          // For Anthropic models, we need to handle tool results differently
+          const isAnthropicModel = modelConfig?.provider === "anthropic" || options.model.toLowerCase().includes("claude");
 
-          // Add tool message with result
-          this.messages.push({
-            role: MessageRole.Tool,
-            content: toolResult.content,
-            toolName: name,
-            toolCallId: chunk.toolCall.id,
-          });
+          if (isAnthropicModel) {
+            // Add assistant message with tool call
+            this.messages.push({
+              role: MessageRole.Assistant,
+              content: responseText,
+              toolCalls: [{
+                id: chunk.toolCall.id,
+                name,
+                args: processedArgs,
+              }],
+            });
+
+            // For Anthropic, send tool result as user message with tool_result content block
+            this.messages.push({
+              role: MessageRole.User,
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: chunk.toolCall.id,
+                  content: toolResult.content
+                }
+              ]
+            });
+          } else {
+            // For OpenAI models, use the existing format
+            this.messages.push({
+              role: MessageRole.Assistant,
+              content: responseText,
+              toolCalls: [{
+                id: chunk.toolCall.id,
+                name,
+                args: processedArgs,
+              }],
+            });
+
+            this.messages.push({
+              role: MessageRole.Tool,
+              content: toolResult.content,
+              toolName: name,
+              toolCallId: chunk.toolCall.id,
+            });
+          }
 
           // Format args for display - always use JSON.stringify for consistency
           let displayArgs = JSON.stringify(processedArgs);
