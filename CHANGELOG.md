@@ -2,6 +2,22 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.3.7] - 2025-05-24
+
+### Improved
+- **OpenAI Integration Optimization**: Simplified OpenAI tool handling to match Google's efficient MCP-unified approach
+  - Added `convertMcpToolsToOpenAIFormat()` method for clean, direct MCP → OpenAI functions conversion
+  - Removed overcomplicated tool conversion and manual JSON parsing that could cause tool calling issues
+  - OpenAI integration now follows the same clean, efficient pattern as Google Gemini integration
+- **Enhanced Agent Loop Capability**: Increased maximum conversation turns for complex tasks
+  - Increased `MAX_NUM_TURNS` from 10 to 25 in both main agent and Anthropic agent loop
+  - Allows for more complex multi-step workflows with extensive tool usage
+  - Better support for research tasks, code projects, and comprehensive information gathering
+
+### Fixed
+- **Tool Reliability**: Improved OpenAI tool calling reliability by simplifying conversion logic
+- **Task Completion**: Complex tasks no longer prematurely terminated due to turn limits
+
 ## [1.3.6] - 2025-05-24
 
 ### Added
