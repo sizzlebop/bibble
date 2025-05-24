@@ -1,7 +1,7 @@
 ﻿﻿import Anthropic from "@anthropic-ai/sdk";
 import type {
   MessageParam,
-  ToolUnion,
+  Tool,
   ContentBlock,
   ToolUseBlock,
   MessageCreateParamsBase
@@ -14,6 +14,11 @@ export interface AnthropicClientOptions {
     baseURL?: string;
 }
 
+/**
+ * Anthropic client implementation following their official MCP example
+ * This implementation uses the direct approach recommended by Anthropic
+ * for MCP tool integration without unnecessary conversions.
+ */
 export class AnthropicClient {
     private client: Anthropic;
 
@@ -62,8 +67,8 @@ export class AnthropicClient {
             let anthropicTools: any[] = [];
 
             try {
-                // Try to convert the tools to Anthropic format
-                anthropicTools = this.anthropicTools(availableTools);
+                // Convert tools using the direct method following Anthropic's example
+                anthropicTools = this.convertMcpToolsToAnthropic(availableTools);
 
                 // Debug: Log the tools being sent to Claude (only in development)
                 if (process.env.NODE_ENV === 'development') {
@@ -83,7 +88,6 @@ export class AnthropicClient {
                     model: model,
                     messages: anthropicMessages,
                     tools: anthropicTools,
-                    tool_choice: { type: "auto", disable_parallel_tool_use: true },
                     max_tokens: 4096,
                     temperature: 0.7
                 });
@@ -102,34 +106,30 @@ export class AnthropicClient {
 
                 const results: string[] = [];
                 for (const block of toolBlocks) {
-                    // Removed tool call logging to reduce terminal clutter
-
                     try {
-                        // Ensure input is properly formatted
-                        let processedInput = block.input || {};
+                        // Use the tool input directly as provided by Claude
+                        const toolArgs = block.input as { [x: string]: unknown } | undefined;
 
                         // Log the tool call for debugging
-                        console.log(`Tool call from Claude (agent loop): ${block.name} with input:`, JSON.stringify(processedInput));
+                        console.log(`Tool call from Claude (agent loop): ${block.name} with input:`, JSON.stringify(toolArgs));
 
-                        // Call the tool and get the result
-                        const result = await McpClient.callTool(block.name, processedInput);
+                        // Call the tool using the MCP client - following Anthropic's example exactly
+                        const result = await McpClient.callTool(block.name, toolArgs);
 
-                        // Removed tool result logging to reduce terminal clutter
-
-                        // Format the result as a tool_result message
-                        results.push(JSON.stringify({
+                        // Format the result following Anthropic's example
+                        results.push({
                             type: "tool_result",
                             tool_use_id: block.id,
-                            content: result
-                        }));
+                            content: result.content
+                        });
                     } catch (error: any) {
                         // Log the error and add an error message to the results
                         console.error(`Error calling tool ${block.name}:`, error);
-                        results.push(JSON.stringify({
+                        results.push({
                             type: "tool_result",
                             tool_use_id: block.id,
-                            content: { error: `Error calling tool: ${error.message || String(error)}` }
-                        }));
+                            content: `Error calling tool: ${error.message || String(error)}`
+                        });
                     }
                 }
 
@@ -141,8 +141,11 @@ export class AnthropicClient {
                     });
                 }
 
-                // Add the tool results as a user message
-                messages.push({ role: MessageRole.User, content: results.join("\n") });
+                // Add the tool results as a user message following Anthropic's format
+                messages.push({
+                    role: MessageRole.User,
+                    content: JSON.stringify(results)
+                });
             } catch (error) {
                 console.error("Error in Anthropic API call:", error);
                 // Add an error message to break the loop
@@ -165,12 +168,12 @@ export class AnthropicClient {
     }
 
 
-            private anthropicTools(tools: any[]): any[] {
-                // Simplified approach: Use MCP tools directly as Anthropic expects them
-                // This matches the working Anthropic example exactly
+            private convertMcpToolsToAnthropic(tools: any[]): Tool[] {
+                // Convert MCP tools directly to Anthropic format following their example
+                // No complex conversions - just use the MCP tool format directly
 
+                const anthropicTools: Tool[] = [];
                 const uniqueToolNames = new Set<string>();
-                const anthropicTools: any[] = [];
 
                 for (const tool of tools) {
                     if (!tool.function) continue;
@@ -180,8 +183,8 @@ export class AnthropicClient {
                     if (uniqueToolNames.has(name)) continue;
                     uniqueToolNames.add(name);
 
-                    // Use the exact format from Anthropic's working example
-                    const toolDef = {
+                    // Use the exact format from Anthropic's MCP example
+                    const anthropicTool: Tool = {
                         name: name,
                         description: description || "",
                         input_schema: parameters || {
@@ -191,18 +194,7 @@ export class AnthropicClient {
                         }
                     };
 
-                    // Debug: Log each tool being added (only in development)
-                    if (process.env.NODE_ENV === 'development') {
-                        console.log(`Adding tool: ${name}`, {
-                            hasDescription: !!description,
-                            schemaType: toolDef.input_schema?.type,
-                            hasProperties: !!toolDef.input_schema?.properties,
-                            propertyCount: Object.keys(toolDef.input_schema?.properties || {}).length,
-                            requiredFields: toolDef.input_schema?.required || []
-                        });
-                    }
-
-                    anthropicTools.push(toolDef);
+                    anthropicTools.push(anthropicTool);
                 }
 
                 return anthropicTools;
@@ -353,17 +345,16 @@ export class AnthropicClient {
                         : params.thinking;
                 }
 
-                // Handle tools for Anthropic - simplified approach
+                // Handle tools for Anthropic - use direct MCP format
                 if (params.tools && Array.isArray(params.tools) && params.tools.length > 0) {
                     try {
-                        // Convert tools using the simplified method
-                        requestParams.tools = this.anthropicTools(params.tools);
+                        // Convert tools using the direct method following Anthropic's example
+                        requestParams.tools = this.convertMcpToolsToAnthropic(params.tools);
 
                         // Set tool_choice if we have tools
                         if (requestParams.tools && requestParams.tools.length > 0) {
                             requestParams.tool_choice = {
-                                type: "auto",
-                                disable_parallel_tool_use: true  // Keep it simple for now
+                                type: "auto"
                             };
                         }
                     } catch (error) {
@@ -377,36 +368,64 @@ export class AnthropicClient {
                 try {
                     const stream = this.client.messages.stream(requestParams);
 
+                    // Track tool blocks as they're being built
+                    let currentToolBlock: any = null;
+
                     // Process the stream
                     for await (const chunk of stream) {
                         if (chunk.type === 'content_block_delta') {
                             if (chunk.delta.type === 'text_delta') {
                                 // Text content
                                 yield { type: "text", text: chunk.delta.text };
+                            } else if (chunk.delta.type === 'input_json_delta' && currentToolBlock) {
+                                // Tool input is being streamed - accumulate it
+                                if (!currentToolBlock.input_json) {
+                                    currentToolBlock.input_json = '';
+                                }
+                                currentToolBlock.input_json += chunk.delta.partial_json;
                             }
-                            // Note: Anthropic's streaming API doesn't currently support tool_use_delta
-                            // in the same way as OpenAI. We'll handle tool calls via content_block_start
-                        } else if (chunk.type === 'message_delta' && chunk.delta.stop_reason === 'tool_use') {
-                            // Message stopped for tool use - we'll handle this with content_block_start
                         } else if (chunk.type === 'content_block_start' && chunk.content_block.type === 'tool_use') {
                             // Beginning of a tool use block
-                            const toolBlock = chunk.content_block as any; // Type assertion for TS
-                            if (toolBlock.id && toolBlock.name) {
-                                // Ensure we have valid input
-                                let processedInput = toolBlock.input || {};
+                            currentToolBlock = {
+                                id: chunk.content_block.id,
+                                name: chunk.content_block.name,
+                                input_json: ''
+                            };
+                        } else if (chunk.type === 'content_block_stop' && currentToolBlock) {
+                            // Tool block is complete - now we can process it
+                            try {
+                                // Parse the accumulated input JSON
+                                const toolArgs = currentToolBlock.input_json ?
+                                    JSON.parse(currentToolBlock.input_json) : {};
 
                                 // Log the tool call for debugging
-                                console.log(`Tool call from Claude: ${toolBlock.name} with input:`, JSON.stringify(processedInput));
+                                console.log(`Tool call from Claude: ${currentToolBlock.name} with input:`, JSON.stringify(toolArgs));
 
                                 yield {
                                     type: "tool_call",
                                     toolCall: {
-                                        id: toolBlock.id,
-                                        name: toolBlock.name,
-                                        args: processedInput
+                                        id: currentToolBlock.id,
+                                        name: currentToolBlock.name,
+                                        args: toolArgs
+                                    }
+                                };
+                            } catch (parseError) {
+                                console.error('Error parsing tool input JSON:', parseError);
+                                console.error('Raw input JSON:', currentToolBlock.input_json);
+
+                                // Yield with empty args as fallback
+                                yield {
+                                    type: "tool_call",
+                                    toolCall: {
+                                        id: currentToolBlock.id,
+                                        name: currentToolBlock.name,
+                                        args: {}
                                     }
                                 };
                             }
+
+                            // Reset current tool block
+                            currentToolBlock = null;
                         } else if (chunk.type === 'message_stop') {
                             // Stream has ended - this is important for proper turn completion
                             break;
@@ -429,18 +448,19 @@ export class AnthropicClient {
                                 for (const block of toolBlocks) {
                                     // Use type assertion to handle the tool use block
                                     const toolBlock = block as any;
-                                    // Ensure we have valid input
-                                    let processedInput = toolBlock.input || {};
+                                    // Use the tool input directly as provided by Claude
+                                    const toolArgs = toolBlock.input || {};
 
                                     // Log the tool call for debugging
-                                    console.log(`Tool call from Claude (non-streaming): ${toolBlock.name} with input:`, JSON.stringify(processedInput));
+                                    console.log(`Tool call from Claude (non-streaming): ${toolBlock.name} with input:`, JSON.stringify(toolArgs));
+                                    console.log('Full tool block:', JSON.stringify(toolBlock, null, 2));
 
                                     yield {
                                         type: "tool_call",
                                         toolCall: {
                                             id: toolBlock.id,
                                             name: toolBlock.name,
-                                            args: processedInput
+                                            args: toolArgs
                                         }
                                     };
                                 }

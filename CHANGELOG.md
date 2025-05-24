@@ -2,6 +2,25 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.3.5] - 2025-05-24
+
+### Fixed
+- **MAJOR FIX**: Fixed Anthropic tool calling by implementing direct MCP approach following Anthropic's official example
+- **CRITICAL**: Fixed streaming tool input handling - tool arguments now properly accumulate from `input_json_delta` chunks
+- Fixed tool result format to match Anthropic's expected structure
+- Removed unnecessary tool argument processing that was causing empty parameters
+- Simplified tool conversion to use MCP tools directly as Anthropic expects them
+- Fixed tool input handling to pass Claude's arguments directly to MCP tools without conversion
+- Updated both streaming and non-streaming tool call handling to follow Anthropic's recommended pattern
+- Removed complex tool schema conversions in favor of direct MCP format usage
+- Fixed tool result message format in agent loop to properly send results back to Claude
+
+### Changed
+- Updated AnthropicClient to follow Anthropic's official MCP integration example exactly
+- Simplified tool calling logic throughout the Anthropic integration
+- Improved tool argument logging for better debugging
+- Enhanced streaming implementation to properly handle `content_block_start`, `input_json_delta`, and `content_block_stop` events
+
 ## [1.3.4] - 2025-05-23
 
 ### Added

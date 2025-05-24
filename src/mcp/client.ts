@@ -70,7 +70,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.3.4"
+        version: "1.3.5"
       });
 
       // Connect to server
@@ -163,65 +163,54 @@ export class McpClient {
 
     async callTool(toolName: string, toolArgs: any): Promise<{ content: string }> {
         // Handle built-in tools
-
-    if (toolName === "task_complete") {
-      return this.handleTaskComplete();
-    }
-
-    if (toolName === "ask_question") {
-      return this.handleAskQuestion();
-    }
-
-    // Handle MCP server tools
-    // Use the exact tool name as registered
-    const client = this.clients.get(toolName);
-
-    if (!client) {
-      return {
-        content: `Error: No MCP client found for tool: ${toolName}`
-      };
-    }
-
-    try {
-      // Ensure toolArgs is a proper object
-      let processedArgs = toolArgs;
-
-      // If it's a string (failed JSON parsing), try to parse it again
-      if (typeof toolArgs === 'string') {
-        try {
-          processedArgs = JSON.parse(toolArgs);
-        } catch (parseError) {
-          console.warn(`Could not parse tool arguments for ${toolName}:`, parseError);
-          // For built-in tools like task_complete that don't need args, use empty object
-          processedArgs = {};
+        if (toolName === "task_complete") {
+            return this.handleTaskComplete();
         }
-      }
 
-      // If it's null or undefined, use an empty object
-      if (processedArgs === null || processedArgs === undefined) {
-        processedArgs = {};
-      }
+        if (toolName === "ask_question") {
+            return this.handleAskQuestion();
+        }
 
-      // Log the processed arguments for debugging
-      console.log(`Calling tool ${toolName} with processed arguments:`, JSON.stringify(processedArgs));
+        // Handle MCP server tools
+        // Use the exact tool name as registered
+        const client = this.clients.get(toolName);
 
-      const result = await client.callTool({
-        name: toolName,
-        arguments: processedArgs
-      });
+        if (!client) {
+            return {
+                content: `Error: No MCP client found for tool: ${toolName}`
+            };
+        }
 
-      return {
-        content: result.content && Array.isArray(result.content) && result.content.length > 0
-          ? result.content[0].text || String(result.content[0])
-          : "No content returned from tool"
-      };
-    } catch (error) {
-      console.error(`Error calling tool ${toolName}:`, error);
-      return {
-        content: `Error executing tool ${toolName}: ${error instanceof Error ? error.message : String(error)}`
-      };
+        try {
+            // Use the tool arguments directly as provided by Claude
+            // Following Anthropic's MCP example - no complex processing needed
+            let processedArgs = toolArgs;
+
+            // Only handle null/undefined cases
+            if (processedArgs === null || processedArgs === undefined) {
+                processedArgs = {};
+            }
+
+            // Log the arguments for debugging
+            console.log(`Calling tool ${toolName} with arguments:`, JSON.stringify(processedArgs));
+
+            const result = await client.callTool({
+                name: toolName,
+                arguments: processedArgs
+            });
+
+            return {
+                content: result.content && Array.isArray(result.content) && result.content.length > 0
+                    ? result.content[0].text || String(result.content[0])
+                    : "No content returned from tool"
+            };
+        } catch (error) {
+            console.error(`Error calling tool ${toolName}:`, error);
+            return {
+                content: `Error executing tool ${toolName}: ${error instanceof Error ? error.message : String(error)}`
+            };
+        }
     }
-  }
 
   /**
    * Handle the task_complete built-in tool

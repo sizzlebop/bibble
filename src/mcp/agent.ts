@@ -513,7 +513,7 @@ export class Agent extends McpClient {
           // Call the tool
           const { name, args } = chunk.toolCall;
 
-          // Ensure args is a proper object
+          // Use the args directly as provided by Claude - following Anthropic's example
           let processedArgs = args;
           if (processedArgs === null || processedArgs === undefined) {
             processedArgs = {};
