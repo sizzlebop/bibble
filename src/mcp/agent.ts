@@ -158,7 +158,8 @@ const askQuestionTool: ChatCompletionInputTool = {
 };
 
 // Maximum number of turns before ending conversation
-const MAX_NUM_TURNS = 10;
+// Increased from 10 to 25 to allow for more complex tasks with multiple tool calls
+const MAX_NUM_TURNS = 25;
 
 /**
  * Agent class implementing the chat loop on top of McpClient

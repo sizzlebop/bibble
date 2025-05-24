@@ -52,7 +52,7 @@ export class AnthropicClient {
             }
         }
 
-        let maxIterations = 10; // Safety limit to prevent infinite loops
+        let maxIterations = 25; // Safety limit to prevent infinite loops - increased to match main agent
         let currentIteration = 0;
 
         while (currentIteration < maxIterations) {

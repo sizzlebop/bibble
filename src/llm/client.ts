@@ -114,6 +114,23 @@ export class LlmClient {
   }
 
   /**
+   * Convert MCP tools to OpenAI's functions format
+   * Following the MCP-unified approach - direct conversion without unnecessary complexity
+   */
+  private convertMcpToolsToOpenAIFormat(mcpTools: any[]): any[] {
+    if (!mcpTools || mcpTools.length === 0) return [];
+
+    return mcpTools.map(tool => ({
+      type: "function",
+      function: {
+        name: tool.function.name,
+        description: tool.function.description,
+        parameters: tool.function.parameters // MCP inputSchema maps directly to OpenAI parameters
+      }
+    }));
+  }
+
+  /**
    * Convert internal message format to OpenAI message format
    * @param messages Internal messages
    * @returns OpenAI format messages
@@ -225,8 +242,8 @@ export class LlmClient {
         model: params.model,
         messages: openaiMessages,
         stream: true,
-        tools: params.tools,
-        tool_choice: "auto",
+        tools: params.tools ? this.convertMcpToolsToOpenAIFormat(params.tools) : undefined,
+        tool_choice: params.tools && params.tools.length > 0 ? "auto" : undefined,
       };
 
       // Add parameters based on model type
