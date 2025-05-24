@@ -12,12 +12,10 @@ import { getAllTools } from "../mcp/client.js";
 export interface AnthropicClientOptions {
     apiKey?: string;
     baseURL?: string;
-    toolToServerMap?: Map<string, string>;
 }
 
 export class AnthropicClient {
     private client: Anthropic;
-    private toolToServerMap: Map<string, string>;
 
     constructor(options: AnthropicClientOptions) {
         if (!options.apiKey) throw new Error("Anthropic API key is required");
@@ -26,8 +24,6 @@ export class AnthropicClient {
             apiKey: options.apiKey,
             baseURL: options.baseURL
         });
-
-        this.toolToServerMap = options.toolToServerMap || new Map();
     }
 
     public async runAgentLoop(McpClient: any, userRequest: string, model?: string) {
@@ -51,140 +47,195 @@ export class AnthropicClient {
             }
         }
 
-        while (true) {
+        let maxIterations = 10; // Safety limit to prevent infinite loops
+        let currentIteration = 0;
+
+        while (currentIteration < maxIterations) {
+            currentIteration++;
+
             const anthropicMessages: MessageParam[] = messages.map((msg: ChatMessage) => ({
                 role: msg.role === MessageRole.User ? "user" : "assistant",
                 content: msg.content
             }));
 
-            // Convert OpenAI-style function tools to Anthropic custom tools
-            let anthropicTools: ToolUnion[] = [];
+            // Convert OpenAI-style function tools to Anthropic format
+            let anthropicTools: any[] = [];
 
             try {
                 // Try to convert the tools to Anthropic format
                 anthropicTools = this.anthropicTools(availableTools);
+
+                // Debug: Log the tools being sent to Claude (only in development)
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`Sending ${anthropicTools.length} tools to Claude:`,
+                        anthropicTools.map(t => ({ name: t.name, hasSchema: !!t.input_schema })));
+                }
             } catch (error) {
                 // If conversion fails, use an empty array
                 anthropicTools = [];
+                console.error("Error converting tools:", error);
             }
 
-            // Log the request for debugging
-            console.log(`Sending request to Anthropic with model ${model} and ${anthropicTools.length} tools`);
+            // Removed request logging to reduce terminal clutter
 
-            const resp = await this.client.messages.create({
-                model: model,
-                messages: anthropicMessages,
-                tools: anthropicTools,
-                tool_choice: { type: "auto", disable_parallel_tool_use: true },
-                max_tokens: 4096
-            });
+            try {
+                const resp = await this.client.messages.create({
+                    model: model,
+                    messages: anthropicMessages,
+                    tools: anthropicTools,
+                    tool_choice: { type: "auto", disable_parallel_tool_use: true },
+                    max_tokens: 4096,
+                    temperature: 0.7
+                });
 
-            const blocks: ContentBlock[] = resp.content;
-            const toolBlocks: ToolUseBlock[] = blocks.filter((b): b is ToolUseBlock => b.type === "tool_use");
+                const blocks: ContentBlock[] = resp.content;
+                const toolBlocks: ToolUseBlock[] = blocks.filter((b): b is ToolUseBlock => b.type === "tool_use");
+                const textBlocks = blocks.filter(b => b.type === "text");
 
-            // Log tool blocks for debugging
-            console.log(`Received ${toolBlocks.length} tool blocks from Anthropic`);
+                // Removed tool blocks logging to reduce terminal clutter
 
-            if(toolBlocks.length === 0) {
-                // No tool calls, we're done
+                // If there are no tool blocks, we're done with the loop
+                if (toolBlocks.length === 0) {
+                    // No tool calls, we're done
+                    break;
+                }
+
+                const results: string[] = [];
+                for (const block of toolBlocks) {
+                    // Removed tool call logging to reduce terminal clutter
+
+                    try {
+                        // Ensure input is properly formatted
+                        let processedInput = block.input || {};
+
+                        // Log the tool call for debugging
+                        console.log(`Tool call from Claude (agent loop): ${block.name} with input:`, JSON.stringify(processedInput));
+
+                        // Call the tool and get the result
+                        const result = await McpClient.callTool(block.name, processedInput);
+
+                        // Removed tool result logging to reduce terminal clutter
+
+                        // Format the result as a tool_result message
+                        results.push(JSON.stringify({
+                            type: "tool_result",
+                            tool_use_id: block.id,
+                            content: result
+                        }));
+                    } catch (error: any) {
+                        // Log the error and add an error message to the results
+                        console.error(`Error calling tool ${block.name}:`, error);
+                        results.push(JSON.stringify({
+                            type: "tool_result",
+                            tool_use_id: block.id,
+                            content: { error: `Error calling tool: ${error.message || String(error)}` }
+                        }));
+                    }
+                }
+
+                // Add the assistant's response to the messages (if any text blocks)
+                if (textBlocks.length > 0) {
+                    messages.push({
+                        role: MessageRole.Assistant,
+                        content: textBlocks.map(b => (b as any).text).join("\n")
+                    });
+                }
+
+                // Add the tool results as a user message
+                messages.push({ role: MessageRole.User, content: results.join("\n") });
+            } catch (error) {
+                console.error("Error in Anthropic API call:", error);
+                // Add an error message to break the loop
+                messages.push({
+                    role: MessageRole.Assistant,
+                    content: `Error: ${error instanceof Error ? error.message : String(error)}`
+                });
                 break;
             }
+        }
 
-            const results: string[] = [];
-            for (const block of toolBlocks) {
-                // Log the tool call for debugging
-                console.log(`Calling tool: ${block.name} with input:`, block.input);
-
-                try {
-                    // Call the tool and get the result
-                    const result = await McpClient.callTool(block.name, block.input);
-
-                    // Log the tool result for debugging
-                    console.log(`Tool result:`, result);
-
-                    // Format the result as a tool_result message
-                    results.push(JSON.stringify({
-                        type: "tool_result",
-                        tool_use_id: block.id,
-                        content: result
-                    }));
-                } catch (error: any) {
-                    // Log the error and add an error message to the results
-                    console.error(`Error calling tool ${block.name}:`, error);
-                    results.push(JSON.stringify({
-                        type: "tool_result",
-                        tool_use_id: block.id,
-                        content: { error: `Error calling tool: ${error.message || String(error)}` }
-                    }));
-                }
-            }
-
-            // Add the tool results as a user message
-            messages.push({ role: MessageRole.User, content: results.join("\n") });
+        // Safety check - if we hit the max iterations, add a message about it
+        if (currentIteration >= maxIterations) {
+            console.warn(`Hit maximum iterations (${maxIterations}) in agent loop, forcing exit`);
+            messages.push({
+                role: MessageRole.Assistant,
+                content: `I've reached the maximum number of tool call iterations. Let me summarize what I've learned so far...`
+            });
         }
     }
-            private formatToolName(name: string): string {
-                // For Anthropic's tool schema, we need to use a unique name format
-                // But we should preserve the original format for tool calling
 
-                // If the name is already in the Anthropic format, return it as is
-                if (name.startsWith("mcp__") && name.indexOf("__", 5) > 0) return name;
 
-                // If the name is in the serverName_toolName format (which is what we want for tool calling),
-                // we'll use it as is for the schema but preserve the original for calling
-                const match = name.match(/^([^_]+)_(.+)$/);
-                if (match) {
-                    // This is the format we want for tool calling
-                    return name;
-                }
+            private anthropicTools(tools: any[]): any[] {
+                // Simplified approach: Use MCP tools directly as Anthropic expects them
+                // This matches the working Anthropic example exactly
 
-                // If we have a server mapping for this tool, use serverName_toolName format
-                const serverName = this.toolToServerMap.get(name);
-                if (serverName) return `${serverName}_${name}`;
-
-                // Fallback - just return the original name
-                return name;
-            }
-
-            private anthropicTools(tools: any[]): ToolUnion[] {
-                // Anthropic only supports specific tool types
-                // For custom tools, we need to use the "custom" type
-                // For built-in tools, we need to use the appropriate tag
-
-                // Anthropic only supports specific tool tags like:
-                // "computer_20241022", "bash_20241022", "text_editor_20241022", etc.
-
-                // If we have built-in Anthropic tools, return them directly
-                if (tools.length > 0 && typeof tools[0] === "string") {
-                    // These are already Anthropic tool tags
-                    return tools.map(tag => ({ type: tag })) as ToolUnion[];
-                }
-
-                // For custom MCP tools, convert to Anthropic's "custom" type
                 const uniqueToolNames = new Set<string>();
-                const uniqueTools: ToolUnion[] = [];
+                const anthropicTools: any[] = [];
 
                 for (const tool of tools) {
                     if (!tool.function) continue;
 
                     const { name, description, parameters } = tool.function;
-                    const formattedName = this.formatToolName(name);
 
-                    if (uniqueToolNames.has(formattedName)) continue;
-                    uniqueToolNames.add(formattedName);
+                    if (uniqueToolNames.has(name)) continue;
+                    uniqueToolNames.add(name);
 
-                    uniqueTools.push({
-                        type: "custom", // Always use "custom" for MCP tools
-                        name: formattedName,
+                    // Use the exact format from Anthropic's working example
+                    const toolDef = {
+                        name: name,
                         description: description || "",
-                        input_schema: {
+                        input_schema: parameters || {
                             type: "object",
-                            ...(parameters || {})
+                            properties: {},
+                            required: []
                         }
-                    });
+                    };
+
+                    // Debug: Log each tool being added (only in development)
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log(`Adding tool: ${name}`, {
+                            hasDescription: !!description,
+                            schemaType: toolDef.input_schema?.type,
+                            hasProperties: !!toolDef.input_schema?.properties,
+                            propertyCount: Object.keys(toolDef.input_schema?.properties || {}).length,
+                            requiredFields: toolDef.input_schema?.required || []
+                        });
+                    }
+
+                    anthropicTools.push(toolDef);
                 }
 
-                return uniqueTools;
+                return anthropicTools;
+            }
+
+            /**
+             * Test method to verify tool calling works with a simple example
+             * This follows the exact Anthropic example pattern
+             */
+            public async testSimpleToolCall(query: string, tools: any[]) {
+                console.log("\n=== Testing Simple Tool Call ===");
+                console.log("Query:", query);
+                console.log("Tools:", JSON.stringify(tools, null, 2));
+
+                const response = await this.client.messages.create({
+                    model: "claude-3-5-sonnet-20241022",
+                    max_tokens: 1000,
+                    messages: [{ role: "user", content: query }],
+                    tools: tools,  // Use tools exactly as provided
+                });
+
+                console.log("Claude Response:", JSON.stringify(response.content, null, 2));
+
+                for (const content of response.content) {
+                    if (content.type === "tool_use") {
+                        console.log("SUCCESS: Claude called tool:", content.name);
+                        console.log("With arguments:", JSON.stringify(content.input, null, 2));
+                        return true;
+                    }
+                }
+
+                console.log("No tool calls detected");
+                return false;
             }
 
             public async *chatCompletion(params: {
@@ -252,38 +303,23 @@ export class AnthropicClient {
                         : params.thinking;
                 }
 
-                // Handle tools for Anthropic
-                if (params.tools && Array.isArray(params.tools)) {
-                    // Check if these are Anthropic's built-in tools (strings) or custom tools (objects)
-                    const isBuiltInTools = params.tools.length > 0 && typeof params.tools[0] === "string";
+                // Handle tools for Anthropic - simplified approach
+                if (params.tools && Array.isArray(params.tools) && params.tools.length > 0) {
+                    try {
+                        // Convert tools using the simplified method
+                        requestParams.tools = this.anthropicTools(params.tools);
 
-                    if (isBuiltInTools) {
-                        // These are Anthropic's built-in tools, pass them directly
-                        requestParams.tools = params.tools;
-                    } else {
-                        // These are custom tools, filter and convert them
-                        const validTools = params.tools.filter(
-                            (tool: any) => tool.function?.name && tool.function?.parameters
-                        );
-
-                        if (validTools.length > 0) {
-                            try {
-                                // Convert to Anthropic's format with "custom" type
-                                requestParams.tools = this.anthropicTools(validTools);
-                            } catch (error) {
-                                console.warn("Error converting tools for Anthropic:", error);
-                                // If conversion fails, don't include tools
-                                console.warn("Continuing without tools due to conversion error");
-                            }
+                        // Set tool_choice if we have tools
+                        if (requestParams.tools && requestParams.tools.length > 0) {
+                            requestParams.tool_choice = {
+                                type: "auto",
+                                disable_parallel_tool_use: true  // Keep it simple for now
+                            };
                         }
-                    }
-
-                    // Set tool_choice if we have tools
-                    if (requestParams.tools && requestParams.tools.length > 0) {
-                        requestParams.tool_choice = {
-                            type: "auto",
-                            disable_parallel_tool_use: params.thinking?.disableParallelToolUse === false ? false : true
-                        };
+                    } catch (error) {
+                        console.warn("Error converting tools for Anthropic:", error);
+                        // If conversion fails, don't include tools
+                        console.warn("Continuing without tools due to conversion error");
                     }
                 }
 
@@ -302,17 +338,22 @@ export class AnthropicClient {
                             // in the same way as OpenAI. We'll handle tool calls via content_block_start
                         } else if (chunk.type === 'message_delta' && chunk.delta.stop_reason === 'tool_use') {
                             // Message stopped for tool use - we'll handle this with content_block_start
-                            console.log("Message stopped for tool use");
                         } else if (chunk.type === 'content_block_start' && chunk.content_block.type === 'tool_use') {
                             // Beginning of a tool use block
                             const toolBlock = chunk.content_block as any; // Type assertion for TS
-                            if (toolBlock.id && toolBlock.name && toolBlock.input) {
+                            if (toolBlock.id && toolBlock.name) {
+                                // Ensure we have valid input
+                                let processedInput = toolBlock.input || {};
+
+                                // Log the tool call for debugging
+                                console.log(`Tool call from Claude: ${toolBlock.name} with input:`, JSON.stringify(processedInput));
+
                                 yield {
                                     type: "tool_call",
                                     toolCall: {
                                         id: toolBlock.id,
                                         name: toolBlock.name,
-                                        args: toolBlock.input
+                                        args: processedInput
                                     }
                                 };
                             }
@@ -335,12 +376,18 @@ export class AnthropicClient {
                                 for (const block of toolBlocks) {
                                     // Use type assertion to handle the tool use block
                                     const toolBlock = block as any;
+                                    // Ensure we have valid input
+                                    let processedInput = toolBlock.input || {};
+
+                                    // Log the tool call for debugging
+                                    console.log(`Tool call from Claude (non-streaming): ${toolBlock.name} with input:`, JSON.stringify(processedInput));
+
                                     yield {
                                         type: "tool_call",
                                         toolCall: {
                                             id: toolBlock.id,
                                             name: toolBlock.name,
-                                            args: toolBlock.input
+                                            args: processedInput
                                         }
                                     };
                                 }

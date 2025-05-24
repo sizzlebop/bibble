@@ -12,7 +12,6 @@ interface LlmClientOptions {
   apiKey?: string;
   baseURL?: string;
   provider?: string;
-  toolToServerMap?: Map<string, string>;
 }
 
 /**
@@ -45,7 +44,6 @@ export class LlmClient {
       this.anthropicClient = new AnthropicClient({
         apiKey,
         baseURL,
-        toolToServerMap: options.toolToServerMap,
       });
     } else if (this.provider === "openaiCompatible") {
       // Get base URL from options or config

@@ -3,7 +3,7 @@
 Bibble is a command-line interface (CLI) chatbot application that integrates with language models and supports the Model Context Protocol (MCP) for enhanced functionality through external tools.
 
 
-*Last updated: May 23, 2025*
+*Last updated: May 24, 2025*
 
 ## Project Overview
 
@@ -11,7 +11,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
 
 - Chat sessions with multiple LLM providers:
   - OpenAI models (GPT-4.1, o4-mini, etc.)
-  - Anthropic models (Claude 3.7 Sonnet, Claude 3.5 Sonnet, etc.)
+  - Anthropic models (Claude Opus 4, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, etc.)
   - OpenAI-compatible endpoints for third-party services
 - Tool use through the Model Context Protocol (MCP)
 - Configuration management with dot-notation access
@@ -261,7 +261,7 @@ Bibble uses the `@modelcontextprotocol/sdk` package to connect to MCP servers vi
 Bibble's Anthropic integration follows specific guidelines for building Claude agents with MCP tools:
 
 1. **Tool Definitions**:
-   - Uses the `mcp__<serverName>__<toolName>` naming convention (double underscores)
+   - Uses the exact tool names as registered in the MCP client
    - Each tool requires a name, description, and strict JSON Schema for input
    - Tools are supplied on every request to Claude
 

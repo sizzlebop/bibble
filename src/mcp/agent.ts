@@ -26,11 +26,7 @@ When using tools, follow these strict guidelines:
 
 ## How to Use MCP Tools
 
-You must call the tools with the server name and tool name together in the following format:
-
-mcp_SERVERNAME_TOOLNAME
-
-Example: The plan_task tool would be called using the name mcp_taskflow_plan_task
+You must call the tools using their exact names as provided in the tool documentation below.
 
 Each tool has specific parameters that are defined in the tool's schema. You must provide these parameters in the correct format. Some of these parameters are optional, but some are required. If you fail to provide a required parameter, the tool will return an error.
 
@@ -277,16 +273,9 @@ export class Agent extends McpClient {
          };
          const toolsResult = await client.request(toolsRequest, ListToolsResultSchema);
 
-         console.log('Available tools:');
-         if (toolsResult.tools.length === 0) {
-             console.log('  No tools available');
-         } else {
-             for (const tool of toolsResult.tools) {
-                 console.log(`  - ${tool.name}: ${tool.description}`);
-             }
-         }
+         // Removed tools listing logging to reduce terminal clutter
      } catch (error) {
-         console.log(`Tools not supported by this server: ${error}`);
+         // Removed error logging to reduce terminal clutter
      }
  }
 
@@ -297,11 +286,9 @@ export class Agent extends McpClient {
   private generateToolsList(): string {
     let toolsList = "# Available MCP Tools\n\n";
     toolsList += "## IMPORTANT: Tool Calling Instructions\n\n";
-    toolsList += "When calling any tool, you MUST use the exact format: `serverName_toolName`\n";
-    toolsList += "For example:\n";
-    toolsList += "- To use the 'read_file' tool from 'desktop-commander' server, call it as: `desktop-commander_read_file`\n";
-    toolsList += "- To use the 'plan_task' tool from 'taskflow' server, call it as: `taskflow_plan_task`\n\n";
-    toolsList += "NEVER call a tool using just the tool name (e.g., 'task', 'read_file'). Always include the server name prefix.\n\n";
+    toolsList += "When calling any tool, you MUST use the exact tool name as listed below.\n";
+    toolsList += "For example, if a tool is listed as 'read_file', call it as 'read_file'.\n\n";
+    toolsList += "ALWAYS provide ALL required parameters for each tool call.\n\n";
 
     // Group tools by server
     const toolsByServer = new Map<string, any[]>();
@@ -323,10 +310,8 @@ export class Agent extends McpClient {
       for (const tool of tools) {
         const { name, description, parameters } = tool.function;
 
-        // Format tool name with server prefix for Anthropic
-        const formattedName = `${serverName}_${name}`;
-
-        toolsList += `### ${formattedName}\n`;
+        // Use the exact tool name as registered
+        toolsList += `### ${name}\n`;
         toolsList += `${description || "No description provided."}\n\n`;
 
         // Add parameters section with detailed information
@@ -439,9 +424,7 @@ export class Agent extends McpClient {
 
     // Initialize LLM client
 
-    this.llmClient = new LlmClient({
-      toolToServerMap: this.toolToServerMap
-    });
+    this.llmClient = new LlmClient();
 
     // Set model
     this.model = options.model || this.configInstance.getDefaultModel();
@@ -546,16 +529,21 @@ export class Agent extends McpClient {
         return;
       }
 
-      // Exit if should call tools but didn't
-      if (currentLast.role !== MessageRole.Tool && nextTurnShouldCallTools) {
-        return;
+      // After a tool call, Claude should get a chance to respond to the tool result
+      // Don't exit immediately if no tools were called after a tool result
+      if (currentLast.role !== MessageRole.Tool && nextTurnShouldCallTools && numOfTurns > 1) {
+        // Only exit if this is not the first turn after a tool call
+        const secondToLast = this.messages[this.messages.length - 2];
+        if (secondToLast && secondToLast.role !== MessageRole.Tool) {
+          return;
+        }
       }
 
       // Toggle tool call expectation
       if (currentLast.role === MessageRole.Tool) {
-        nextTurnShouldCallTools = false;
+        nextTurnShouldCallTools = false; // Next turn should be Claude's response to the tool result
       } else {
-        nextTurnShouldCallTools = true;
+        nextTurnShouldCallTools = true; // Next turn could involve tool calls
       }
     }
   }
@@ -629,7 +617,17 @@ export class Agent extends McpClient {
         try {
           // Call the tool
           const { name, args } = chunk.toolCall;
-          const toolResult = await this.callTool(name, args);
+
+          // Ensure args is a proper object
+          let processedArgs = args;
+          if (processedArgs === null || processedArgs === undefined) {
+            processedArgs = {};
+          }
+
+          // Log the tool call for debugging
+          console.log(`Tool call from Agent: ${name} with args:`, JSON.stringify(processedArgs));
+
+          const toolResult = await this.callTool(name, processedArgs);
 
           // Add assistant message with tool call
           this.messages.push({
@@ -638,7 +636,7 @@ export class Agent extends McpClient {
             toolCalls: [{
               id: chunk.toolCall.id,
               name,
-              args,
+              args: processedArgs,
             }],
           });
 
@@ -650,16 +648,8 @@ export class Agent extends McpClient {
             toolCallId: chunk.toolCall.id,
           });
 
-          // Format args for display - handle both objects and strings
-          let displayArgs;
-          try {
-            // If args is already an object, stringify it
-            // If it's a string that can be parsed as JSON, parse and then stringify it for formatting
-            displayArgs = typeof args === 'string' ? args : JSON.stringify(args);
-          } catch (error) {
-            // If there's any error, just use the args as is
-            displayArgs = String(args);
-          }
+          // Format args for display - always use JSON.stringify for consistency
+          let displayArgs = JSON.stringify(processedArgs);
 
           // Yield tool call information
           yield `\n[Tool Call] ${name}(${displayArgs})\n${toolResult.content}\n`;

@@ -79,8 +79,7 @@ export class McpClient {
       // Get available tools
       const toolsResult = await mcp.listTools();
 
-      // Only log the connection, not the tools list
-      console.log(`Connected to MCP server "${server.name}"`);
+      // Removed connection logging to reduce terminal clutter
 
       // Register tools with client map
       for (const tool of toolsResult.tools) {
@@ -174,6 +173,7 @@ export class McpClient {
     }
 
     // Handle MCP server tools
+    // Use the exact tool name as registered
     const client = this.clients.get(toolName);
 
     if (!client) {
@@ -187,7 +187,6 @@ export class McpClient {
       let processedArgs = toolArgs;
 
       // If it's a string (failed JSON parsing), try to parse it again
-      // or create an empty object as fallback
       if (typeof toolArgs === 'string') {
         try {
           processedArgs = JSON.parse(toolArgs);
@@ -197,6 +196,14 @@ export class McpClient {
           processedArgs = {};
         }
       }
+
+      // If it's null or undefined, use an empty object
+      if (processedArgs === null || processedArgs === undefined) {
+        processedArgs = {};
+      }
+
+      // Log the processed arguments for debugging
+      console.log(`Calling tool ${toolName} with processed arguments:`, JSON.stringify(processedArgs));
 
       const result = await client.callTool({
         name: toolName,

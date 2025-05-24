@@ -14,6 +14,9 @@ All notable changes to the Bibble project will be documented in this file.
 ### Fixed
 - Fixed Anthropic API tool handling to properly process tool calls
 - Fixed tool name formatting in Anthropic client to match the expected format (serverName_toolName)
+- Fixed tool parameter handling to ensure proper schema formatting for Anthropic API
+- Added proper handling of empty tool parameters
+- Added safety limits to prevent infinite loops in agent conversations
 - Improved error handling for Anthropic tool calls
 - Enhanced streaming implementation for Anthropic responses
 - Removed hardcoded model in Anthropic client, now using user-configured model from config.json
