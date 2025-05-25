@@ -235,27 +235,6 @@ current = (current as any)[k];
           topP: 0.9,
           topK: 40
         };
-      } else if (modelId.includes("/") && (modelId.includes("anthropic/") || modelId.includes("openai/") || modelId.includes("google/") || modelId.includes("deepseek/") || modelId.includes("microsoft/") || modelId.includes("qwen/"))) {
-        // For OpenRouter models (with provider prefix), return default configuration
-        const config = {
-          provider: "openrouter",
-          maxTokens: 4096,
-          temperature: 0.7,
-          topP: 0.9,
-          topK: 40
-        };
-
-        // Check if it's a reasoning model
-        if (modelId.includes("reasoning") || modelId.includes("phi-4")) {
-          return {
-            ...config,
-            isReasoningModel: true,
-            reasoningEffort: "medium",
-            maxCompletionTokens: 4096
-          };
-        }
-
-        return config;
       } else if (modelId.startsWith("o")) {
         // For OpenAI o-series models, return default configuration
         return {

@@ -2,7 +2,7 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.3.7
+**Version**: 1.3.6
 **Author**: Pink Pixel
 **NPM Package**: @pinkpixel/bibble
 *Last updated: May 24, 2025*
@@ -67,9 +67,6 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 │   │   └── client.ts     # MCP client for connecting to servers
 │   ├── llm/              # LLM integration
 │   │   ├── anthropic.ts  # Anthropic client for Claude models
-│   │   ├── google.ts     # Google client for Gemini models
-│   │   ├── openai.ts     # OpenAI client for GPT models
-│   │   ├── openrouter.ts # OpenRouter client for multi-provider access
 │   │   └── client.ts     # LLM client for multiple providers
 │   ├── ui/               # Terminal UI components
 │   │   ├── chat.ts       # Chat UI for interactive sessions
@@ -161,37 +158,6 @@ The application supports Anthropic's Claude models through a sophisticated `Anth
 - Handles tool_result blocks correctly (only in user messages)
 - Implements proper turn management and conversation flow
 
-#### Google Gemini Integration
-
-The application supports Google's Gemini models through a dedicated `GoogleClient` class:
-
-**Key Features:**
-- **Function Calling**: Full support for Google's `functionDeclarations` format
-- **MCP-Unified Tool Support**: All MCP tools work seamlessly without conversion
-- **JSON Schema Cleaning**: Recursive cleaning to remove metadata fields Google API rejects
-- **Streaming Support**: Real-time response streaming with proper chunk handling
-- **Model Support**: Comprehensive support for Gemini 2.5, 2.0, and 1.5 models
-
-#### OpenRouter Integration
-
-The application supports OpenRouter for multi-provider access through a dedicated `OpenRouterClient` class:
-
-**Key Features:**
-- **Multi-Provider Access**: Access to Claude, GPT, Gemini, and other models via single API
-- **OpenAI-Compatible**: Uses OpenAI SDK with custom base URL for seamless integration
-- **Tool Calling Support**: Full MCP tool calling for supported models (GPT-4.1, Qwen, Phi-4)
-- **Reasoning Model Detection**: Automatic detection of reasoning models like Phi-4
-- **Streaming Support**: Real-time response streaming with proper tool calling workflow
-- **Cost-Effective**: Access to free models like DeepSeek, Phi-4, and Qwen3
-
-**Supported Models:**
-- `anthropic/claude-sonnet-4` - Claude Sonnet 4 via OpenRouter
-- `openai/gpt-4.1` - GPT-4.1 via OpenRouter (tested and working)
-- `google/gemini-2.5-flash-preview-05-20` - Gemini via OpenRouter
-- `deepseek/deepseek-chat-v3-0324:free` - DeepSeek (no tool support)
-- `microsoft/phi-4-reasoning:free` - Phi-4 Reasoning model
-- `qwen/qwen3-32b:free` - Qwen3 32B model
-
 #### OpenAI-Compatible Endpoints
 
 For third-party services that implement the OpenAI API, Bibble provides:
@@ -207,7 +173,7 @@ The `Agent` class is the sophisticated core component that orchestrates conversa
 - **Inheritance**: Extends `McpClient` to inherit comprehensive tool management capabilities
 - **System Prompt**: Uses a comprehensive, non-configurable `DEFAULT_SYSTEM_PROMPT` for consistent behavior
 - **User Guidelines**: Supports configurable user guidelines as additional instructions layered on top
-- **Conversation Management**: Implements a robust conversation loop with safety limits (MAX_NUM_TURNS = 25)
+- **Conversation Management**: Implements a robust conversation loop with safety limits (MAX_NUM_TURNS = 10)
 - **Tool Orchestration**: Handles complex tool calls and responses with proper error handling
 - **Dynamic Documentation**: Generates comprehensive tool documentation with parameter details and examples
 
@@ -370,58 +336,9 @@ The implementation is based on the plan outlined in `PLAN/ANTHROPIC-REIMPLEMENTA
 
 ## Recent Development & Research
 
-### OpenRouter Integration (v1.3.8) - May 24, 2025
-
-Version 1.3.8 introduces **COMPLETE OPENROUTER INTEGRATION** for multi-provider access:
-
-**OpenRouter Integration Features:**
-- **Multi-Provider Access**: Single API access to Claude, GPT, Gemini, DeepSeek, Phi-4, and Qwen models
-- **OpenAI-Compatible Implementation**: Uses OpenAI SDK with custom base URL for seamless integration
-- **Tool Calling Support**: Full MCP tool calling for supported models (GPT-4.1, Qwen, Phi-4 tested)
-- **Reasoning Model Detection**: Automatic detection and configuration for reasoning models like Phi-4
-- **Streaming Support**: Real-time response streaming with proper tool calling workflow
-- **Cost-Effective Options**: Access to free models like DeepSeek, Phi-4, and Qwen3
-
-**Technical Implementation:**
-- **OpenRouterClient Class**: Dedicated client following the unified MCP approach
-- **Configuration Integration**: Complete setup wizard and API key management
-- **Type Safety**: Enhanced StreamChunk types with content and done variants
-- **Error Handling**: Proper handling of models that don't support tool calling
-- **Comprehensive Testing**: Unit tests and live integration testing with GPT-4.1
-
-**Supported Models:**
-- `anthropic/claude-sonnet-4` - Claude Sonnet 4 via OpenRouter
-- `openai/gpt-4.1` - GPT-4.1 via OpenRouter (✅ tested and working)
-- `google/gemini-2.5-flash-preview-05-20` - Gemini via OpenRouter
-- `deepseek/deepseek-chat-v3-0324:free` - DeepSeek (no tool support)
-- `microsoft/phi-4-reasoning:free` - Phi-4 Reasoning model
-- `qwen/qwen3-32b:free` - Qwen3 32B model
-
-**Key Benefits:**
-- **Unified Architecture**: Same MCP tool calling experience across all providers
-- **Provider Flexibility**: Easy switching between different AI providers
-- **Cost Management**: Access to both premium and free models
-- **No Tool Conversion**: Direct MCP tool usage without format conversion
-
-### OpenAI Integration Optimization (v1.3.7) - May 24, 2025
-
-Version 1.3.7 introduces **OPENAI INTEGRATION OPTIMIZATION** and enhanced agent capabilities:
-
-**OpenAI Integration Improvements:**
-- **Simplified Tool Handling**: Added `convertMcpToolsToOpenAIFormat()` method for clean, direct MCP → OpenAI functions conversion
-- **Removed Complex Conversions**: Eliminated overcomplicated tool conversion and manual JSON parsing that could cause tool calling issues
-- **Unified Approach**: OpenAI integration now follows the same clean, efficient pattern as Google Gemini integration
-- **Improved Reliability**: Enhanced tool calling reliability by simplifying conversion logic
-
-**Enhanced Agent Loop Capability:**
-- **Increased Conversation Turns**: Raised `MAX_NUM_TURNS` from 10 to 25 in both main agent and Anthropic agent loop
-- **Complex Task Support**: Allows for more complex multi-step workflows with extensive tool usage
-- **Better Research Tasks**: Improved support for research tasks, code projects, and comprehensive information gathering
-- **Task Completion**: Complex tasks no longer prematurely terminated due to turn limits
-
 ### Google Gemini Integration (v1.3.6) - May 24, 2025
 
-Version 1.3.6 introduced **COMPLETE GOOGLE GEMINI SUPPORT** with comprehensive MCP integration:
+Version 1.3.6 introduces **COMPLETE GOOGLE GEMINI SUPPORT** with comprehensive MCP integration:
 
 **New Google Gemini Models:**
 - **Gemini 2.5 Flash Preview** (`gemini-2.5-flash-preview-05-20`)
@@ -551,7 +468,7 @@ bibble setup
 ```
 
 The setup wizard will guide you through:
-- Selecting your default provider (OpenAI, Anthropic, Google, OpenRouter, or OpenAI-compatible)
+- Selecting your default provider (OpenAI, Anthropic, or OpenAI-compatible)
 - Configuring API keys
 - Selecting your default model
 - Setting UI preferences
