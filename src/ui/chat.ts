@@ -1,10 +1,16 @@
-﻿import readline from "readline";
+import readline from "readline";
 import { terminal } from "./colors.js";
 import { markdown } from "./markdown.js";
 import { ChatMessage, MessageRole } from "../types.js";
 import { Agent } from "../mcp/agent.js";
 import { chatHistory } from "../utils/history.js";
+import { createWelcomeBanner, splash } from "./splash.js";
+import { gradient, brandGradient } from "./gradient.js";
+import { symbols, chatSymbols } from "./symbols.js";
+import { BRAND_COLORS, t } from "./theme.js";
+import { BibbleTable } from "./tables.js";
 import boxen from "boxen";
+import ora from "ora";
 
 /**
  * Chat UI options
@@ -66,21 +72,11 @@ export class ChatUI {
   }
 
   /**
-   * Display welcome message
+   * Display welcome message with gorgeous BIBBLE banner!
    */
   private displayWelcome(): void {
-    const welcomeText = boxen(
-      "Welcome to Bibble - CLI Chatbot with MCP support\n\n" +
-      "Start chatting or type /help for commands",
-      {
-        padding: 1,
-        margin: 1,
-        borderStyle: "round",
-        borderColor: "cyan",
-      }
-    );
-
-    console.log(welcomeText);
+    // Show the stunning BIBBLE banner instead of boring box
+    console.log(createWelcomeBanner());
   }
 
   /**
@@ -160,19 +156,22 @@ export class ChatUI {
   }
 
   /**
-   * Prompt for user input
+   * Prompt for user input with beautiful styling
    * @returns User input
    */
   private promptUser(): Promise<string> {
     return new Promise((resolve) => {
-      this.rl.question(terminal.user("\nYou: "), (answer) => {
+      // Create beautiful user prompt with icon and styling
+      const prompt = `\n${terminal.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: `;
+      
+      this.rl.question(prompt, (answer) => {
         resolve(answer.trim());
       });
     });
   }
 
   /**
-   * Process user input
+   * Process user input with beautiful styling and loading states
    * @param input User input
    */
   private async processUserInput(input: string): Promise<void> {
@@ -180,9 +179,6 @@ export class ChatUI {
     if (!input.trim()) {
       return;
     }
-
-    // Add user message to conversation but don't display it again
-    // (it was already displayed in the prompt)
 
     // Ensure agent is initialized
     if (!this.agent) {
@@ -194,48 +190,102 @@ export class ChatUI {
       // Reset abort controller
       this.abortController = new AbortController();
 
-      // Start response
-      process.stdout.write(terminal.assistant("Assistant: "));
+      // Show beautiful thinking indicator with safe implementation
+      const thinkingText = `\n${gradient.cyanGreen('Thinking...')}\n`;
+      process.stderr.write(thinkingText);
 
-      // Get response stream
-      const stream = await this.agent.chat(input, {
-        abortSignal: this.abortController.signal,
-        model: this.model,
-      });
+      try {
+        // Get response stream
+        const stream = await this.agent.chat(input, {
+          abortSignal: this.abortController.signal,
+          model: this.model,
+        });
 
-      // Process stream
-      let fullResponse = "";
-      for await (const chunk of stream) {
-        process.stdout.write(chunk);
-        fullResponse += chunk;
+        // Clear the thinking message by writing to stderr
+        
+        // Create beautiful assistant prompt with robot icon
+        const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
+        process.stdout.write(assistantPrompt);
+
+        // Process stream with beautiful styling
+        let fullResponse = "";
+        
+        for await (const chunk of stream) {
+          // Check for tool call markers
+          const toolCallMatch = chunk.match(/<!TOOL_CALL_START:([^:]+):(.+):TOOL_CALL_END!>/);
+          
+          if (toolCallMatch) {
+            // Extract tool call info
+            const [, toolName, toolResultJson] = toolCallMatch;
+            
+            try {
+              const toolResult = JSON.parse(toolResultJson);
+              
+              // Display beautiful tool call
+              const toolMessage: ChatMessage = {
+                role: MessageRole.Tool,
+                content: toolResult,
+                toolName: toolName
+              };
+              
+              console.log(''); // New line
+              this.displayToolCall(toolMessage);
+            } catch (error) {
+              // Fallback to styled text if parsing fails
+              const styledChunk = terminal.hex(BRAND_COLORS.text || '#FFFFFF', chunk);
+              process.stdout.write(styledChunk);
+            }
+          } else {
+            // Style the response content normally
+            const styledChunk = terminal.hex(BRAND_COLORS.text || '#FFFFFF', chunk);
+            process.stdout.write(styledChunk);
+          }
+          
+          fullResponse += chunk;
+        }
+
+        // Add beautiful separator after response
+        process.stdout.write("\n");
+        this.displayMessageSeparator();
+        
+        // CRITICAL: Force readline interface refresh to prevent freezing
+        // This fixes the issue where the prompt only accepts input once
+        this.rl.write("", { ctrl: false, name: "refresh" });
+        this.rl.prompt(false);
+        
+      } catch (streamError) {
+        // Handle stream error
+        throw streamError;
       }
-
-      // Add newline at end
-      process.stdout.write("\n");
 
       // Save full response for history
       // This will be handled by the agent internally
     } catch (error) {
-      console.error(terminal.error("\nError:"), error);
+      // Beautiful error display
+      console.log(`\n${terminal.hex(BRAND_COLORS.red, chatSymbols.status.error)} ${terminal.error('Error:')} ${error}`);
+      this.displayMessageSeparator();
     }
   }
 
   /**
-   * Display a chat message
+   * Display a chat message with beautiful styling
    * @param message Message to display
    */
   private displayMessage(message: ChatMessage): void {
     switch (message.role) {
       case MessageRole.User:
-        console.log(terminal.user(`\nYou: ${message.content}`));
+        const userPrompt = `${terminal.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: ${message.content}`;
+        console.log(`\n${userPrompt}`);
         break;
 
       case MessageRole.Assistant:
-        console.log(terminal.assistant(`\nAssistant: ${markdown.render(message.content)}`));
+        const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
+        console.log(`\n${assistantPrompt}${markdown.render(message.content)}`);
+        this.displayMessageSeparator();
         break;
 
       case MessageRole.Tool:
-        console.log(terminal.tool(`\n[Tool] ${message.toolName}: ${message.content}`));
+        this.displayToolCall(message);
         break;
 
       default:
@@ -244,23 +294,163 @@ export class ChatUI {
   }
 
   /**
-   * Display help information
+   * Display a beautiful separator between messages
+   */
+  private displayMessageSeparator(): void {
+    // Create a subtle gradient separator line
+    const separator = gradient.pinkCyan('─'.repeat(50));
+    console.log(`\n${separator}`);
+  }
+
+  /**
+   * Display a beautifully formatted tool call result
+   * @param message Tool message to display
+   */
+  private displayToolCall(message: ChatMessage): void {
+    // Create beautiful tool header with icon and name
+    const toolHeader = `${terminal.hex(BRAND_COLORS.orange, chatSymbols.tech.tool)} ${gradient.fire('Tool Call')} [${t.cyan(message.toolName || 'Unknown')}]`;
+    
+    console.log(`\n${toolHeader}`);
+    
+    try {
+      // Try to parse the content as JSON for structured display
+      const content = message.content || '';
+      
+      // Check if content looks like JSON
+      if (content.startsWith('{') || content.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(content);
+          this.displayToolResultTable(parsed, message.toolName || 'Unknown');
+        } catch {
+          // If parsing fails, display as formatted text
+          this.displayToolResultText(content);
+        }
+      } else {
+        // Display as formatted text
+        this.displayToolResultText(content);
+      }
+    } catch (error) {
+      console.log(t.red(`Error displaying tool result: ${error}`));
+    }
+    
+    this.displayMessageSeparator();
+  }
+
+  /**
+   * Display tool result as structured table when possible
+   * @param data Parsed JSON data
+   * @param toolName Name of the tool
+   */
+  private displayToolResultTable(data: any, toolName: string): void {
+    if (Array.isArray(data) && data.length > 0) {
+      // Handle array of objects (like search results, file lists, etc.)
+      if (typeof data[0] === 'object' && data[0] !== null) {
+        const table = new BibbleTable({
+          head: Object.keys(data[0]).map(key => t.cyan(key)),
+          style: 'fancy'
+        });
+        
+        data.slice(0, 10).forEach(item => { // Limit to 10 rows for readability
+          const row = Object.values(item).map(value => 
+            String(value).length > 50 ? String(value).slice(0, 47) + '...' : String(value)
+          );
+          table.addRow(row);
+        });
+        
+        console.log(`\n${table.toString()}`);
+        
+        if (data.length > 10) {
+          console.log(t.dim(`... and ${data.length - 10} more items`));
+        }
+      } else {
+        // Handle simple arrays (like ["flux", "kontext", "turbo"])
+        const table = new BibbleTable({
+          head: [`${toolName} Results`],
+          style: 'clean'
+        });
+        
+        data.forEach(item => {
+          table.addRow([String(item)]);
+        });
+        
+        console.log(`\n${table.toString()}`);
+      }
+    } else if (typeof data === 'object' && data !== null) {
+      // Create key-value display for single object
+      const table = new BibbleTable({
+        head: ['Property', 'Value'],
+        style: 'fancy',
+        colWidths: [25, 50]
+      });
+      
+      Object.entries(data).forEach(([key, value]) => {
+        let displayValue = String(value);
+        if (displayValue.length > 100) {
+          displayValue = displayValue.slice(0, 97) + '...';
+        }
+        
+        table.addRow([t.cyan(key), displayValue]);
+      });
+      
+      console.log(`\n${table.toString()}`);
+    } else {
+      // Fallback to text display
+      this.displayToolResultText(JSON.stringify(data, null, 2));
+    }
+  }
+
+  /**
+   * Display tool result as formatted text
+   * @param content Text content to display
+   */
+  private displayToolResultText(content: string): void {
+    // Style the content with proper indentation and colors
+    const lines = content.split('\n');
+    const styledLines = lines.map(line => {
+      // Highlight URLs
+      if (line.match(/https?:\/\/[^\s]+/)) {
+        return line.replace(/(https?:\/\/[^\s]+)/g, t.cyan('$1'));
+      }
+      // Highlight file paths
+      if (line.match(/\/[\w\/.]+/) || line.match(/[A-Z]:\\[\w\\./]+/)) {
+        return t.green(line);
+      }
+      // Highlight numbers
+      if (line.match(/^\s*\d+/)) {
+        return line.replace(/\d+/g, t.cyan('$&'));
+      }
+      // Default styling
+      return terminal.hex(BRAND_COLORS.text || '#FFFFFF', line);
+    });
+    
+    console.log(`\n${styledLines.join('\n')}`);
+  }
+
+  /**
+   * Display help information with colorful styling
    */
   private displayHelp(): void {
-    const helpText = boxen(
-      "Available Commands:\n\n" +
-      "/help   - Display this help\n" +
-      "/exit   - Exit the chat\n" +
-      "/quit   - Exit the chat\n" +
-      "/clear  - Clear the screen\n" +
-      "/save   - Save the current chat to history\n" +
-      "/reset  - Reset the current conversation",
-      {
-        padding: 1,
-        borderStyle: "round",
-        borderColor: "blue",
-      }
-    );
+    // Create colorful command list with symbols
+    const commands = [
+      terminal.style.label("/help", "Display this help"),
+      terminal.style.label("/exit", "Exit the chat"),
+      terminal.style.label("/quit", "Exit the chat"),
+      terminal.style.label("/clear", "Clear the screen"),
+      terminal.style.label("/save", "Save the current chat to history"),
+      terminal.style.label("/reset", "Reset the current conversation"),
+    ];
+    
+    // Format the help text with gradient title
+    const content = 
+      terminal.style.title("✨ Available Commands ✨") + "\n\n" +
+      commands.join("\n");
+      
+    // Display in a nice box with custom styling
+    const helpText = boxen(content, {
+      padding: 1,
+      borderStyle: "round",
+      borderColor: "cyan",
+    });
 
     console.log(helpText);
   }

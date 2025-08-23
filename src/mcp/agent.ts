@@ -543,13 +543,13 @@ export class Agent extends McpClient {
             // For Anthropic, send tool result as user message with tool_result content block
             this.messages.push({
               role: MessageRole.User,
-              content: [
+              content: JSON.stringify([
                 {
                   type: "tool_result",
                   tool_use_id: chunk.toolCall.id,
                   content: toolResult.content
                 }
-              ]
+              ])
             });
           } else {
             // For OpenAI models, use the existing format
@@ -574,8 +574,8 @@ export class Agent extends McpClient {
           // Format args for display - always use JSON.stringify for consistency
           let displayArgs = JSON.stringify(processedArgs);
 
-          // Yield tool call information
-          yield `\n[Tool Call] ${name}(${displayArgs})\n${toolResult.content}\n`;
+          // Yield tool call with special formatting markers that the UI can detect
+          yield `\n<!TOOL_CALL_START:${name}:${JSON.stringify(toolResult.content)}:TOOL_CALL_END!>\n`;
         } catch (error) {
           console.error("Error handling tool call:", error);
           yield `\nError handling tool call: ${error instanceof Error ? error.message : String(error)}\n`;

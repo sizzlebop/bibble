@@ -1,14 +1,18 @@
 ﻿import { Command } from "commander";
 import inquirer from "inquirer";
 import { Config } from "../config/config.js";
-import { terminal } from "../ui/colors.js";
+import { terminal, Color } from "../ui/colors.js";
 import { BibbleConfig } from "../config/storage.js";
+import { tables, BibbleTable } from "../ui/tables.js";
+import { t } from "../ui/theme.js";
+import { status } from "../ui/spinners.js";
+import { brandSymbols } from "../ui/symbols.js";
 
 /**
  * Setup the config command
  * @param program Commander program
  */
-export function setupConfigCommand(program: Command): void {
+export function setupConfigCommand(program: Command): Command {
   const config = Config.getInstance();
 
   const configCommand = program
@@ -32,8 +36,8 @@ export function setupConfigCommand(program: Command): void {
         }
       }
 
-      console.log(terminal.info("Current configuration:"));
-      console.log(JSON.stringify(sanitizedConfig, null, 2));
+      // Use our beautiful table system instead of raw JSON!
+      console.log(tables.config(sanitizedConfig));
     });
 
   // Set a configuration value
@@ -275,49 +279,59 @@ async function manageMcpServers(): Promise<void> {
   const config = Config.getInstance();
   const servers = config.getMcpServers();
 
-  const { action } = await inquirer.prompt([
-    {
-      type: "list",
-      name: "action",
-      message: "MCP server configuration:",
-      choices: [
-        { name: "List servers", value: "list" },
-        { name: "Add server", value: "add" },
-        { name: "Remove server", value: "remove" },
-        { name: "Edit server", value: "edit" },
-        { name: "Cancel", value: "cancel" },
-      ],
-    },
-  ]);
+  const { action } = await inquirer.prompt([{
+    type: "list",
+    name: "action",
+    message: "MCP server configuration:",
+    choices: [
+      { name: "List servers", value: "list" },
+      { name: "Add server", value: "add" },
+      { name: "Remove server", value: "remove" },
+      { name: "Edit server", value: "edit" },
+      { name: "Cancel", value: "cancel" },
+    ],
+  }]);
 
-  switch (action) {
-    case "list":
-      if (servers.length === 0) {
-        console.log(terminal.info("No MCP servers configured."));
-      } else {
-        console.log(terminal.info("Configured MCP servers:"));
-        servers.forEach((server, index) => {
-          console.log(`${index + 1}. ${terminal.format(server.name, "cyan")} (${server.command} ${server.args.join(" ")})`);
-          if (server.env) {
-            console.log(`   Environment: ${Object.keys(server.env).join(", ")}`);
-          }
-          console.log(`   Enabled: ${server.enabled ? "Yes" : "No"}`);
-        });
-      }
-      break;
+  const actions = {
+    list: () => listMcpServers(servers),
+    add: () => addMcpServer(),
+    remove: () => removeMcpServer(servers),
+    edit: () => editMcpServer(servers),
+  };
 
-    case "add":
-      await addMcpServer();
-      break;
+  if (actions[action]) await actions[action]();
+}
 
-    case "remove":
-      await removeMcpServer();
-      break;
-
-    case "edit":
-      await editMcpServer();
-      break;
+function listMcpServers(servers: any[]): void {
+  if (servers.length === 0) {
+    console.log(t.dim("No MCP servers configured."));
+    return;
   }
+  
+  // Transform servers for our beautiful table
+  const mcpServerData = servers.map(server => ({
+    name: server.name,
+    command: `${server.command} ${server.args.join(" ")}`,
+    environment: server.env ? Object.keys(server.env).join(", ") || "None" : "None",
+    status: server.enabled ? "enabled" : "disabled"
+  }));
+
+  // Create a beautiful table using our table system
+  const table = new BibbleTable({
+    head: ['Server', 'Command', 'Environment', 'Status'],
+    style: 'fancy'
+  });
+
+  mcpServerData.forEach(server => {
+    table.addRow([
+      server.name,
+      server.command,
+      server.environment,
+      server.status
+    ]);
+  });
+
+  console.log(`\n${t.h2('MCP Servers')} ${brandSymbols.lightning}\n${table.toString()}`);
 }
 
 /**
@@ -325,27 +339,26 @@ async function manageMcpServers(): Promise<void> {
  */
 async function addMcpServer(): Promise<void> {
   const config = Config.getInstance();
-
   const answers = await inquirer.prompt([
     {
       type: "input",
       name: "name",
       message: "Server name:",
-      validate: (input) => input.trim().length > 0 || "Name is required",
+      validate: (input: string) => input.trim().length > 0 || "Name is required",
     },
     {
       type: "input",
       name: "command",
       message: "Command:",
-      validate: (input) => input.trim().length > 0 || "Command is required",
+      validate: (input: string) => input.trim().length > 0 || "Command is required",
     },
     {
       type: "input",
       name: "args",
       message: "Arguments (comma-separated):",
       default: "",
-      filter: (input) =>
-        input.split(",").map((arg) => arg.trim()).filter((arg) => arg.length > 0),
+      filter: (input: string) =>
+        input.split(",").map((arg: string) => arg.trim()).filter((arg: string) => arg.length > 0),
     },
     {
       type: "confirm",
@@ -361,63 +374,60 @@ async function addMcpServer(): Promise<void> {
     },
   ]);
 
-  let env: Record<string, string> = {};
-
-  if (answers.hasEnv) {
-    while (true) {
-      const { key, value, addMore } = await inquirer.prompt([
-        {
-          type: "input",
-          name: "key",
-          message: "Environment variable name:",
-          validate: (input) => input.trim().length > 0 || "Name is required",
-        },
-        {
-          type: "input",
-          name: "value",
-          message: "Environment variable value:",
-        },
-        {
-          type: "confirm",
-          name: "addMore",
-          message: "Add another environment variable?",
-          default: false,
-        },
-      ]);
-
-      env[key] = value;
-
-      if (!addMore) {
-        break;
-      }
-    }
-  }
-
-  const server = {
+  const env = answers.hasEnv ? await collectEnvVars() : {};
+  
+  config.addMcpServer({
     name: answers.name,
     command: answers.command,
     args: answers.args,
     env,
     enabled: answers.enabled,
-  };
-
-  config.addMcpServer(server);
+  });
+  
   console.log(terminal.success(`MCP server '${answers.name}' added successfully.`));
+}
+
+async function collectEnvVars(): Promise<Record<string, string>> {
+  const env: Record<string, string> = {};
+  
+  while (true) {
+    const { key, value, addMore } = await inquirer.prompt([
+      {
+        type: "input",
+        name: "key",
+        message: "Environment variable name:",
+        validate: (input) => input.trim().length > 0 || "Name is required",
+      },
+      {
+        type: "input",
+        name: "value",
+        message: "Environment variable value:",
+      },
+      {
+        type: "confirm",
+        name: "addMore",
+        message: "Add another environment variable?",
+        default: false,
+      },
+    ]);
+
+    env[key] = value;
+    if (!addMore) break;
+  }
+  
+  return env;
 }
 
 /**
  * Remove an MCP server
  */
-async function removeMcpServer(): Promise<void> {
-  const config = Config.getInstance();
-  const servers = config.getMcpServers();
-
+async function removeMcpServer(servers: any[]): Promise<void> {
   if (servers.length === 0) {
     console.log(terminal.warning("No MCP servers configured."));
     return;
   }
 
-  const { serverName } = await inquirer.prompt([
+  const { serverName, confirm } = await inquirer.prompt([
     {
       type: "list",
       name: "serverName",
@@ -427,19 +437,16 @@ async function removeMcpServer(): Promise<void> {
         value: server.name,
       })),
     },
-  ]);
-
-  const { confirm } = await inquirer.prompt([
     {
       type: "confirm",
       name: "confirm",
-      message: `Are you sure you want to remove server '${serverName}'?`,
+      message: (answers) => `Are you sure you want to remove server '${answers.serverName}'?`,
       default: false,
     },
   ]);
 
   if (confirm) {
-    config.removeMcpServer(serverName);
+    Config.getInstance().removeMcpServer(serverName);
     console.log(terminal.success(`MCP server '${serverName}' removed successfully.`));
   } else {
     console.log(terminal.info("Remove cancelled."));
@@ -449,29 +456,23 @@ async function removeMcpServer(): Promise<void> {
 /**
  * Edit an MCP server
  */
-async function editMcpServer(): Promise<void> {
-  const config = Config.getInstance();
-  const servers = config.getMcpServers();
-
+async function editMcpServer(servers: any[]): Promise<void> {
   if (servers.length === 0) {
     console.log(terminal.warning("No MCP servers configured."));
     return;
   }
 
-  const { serverName } = await inquirer.prompt([
-    {
-      type: "list",
-      name: "serverName",
-      message: "Select server to edit:",
-      choices: servers.map((server) => ({
-        name: `${server.name} (${server.command} ${server.args.join(" ")})`,
-        value: server.name,
-      })),
-    },
-  ]);
+  const { serverName } = await inquirer.prompt([{
+    type: "list",
+    name: "serverName",
+    message: "Select server to edit:",
+    choices: servers.map((server) => ({
+      name: `${server.name} (${server.command} ${server.args.join(" ")})`,
+      value: server.name,
+    })),
+  }]);
 
   const server = servers.find((s) => s.name === serverName);
-
   if (!server) {
     console.log(terminal.error(`Server '${serverName}' not found.`));
     return;
@@ -508,66 +509,36 @@ async function editMcpServer(): Promise<void> {
   ]);
 
   let env = server.env || {};
-
   if (answers.editEnv) {
-    const { action } = await inquirer.prompt([
-      {
-        type: "list",
-        name: "action",
-        message: "Environment variables:",
-        choices: [
-          { name: "Add new variables", value: "add" },
-          { name: "Clear all variables", value: "clear" },
-          { name: "Cancel", value: "cancel" },
-        ],
-      },
-    ]);
-
-    if (action === "clear") {
-      env = {};
-    } else if (action === "add") {
-      while (true) {
-        const { key, value, addMore } = await inquirer.prompt([
-          {
-            type: "input",
-            name: "key",
-            message: "Environment variable name:",
-            validate: (input) => input.trim().length > 0 || "Name is required",
-          },
-          {
-            type: "input",
-            name: "value",
-            message: "Environment variable value:",
-          },
-          {
-            type: "confirm",
-            name: "addMore",
-            message: "Add another environment variable?",
-            default: false,
-          },
-        ]);
-
-        env[key] = value;
-
-        if (!addMore) {
-          break;
-        }
-      }
-    }
+    env = await handleEnvEdit(env);
   }
 
-  // Remove old server
+  const config = Config.getInstance();
   config.removeMcpServer(serverName);
-
-  // Add updated server
-  const updatedServer = {
+  config.addMcpServer({
     name: serverName,
     command: answers.command,
     args: answers.args,
     env,
     enabled: answers.enabled,
-  };
-
-  config.addMcpServer(updatedServer);
+  });
+  
   console.log(terminal.success(`MCP server '${serverName}' updated successfully.`));
+}
+
+async function handleEnvEdit(currentEnv: Record<string, string>): Promise<Record<string, string>> {
+  const { action } = await inquirer.prompt([{
+    type: "list",
+    name: "action",
+    message: "Environment variables:",
+    choices: [
+      { name: "Add new variables", value: "add" },
+      { name: "Clear all variables", value: "clear" },
+      { name: "Cancel", value: "cancel" },
+    ],
+  }]);
+
+  if (action === "clear") return {};
+  if (action === "add") return { ...currentEnv, ...(await collectEnvVars()) };
+  return currentEnv;
 }

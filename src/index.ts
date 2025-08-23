@@ -13,6 +13,10 @@ import { isSetupNeeded, runSetupWizard } from "./config/setup.js";
 // Import Agent for system prompt command
 import { Agent } from "./mcp/agent.js";
 
+// Import our gorgeous theme system
+import { terminal } from "./ui/colors.js";
+import { splash } from "./ui/splash.js";
+
 // Create CLI program
 const program = new Command();
 
@@ -44,13 +48,18 @@ program
   .description("View the system prompt with tools list")
   .action(async () => {
     try {
+      // Show a nice loading spinner
+      const spinner = splash.spinner("Generating system prompt...");
+      spinner.start();
+      
       // Create an agent instance to generate the system prompt
       new Agent(); // Agent constructor will log the system prompt
 
       // The system prompt has been logged by the Agent constructor
-      console.log(chalk.green("System prompt generated successfully."));
+      spinner.succeed("System prompt generated successfully!");
     } catch (error) {
-      console.error(chalk.red("Error generating system prompt:"), error instanceof Error ? error.message : String(error));
+      console.error(terminal.error("Error generating system prompt:"), 
+        error instanceof Error ? error.message : String(error));
     }
   });
 
@@ -58,7 +67,7 @@ program
 program.action(async () => {
   // Check if setup is needed
   if (isSetupNeeded()) {
-    console.log(chalk.cyan("First-time setup detected. Running setup wizard..."));
+    console.log(terminal.status.info("First-time setup detected. Running setup wizard..."));
     await runSetupWizard();
     return;
   }
@@ -75,7 +84,8 @@ async function main(): Promise<void> {
   try {
     await program.parseAsync(process.argv);
   } catch (error) {
-    console.error(chalk.red("Error:"), error instanceof Error ? error.message : String(error));
+    console.error(terminal.error("Error:"), 
+      error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

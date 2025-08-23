@@ -1,5 +1,9 @@
 ﻿import chalk from "chalk";
+import supportsColor from "supports-color";
 import { Config } from "../config/config.js";
+import { theme } from "./theme.js";
+import { gradient } from "./gradient.js";
+import { s, statusSymbols } from "./symbols.js";
 
 // Text colors
 export enum Color {
@@ -18,6 +22,17 @@ export enum Color {
  */
 export class Terminal {
   private config = Config.getInstance();
+  private colorChalk: typeof chalk;
+
+  constructor() {
+    // Force color support for Chalk v5 compatibility
+    if (!process.env.FORCE_COLOR) {
+      process.env.FORCE_COLOR = '3'; // Force truecolor support
+    }
+    
+    // Chalk v5 uses environment variables for configuration
+    this.colorChalk = chalk;
+  }
 
   /**
    * Format text with color
@@ -32,19 +47,19 @@ export class Terminal {
 
     switch (color) {
       case Color.Red:
-        return chalk.red(text);
+        return this.colorChalk.red(text);
       case Color.Green:
-        return chalk.green(text);
+        return this.colorChalk.green(text);
       case Color.Yellow:
-        return chalk.yellow(text);
+        return this.colorChalk.yellow(text);
       case Color.Blue:
-        return chalk.blue(text);
+        return this.colorChalk.blue(text);
       case Color.Magenta:
-        return chalk.magenta(text);
+        return this.colorChalk.magenta(text);
       case Color.Cyan:
-        return chalk.cyan(text);
+        return this.colorChalk.cyan(text);
       case Color.Gray:
-        return chalk.gray(text);
+        return this.colorChalk.gray(text);
       case Color.Default:
       default:
         return text;
@@ -122,6 +137,71 @@ export class Terminal {
   tool(text: string): string {
     return this.format(text, Color.Yellow);
   }
+
+  /**
+   * Get access to the configured chalk instance for advanced usage
+   */
+  get chalk() {
+    return this.colorChalk;
+  }
+
+  /**
+   * Format text with hex color (Pink Pixel brand colors!)
+   * @param hex Hex color code (e.g., '#FF5FD1')
+   * @param text Text to format
+   */
+  hex(hex: string, text: string): string {
+    if (!this.config.get("ui.colorOutput", true)) {
+      return text;
+    }
+    return this.colorChalk.hex(hex)(text);
+  }
+
+  /**
+   * Apply Pink Pixel brand colors
+   */
+  get brand() {
+    return {
+      pink: (text: string) => theme.brand(text),
+      cyan: (text: string) => theme.accent(text),
+      green: (text: string) => theme.success(text),
+      orange: (text: string) => theme.warning(text),
+      red: (text: string) => theme.error(text),
+    };
+  }
+  
+  /**
+   * Access to gradient utilities
+   */
+  get gradient() {
+    return gradient;
+  }
+  
+  /**
+   * Access to status symbols with colors
+   */
+  status = {
+    success: (text: string) => `${statusSymbols.success} ${this.success(text)}`,
+    error: (text: string) => `${statusSymbols.error} ${this.error(text)}`,
+    warning: (text: string) => `${statusSymbols.warning} ${this.warning(text)}`,
+    info: (text: string) => `${statusSymbols.info} ${this.info(text)}`,
+  };
+  
+  /**
+   * Beautiful text styling combinations
+   */
+  style = {
+    title: (text: string) => theme.heading(text),
+    subtitle: (text: string) => theme.subheading(text), 
+    label: (k: string, v: string) => theme.label(k, v),
+    code: (text: string) => theme.code(text),
+    link: (text: string) => theme.link(text),
+    
+    // Pink Pixel signatures
+    pinkPixel: (text: string) => gradient.pinkPixel(text),
+    rainbow: (text: string) => gradient.rainbow(text),
+    fire: (text: string) => gradient.fire(text),
+  };
 }
 
 // Export singleton instance
