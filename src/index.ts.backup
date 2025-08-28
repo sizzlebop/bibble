@@ -1,11 +1,10 @@
-import { Command } from "commander";
+﻿import { Command } from "commander";
 import chalk from "chalk";
 
 // Command modules
 import { setupChatCommand } from "./commands/chat.js";
 import { setupConfigCommand } from "./commands/config.js";
 import { setupHistoryCommand } from "./commands/history.js";
-import { createHelpCommand } from "./commands/help.js";
 
 // Config initialization
 import { ensureConfigDirExists } from "./config/storage.js";
@@ -37,9 +36,6 @@ ensureConfigDirExists();
 setupChatCommand(program);
 setupConfigCommand(program);
 setupHistoryCommand(program);
-
-// Add help command
-program.addCommand(createHelpCommand());
 
 // Setup command
 program

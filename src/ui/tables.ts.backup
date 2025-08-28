@@ -19,10 +19,8 @@ export const TABLE_STYLES = {
       'right': '║', 'right-mid': '╢', 'middle': '│'
     },
     style: {
-      "padding-left": 1,
-      "padding-right": 1,
-      head: ["cyan"],
-      border: ["grey"],
+      head: [],
+      border: [],
       compact: false,
     }
   },
@@ -36,10 +34,8 @@ export const TABLE_STYLES = {
       'right': '', 'right-mid': '', 'middle': '  '
     },
     style: {
-      "padding-left": 1,
-      "padding-right": 1,
-      head: ["cyan"],
-      border: ["grey"],
+      head: [],
+      border: [],
       compact: true,
     }
   },
@@ -53,10 +49,8 @@ export const TABLE_STYLES = {
       'right': '│', 'right-mid': '┤', 'middle': '│'
     },
     style: {
-      "padding-left": 1,
-      "padding-right": 1,
-      head: ["cyan"],
-      border: ["grey"],
+      head: [],
+      border: [],
       compact: false,
     }
   }

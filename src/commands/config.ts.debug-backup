@@ -320,44 +320,30 @@ function listMcpServers(servers: any[]): void {
     return;
   }
   
-  // Transform servers for our beautiful table with defensive programming
-  const mcpServerData = servers.map(server => {
-    const args = Array.isArray(server.args) ? server.args : [];
-    return {
-      name: server.name || 'Unknown',
-      command: `${server.command || 'Unknown'} ${args.join(" ")}`,
-      environment: server.env ? Object.keys(server.env).join(", ") || "None" : "None",
-      status: server.enabled ? "enabled" : "disabled"
-    };
+  // Transform servers for our beautiful table
+  const mcpServerData = servers.map(server => ({
+    name: server.name,
+    command: `${server.command} ${server.args.join(" ")}`,
+    environment: server.env ? Object.keys(server.env).join(", ") || "None" : "None",
+    status: server.enabled ? "enabled" : "disabled"
+  }));
+
+  // Create a beautiful table using our table system
+  const table = new BibbleTable({
+    head: ['Server', 'Command', 'Environment', 'Status'],
+    style: 'fancy'
   });
 
-  try {
-    // Create table with explicit column widths like the config table does
-    const table = new BibbleTable({
-      head: ['Server', 'Command', 'Environment', 'Status'],
-      style: 'fancy',
-      colWidths: [20, 50, 15, 10] // Explicit column widths
-    });
+  mcpServerData.forEach(server => {
+    table.addRow([
+      server.name,
+      server.command,
+      server.environment,
+      server.status
+    ]);
+  });
 
-    mcpServerData.forEach(server => {
-      table.addRow([
-        server.name,
-        server.command,
-        server.environment,
-        server.status
-      ]);
-    });
-
-    console.log(`\n${t.h2('MCP Servers')} ${brandSymbols.lightning}\n${table.toString()}`);
-    
-  } catch (tableError) {
-    // Fallback to simple list if anything goes wrong
-    console.log('Table rendering failed, using simple list');
-    console.log(`\n${t.h2('MCP Servers')} ${brandSymbols.lightning}`);
-    mcpServerData.forEach((server, i) => {
-      console.log(`${i + 1}. ${t.cyan(server.name)} - ${server.command} (${server.status})`);
-    });
-  }
+  console.log(`\n${t.h2('MCP Servers')} ${brandSymbols.lightning}\n${table.toString()}`);
 }
 
 /**

@@ -198,7 +198,7 @@ src/ui/
 ╰─────────────────────────────────────────╯
 
 🔥 Model: Claude 3.7 Sonnet   ⚡ MCP: 5 servers connected
-💫 Version: 1.3.9              🚀 Ready for magic!
+💫 Version: 1.3.10              🚀 Ready for magic!
 ```
 
 ### Chat Interface

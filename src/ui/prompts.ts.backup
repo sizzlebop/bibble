@@ -29,9 +29,9 @@ export class PromptUI {
     };
 
     // Apply theme customizations
-    //     Object.assign(inquirer.prompt.prompts.input.prototype, customTheme); // Temporarily disabled due to inquirer version compatibility
-    //     Object.assign(inquirer.prompt.prompts.list.prototype, customTheme); // Temporarily disabled due to inquirer version compatibility
-    //     Object.assign(inquirer.prompt.prompts.confirm.prototype, customTheme); // Temporarily disabled due to inquirer version compatibility
+    Object.assign(inquirer.prompt.prompts.input.prototype, customTheme);
+    Object.assign(inquirer.prompt.prompts.list.prototype, customTheme);
+    Object.assign(inquirer.prompt.prompts.confirm.prototype, customTheme);
   }
 
   /**
