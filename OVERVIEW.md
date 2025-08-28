@@ -2,8 +2,8 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.3.10
-**Author**: Pink Pixel
+**Version**: 1.4.0
+**Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble
 *Last updated: August 28, 2025*
 
@@ -340,6 +340,48 @@ Bibble's Anthropic integration follows specific guidelines for building Claude a
    - Monitors `stop_reason` for early terminations
 
 The implementation is based on the plan outlined in `PLAN/ANTHROPIC-REIMPLEMENTATION-PLAN.md` and follows the guidelines in `PLAN/CLAUDE_AGENTS.md`.
+
+### Enhanced Tool Display System (v1.4.0) - August 28, 2025
+
+Version 1.4.0 introduces a **REVOLUTIONARY TOOL CALLING INTERFACE** that transforms MCP tool execution from basic text output into a professional, interactive, and beautifully designed system:
+
+**🎨 Enhanced Tool Display System:**
+- **Comprehensive Tool Execution Display** (`src/ui/tool-display.ts`): Complete overhaul of tool result rendering
+- **Beautiful Gradient Headers**: Fire gradient "Tool Call" banners with Pink Pixel branding
+- **Dynamic Status Badges**: Visual indicators (Running, Success, Error, Cancelled) with color coding
+- **Boxed Parameter Sections**: Magenta borders with JSON syntax highlighting using `cli-highlight`
+- **Boxed Result Sections**: Cyan borders with intelligent content formatting and type detection
+- **Real-time Status Updates**: Timing information with start time and execution duration
+- **Progress Indicators**: Ora spinner integration during tool execution
+
+**🎯 Smart Content Formatting:**
+- **Arrays of Objects** → Beautiful tables with proper column headers and data truncation
+- **Simple Arrays** → Clean numbered lists with intelligent item formatting
+- **JSON Objects** → Syntax-highlighted key-value displays with colored brackets
+- **URLs** → Clickable terminal links with `terminal-link` integration where supported
+- **File Paths** → Green highlighting for easy identification
+- **Text Content** → Smart line wrapping and proper indentation
+
+**🖼️ Interactive Features:**
+- **Clipboard Integration**: Copy tool results to clipboard with `c` key using `clipboardy`
+- **Expandable JSON**: Collapse/expand JSON sections with `space` key
+- **Interactive Navigation**: Quit detailed view with `q` key
+- **Keyboard Shortcuts**: Interactive hints footer with guidance
+
+**🔧 Critical Bug Fixes:**
+- **FIXED: Duplicate Tool Display**: Eliminated double tool call rendering between enhanced and legacy systems
+- **FIXED: Object Serialization**: Resolved "[object Object]" display issues with proper JSON stringification
+- **FIXED: MCP Tools System Prompt**: Corrected empty tools list in system prompt by deferring generation until after MCP server loading
+- **FIXED: Tool Discovery**: Models now properly recognize all 51+ available MCP tools
+
+**📈 New Dependencies:**
+- `cli-highlight`: Professional JSON syntax highlighting
+- `clipboardy`: Seamless clipboard integration
+- `json-stringify-pretty-compact`: Optimal JSON formatting
+
+**🌟 Environment Variables:**
+- `BIBBLE_ENHANCED_TOOLS=true` (default): Enable enhanced tool display
+- `BIBBLE_ENHANCED_TOOLS=false`: Use legacy display for compatibility
 
 ### Pink Pixel Glamour Transformation (v1.3.8) - August 23, 2025
 

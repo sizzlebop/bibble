@@ -1,24 +1,54 @@
-﻿import MarkdownIt from "markdown-it";
+import { marked } from "marked";
+import { markedTerminal } from "marked-terminal";
 import chalk from "chalk";
 import { Config } from "../config/config.js";
+import { BRAND_COLORS, theme } from "./theme.js";
+import { terminal } from "./colors.js";
 
 /**
- * Markdown renderer for the terminal
+ * Beautiful markdown renderer for the terminal using marked-terminal
+ * Features Pink Pixel theming with stunning colors and formatting
  */
 export class MarkdownRenderer {
-  private md: MarkdownIt;
   private config = Config.getInstance();
   
   constructor() {
-    this.md = new MarkdownIt({
-      html: false,
-      linkify: true,
-      typographer: true,
-    });
+    // Configure marked with our beautiful Pink Pixel terminal renderer
+    // Use simple chalk colors to avoid issues with marked-terminal
+    const terminalConfig = {
+      // Basic styling with chalk for compatibility
+      firstHeading: chalk.hex(BRAND_COLORS.pink).bold,
+      heading: chalk.hex(BRAND_COLORS.cyan).bold,
+      blockquote: chalk.hex(BRAND_COLORS.cyan).italic,
+      code: chalk.hex(BRAND_COLORS.purple).bgBlack,
+      codespan: chalk.hex(BRAND_COLORS.purple).bgBlack,
+      del: chalk.strikethrough,
+      em: chalk.hex(BRAND_COLORS.cyan).italic,
+      strong: chalk.hex(BRAND_COLORS.pink).bold,
+      hr: chalk.hex(BRAND_COLORS.pink),
+      link: chalk.hex(BRAND_COLORS.cyan).underline,
+      listitem: chalk.hex(BRAND_COLORS.pink),
+      paragraph: chalk.hex(BRAND_COLORS.bright),
+      table: chalk.hex(BRAND_COLORS.bright),
+      tablerow: chalk.hex(BRAND_COLORS.bright),
+      tablecell: chalk.hex(BRAND_COLORS.bright),
+      
+      // Layout options
+      width: 80,
+      reflowText: true,
+      showSectionPrefix: false,
+      tab: 2,
+      
+      // Provide required properties that marked-terminal expects
+      unescape: true,
+      emoji: true,
+    };
+    
+    marked.use(markedTerminal(terminalConfig));
   }
 
   /**
-   * Render markdown text to terminal-friendly format
+   * Render markdown text to beautiful terminal format
    * @param text Markdown text to render
    */
   render(text: string): string {
@@ -27,133 +57,81 @@ export class MarkdownRenderer {
       return text;
     }
     
-    // Parse markdown
-    const tokens = this.md.parse(text, {});
-    let result = "";
-    
-    // Process tokens
-    for (const token of tokens) {
-      switch (token.type) {
-        case "heading_open":
-          // Get heading level
-          const level = parseInt(token.tag.slice(1));
-          result += this.renderHeading(level);
-          break;
-        
-        case "paragraph_open":
-          // Add newline before paragraph
-          if (result.length > 0) {
-            result += "\n";
-          }
-          break;
-        
-        case "paragraph_close":
-          // Add newline after paragraph
-          result += "\n";
-          break;
-        
-        case "bullet_list_open":
-          // Add newline before list
-          if (result.length > 0 && !result.endsWith("\n\n")) {
-            result += "\n";
-          }
-          break;
-        
-        case "list_item_open":
-          // Add bullet point
-          result += "• ";
-          break;
-        
-        case "list_item_close":
-          // Add newline after list item
-          result += "\n";
-          break;
-        
-        case "code_block":
-          // Format code block
-          result += this.renderCodeBlock(token.content, token.info);
-          break;
-        
-        case "fence":
-          // Format fenced code block
-          result += this.renderCodeBlock(token.content, token.info);
-          break;
-        
-        case "code_inline":
-          // Format inline code
-          result += this.renderInlineCode(token.content);
-          break;
-        
-        case "strong_open":
-          // Bold text
-          result += chalk.bold("");
-          break;
-        
-        case "em_open":
-          // Italic text
-          result += chalk.italic("");
-          break;
-        
-        case "text":
-          // Plain text
-          result += token.content;
-          break;
-        
-        case "link_open":
-          // Extract href attribute
-          const href = token.attrs?.find(([name]) => name === "href")?.[1] || "";
-          result += `${chalk.blue.underline("")}`;
-          break;
-        
-        case "link_close":
-          // Add link URL
-          result += ` (${chalk.blue.underline(token.href)})`;
-          break;
-      }
-    }
-    
-    return result.trim();
-  }
-
-  /**
-   * Render heading with appropriate formatting
-   * @param level Heading level (1-6)
-   * @returns Formatted heading prefix
-   */
-  private renderHeading(level: number): string {
-    // Format heading based on level
-    switch (level) {
-      case 1:
-        return `\n${chalk.bold.underline("")}`;
-      case 2:
-        return `\n${chalk.bold("")}`;
-      case 3:
-        return `\n${chalk.underline("")}`;
-      default:
-        return "\n";
+    try {
+      // Use marked with our beautiful terminal renderer
+      const rendered = marked.parse(text);
+      return rendered.toString().trim();
+    } catch (error) {
+      // Fallback to plain text with a subtle error indicator
+      console.error('Markdown rendering error:', error);
+      return terminal.hex(BRAND_COLORS.bright, text);
     }
   }
-
+  
   /**
-   * Render code block with syntax highlighting
-   * @param content Code content
-   * @param language Language identifier
-   * @returns Formatted code block
+   * Apply basic syntax highlighting to code content
+   * @param code Code content
+   * @param lang Language identifier
    */
-  private renderCodeBlock(content: string, language: string): string {
-    // Add code block formatting
-    return `\n${chalk.bgBlack.white("```" + (language || ""))}
-${chalk.bgBlack.white(content)}
-${chalk.bgBlack.white("```")}\n`;
-  }
-
-  /**
-   * Render inline code
-   * @param content Code content
-   * @returns Formatted inline code
-   */
-  private renderInlineCode(content: string): string {
-    return chalk.bgBlack.white(` ${content} `);
+  private styleCodeContent(code: string, lang: string): string {
+    // Basic syntax highlighting for common languages
+    let styledCode = code;
+    
+    if (lang === 'javascript' || lang === 'js' || lang === 'typescript' || lang === 'ts') {
+      // Highlight keywords
+      styledCode = styledCode.replace(
+        /\b(const|let|var|function|if|else|for|while|return|class|interface|type|import|export|from|async|await)\b/g,
+        (match) => terminal.hex(BRAND_COLORS.purple, match)
+      );
+      
+      // Highlight strings
+      styledCode = styledCode.replace(
+        /(['"`])(?:(?!\1)[^\\]|\\.)*?\1/g,
+        (match) => terminal.hex(BRAND_COLORS.green, match)
+      );
+      
+      // Highlight numbers
+      styledCode = styledCode.replace(
+        /\b\d+(\.\d+)?\b/g,
+        (match) => terminal.hex(BRAND_COLORS.cyan, match)
+      );
+    }
+    
+    if (lang === 'json') {
+      // Highlight JSON keys
+      styledCode = styledCode.replace(
+        /"([^"]+)":/g,
+        (match, key) => terminal.hex(BRAND_COLORS.pink, `"${key}"`) + ':'
+      );
+      
+      // Highlight string values
+      styledCode = styledCode.replace(
+        /:\s*"([^"]*)"/g,
+        (match, value) => ': ' + terminal.hex(BRAND_COLORS.green, `"${value}"`)
+      );
+      
+      // Highlight numbers and booleans
+      styledCode = styledCode.replace(
+        /:\s*(\d+|true|false|null)/g,
+        (match, value) => ': ' + terminal.hex(BRAND_COLORS.cyan, value)
+      );
+    }
+    
+    if (lang === 'bash' || lang === 'shell' || lang === 'sh') {
+      // Highlight commands
+      styledCode = styledCode.replace(
+        /^([a-zA-Z][a-zA-Z0-9_-]*)/gm,
+        (match) => terminal.hex(BRAND_COLORS.pink, match)
+      );
+      
+      // Highlight flags
+      styledCode = styledCode.replace(
+        /(--?[a-zA-Z0-9_-]+)/g,
+        (match) => terminal.hex(BRAND_COLORS.cyan, match)
+      );
+    }
+    
+    return styledCode;
   }
 }
 

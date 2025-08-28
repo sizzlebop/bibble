@@ -208,14 +208,23 @@ export class ChatUI {
         const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
         process.stdout.write(assistantPrompt);
 
-        // Process stream with beautiful styling
+        // Process stream with beautiful styling and markdown rendering
         let fullResponse = "";
+        let responseBuffer = "";
         
         for await (const chunk of stream) {
           // Check for tool call markers
           const toolCallMatch = chunk.match(/<!TOOL_CALL_START:([^:]+):(.+):TOOL_CALL_END!>/);
           
           if (toolCallMatch) {
+            // If we have buffered response content, render it first
+            if (responseBuffer.trim()) {
+              // Render accumulated markdown content beautifully
+              const renderedMarkdown = markdown.render(responseBuffer);
+              process.stdout.write(renderedMarkdown);
+              responseBuffer = "";
+            }
+            
             // Extract tool call info
             const [, toolName, toolResultJson] = toolCallMatch;
             
@@ -229,20 +238,29 @@ export class ChatUI {
                 toolName: toolName
               };
               
-              console.log(''); // New line
+              console.log('\n'); // New line
               this.displayToolCall(toolMessage);
+              
+              // Continue assistant response after tool call if needed
+              const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
+              process.stdout.write('\n' + assistantPrompt);
+              
             } catch (error) {
               // Fallback to styled text if parsing fails
-              const styledChunk = terminal.hex(BRAND_COLORS.text || '#FFFFFF', chunk);
-              process.stdout.write(styledChunk);
+              responseBuffer += chunk;
             }
           } else {
-            // Style the response content normally
-            const styledChunk = terminal.hex(BRAND_COLORS.text || '#FFFFFF', chunk);
-            process.stdout.write(styledChunk);
+            // Buffer the response content for markdown rendering
+            responseBuffer += chunk;
           }
           
           fullResponse += chunk;
+        }
+        
+        // Render any remaining buffered content
+        if (responseBuffer.trim()) {
+          const renderedMarkdown = markdown.render(responseBuffer);
+          process.stdout.write(renderedMarkdown);
         }
 
         // Add beautiful separator after response
