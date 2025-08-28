@@ -1,6 +1,6 @@
 {
   "name": "@pinkpixel/bibble",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "CLI chatbot application with MCP support",
   "type": "module",
   "main": "dist/index.js",
