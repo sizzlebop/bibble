@@ -28,7 +28,7 @@ const program = new Command();
 program
   .name("bibble")
   .description("CLI chatbot with MCP support")
-  .version("1.3.10");
+  .version("1.4.0");
 
 // Initialize configuration
 ensureConfigDirExists();
@@ -56,14 +56,34 @@ program
   .action(async () => {
     try {
       // Show a nice loading spinner
-      const spinner = splash.spinner("Generating system prompt...");
+      const spinner = splash.spinner("Loading MCP tools and generating system prompt...");
       spinner.start();
       
-      // Create an agent instance to generate the system prompt
-      new Agent(); // Agent constructor will log the system prompt
-
-      // The system prompt has been logged by the Agent constructor
+      // Create an agent instance and initialize it to load tools
+      const agent = new Agent();
+      await agent.initialize(); // This will load tools and update the system prompt
+      
+      // Get the conversation messages to access the system prompt
+      const conversation = agent.getConversation();
+      const systemMessage = conversation.find(msg => msg.role === 'system');
+      
       spinner.succeed("System prompt generated successfully!");
+      console.log();
+      
+      if (systemMessage) {
+        // Display the complete system prompt with tools
+        console.log(terminal.style.title("📋 Complete System Prompt with MCP Tools"));
+        console.log();
+        console.log(systemMessage.content);
+        console.log();
+        
+        // Show summary statistics
+        const toolMatches = systemMessage.content.match(/### \w+/g);
+        const toolCount = toolMatches ? toolMatches.length : 0;
+        console.log(terminal.info(`📊 Summary: ${systemMessage.content.length} characters, ${toolCount} tools loaded`));
+      } else {
+        console.log(terminal.error("No system message found in agent conversation"));
+      }
     } catch (error) {
       console.error(terminal.error("Error generating system prompt:"), 
         error instanceof Error ? error.message : String(error));

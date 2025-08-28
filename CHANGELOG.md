@@ -2,6 +2,90 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.4.0] - 2025-08-28
+
+### 🎨 MAJOR UI ENHANCEMENT - ENHANCED TOOL CALLING DISPLAY
+
+### Added
+- **✨ Enhanced Tool Display System**: Revolutionary tool calling interface with Pink Pixel branding
+  - Created `src/ui/tool-display.ts` - Comprehensive tool execution display system
+  - Beautiful gradient headers with status badges (Running, Success, Error, Cancelled)
+  - Boxed parameter sections with magenta borders and JSON syntax highlighting
+  - Boxed result sections with cyan borders and intelligent content formatting
+  - Dynamic status updates with timing information (start time, duration)
+  - Support for progress indicators using Ora spinners during tool execution
+- **🎯 Smart Content Formatting**: Intelligent detection and display of different data types
+  - **Arrays of objects** → Beautiful tables with proper column headers and data truncation
+  - **Simple arrays** → Clean numbered lists with item formatting
+  - **JSON objects** → Syntax-highlighted key-value displays with colored brackets
+  - **URLs** → Clickable links with terminal-link integration where supported
+  - **File paths** → Green highlighting for easy identification
+  - **Text content** → Smart line wrapping and proper indentation
+- **🖼️ Interactive Features**: Clipboard integration and keyboard shortcuts
+  - Copy tool results to clipboard with `c` key using clipboardy
+  - Expand/collapse JSON sections with `space` key
+  - Quit detailed view with `q` key
+  - Interactive hints footer with keyboard shortcut guidance
+- **🎨 Pink Pixel Brand Integration**: Consistent theming throughout tool displays
+  - Gradient "Tool Call" banners with fire gradient effect
+  - Color-coded status badges (cyan for running, green for success, red for errors)
+  - Pink pixel branded icons and symbols throughout the interface
+  - Beautiful gradient separators between tool calls
+- **📊 Enhanced JSON Handling**: Professional JSON display with syntax highlighting
+  - Integration with `cli-highlight` for beautiful JSON syntax coloring
+  - `json-stringify-pretty-compact` for optimal JSON formatting
+  - Type-based coloring: strings in green, numbers in cyan, booleans in orange
+  - Proper bracket and indentation highlighting
+- **🔧 Backward Compatibility**: Feature flag system for smooth adoption
+  - `BIBBLE_ENHANCED_TOOLS` environment variable for easy toggle
+  - Legacy display system preserved as `displayToolCallLegacy`
+  - Graceful fallback on any errors to maintain stability
+
+### Fixed
+- **🔧 CRITICAL: Duplicate Tool Display**: Eliminated double tool call rendering
+  - Fixed Agent stream processing to prevent tool marker emission when enhanced display is active
+  - Resolved duplicate display issue where both enhanced and legacy systems were triggering
+  - Ensured single, beautiful tool display per execution
+- **🔧 CRITICAL: Object Serialization**: Fixed "[object Object]" display issues
+  - Ensured tool result content is properly stringified before display processing
+  - Fixed JSON parsing and formatting pipeline for consistent data handling
+  - Resolved object-to-string conversion issues in tool result rendering
+- **🔧 CRITICAL: MCP Tools System Prompt**: Fixed empty tools list in system prompt
+  - Resolved critical bug where tools list was generated before MCP servers were loaded
+  - Fixed Agent constructor to defer system prompt generation until after tool loading
+  - Updated Agent.initialize() to properly update system prompt with complete tools list
+  - Enhanced `system-prompt` command to show actual loaded tools and descriptions
+- **🔧 Tool Discovery**: Models now properly recognize available MCP tools
+  - Fixed Context7 documentation tools visibility in system prompt
+  - Ensured all 51 MCP tools are properly described and accessible to the model
+  - Restored proper tool selection behavior for documentation searches and other tasks
+
+### Changed
+- **🎨 Tool Display Architecture**: Complete overhaul of tool result rendering
+  - Replaced basic console.log output with sophisticated boxed display system
+  - Enhanced visual hierarchy with clear input/output separation
+  - Improved readability with proper spacing, borders, and color coding
+- **📈 Dependencies**: Added essential UI enhancement packages
+  - `cli-highlight` for JSON syntax highlighting
+  - `clipboardy` for clipboard integration
+  - `json-stringify-pretty-compact` for optimal JSON formatting
+
+### Technical Details
+- **Architecture**: New modular tool display system with extensible formatting options
+- **Performance**: Optimized rendering with efficient content detection and formatting
+- **Reliability**: Comprehensive error handling with graceful degradation
+- **Compatibility**: Works across all terminal environments with proper feature detection
+
+### Visual Impact
+- **Before**: Basic text output with minimal formatting and duplicate displays
+- **After**: Professional, branded tool interface with boxed sections, syntax highlighting, status badges, and interactive features
+
+### New Environment Variables
+- `BIBBLE_ENHANCED_TOOLS=true` (default) - Enable enhanced tool display
+- `BIBBLE_ENHANCED_TOOLS=false` - Use legacy tool display for compatibility
+
+This release transforms Bibble's tool calling interface from basic text output into a **professional, interactive, and beautifully designed system** that showcases tool execution results with Pink Pixel's signature style! ✨
+
 ## [1.3.10] - 2025-08-28
 
 ### 🚀 MAJOR RELIABILITY UPDATE - CROSS-TERMINAL COMPATIBILITY

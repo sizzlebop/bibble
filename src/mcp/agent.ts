@@ -322,23 +322,16 @@ export class Agent extends McpClient {
     super(options);
 
     // Initialize LLM client
-
     this.llmClient = new LlmClient();
 
     // Set model
     this.model = options.model || this.configInstance.getDefaultModel();
 
-    // Generate dynamic tool list for system prompt
-    const toolsList = this.generateToolsList();
-
-    // Combine default system prompt with tool list
-    const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${toolsList}`;
-
-    // Initialize messages with system prompt
+    // Initialize messages with basic system prompt (tools will be added during initialize)
     this.messages = [
       {
         role: MessageRole.System,
-        content: systemPrompt,
+        content: DEFAULT_SYSTEM_PROMPT,
       },
     ];
 
@@ -357,6 +350,16 @@ export class Agent extends McpClient {
    */
   async initialize(): Promise<void> {
     await this.loadTools();
+
+    // Now that tools are loaded, update the system prompt with tools list
+    const toolsList = this.generateToolsList();
+    const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${toolsList}`;
+    
+    // Update the first system message with the complete prompt including tools
+    this.messages[0] = {
+      role: MessageRole.System,
+      content: systemPrompt,
+    };
 
     // We don't add exit loop tools to availableTools to avoid including them in the context
     // They are handled separately
@@ -574,8 +577,18 @@ export class Agent extends McpClient {
           // Format args for display - always use JSON.stringify for consistency
           let displayArgs = JSON.stringify(processedArgs);
 
-          // Yield tool call with special formatting markers that the UI can detect
-          yield `\n<!TOOL_CALL_START:${name}:${JSON.stringify(toolResult.content)}:TOOL_CALL_END!>\n`;
+          // Check if enhanced tool display is enabled
+          const useEnhancedDisplay = process.env.BIBBLE_ENHANCED_TOOLS !== 'false';
+          
+          if (useEnhancedDisplay) {
+            // For enhanced display, don't emit tool call markers since the tool message
+            // in conversation history will be displayed by the enhanced system
+            // Just yield a newline to maintain spacing
+            yield '\n';
+          } else {
+            // For legacy display, emit tool call markers that the UI can detect
+            yield `\n<!TOOL_CALL_START:${name}:${JSON.stringify(toolResult.content)}:TOOL_CALL_END!>\n`;
+          }
         } catch (error) {
           console.error("Error handling tool call:", error);
           yield `\nError handling tool call: ${error instanceof Error ? error.message : String(error)}\n`;

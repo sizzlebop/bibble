@@ -225,7 +225,7 @@ export class ChatUI {
               // Display beautiful tool call
               const toolMessage: ChatMessage = {
                 role: MessageRole.Tool,
-                content: toolResult,
+                content: JSON.stringify(toolResult), // Ensure content is always a string
                 toolName: toolName
               };
               

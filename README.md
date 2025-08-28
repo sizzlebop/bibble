@@ -32,6 +32,7 @@ Bibble is a command-line interface (CLI) chatbot application built in TypeScript
 - **🎨 Beautiful Pink Pixel themed terminal interface with gorgeous ASCII banners**
 - **📊 Stunning table displays for configuration and data with smart color coding**
 - **🌈 Gradient text effects and role-based chat styling**
+- **🧰 Enhanced interactive tool display system with status badges and syntax highlighting**
 - Colored text output and markdown rendering
 - Chat history storage and retrieval
 - Model switching capabilities
@@ -146,6 +147,24 @@ The following commands are available during a chat session:
 - `/save` - Save the current chat to history
 - `/reset` - Reset the current conversation
 
+## Enhanced Tool Display System
+
+Bibble v1.4.0 introduces a completely overhauled tool display system featuring:
+
+- **Dynamic Status Badges**: Visual indicators showing tool execution status (running, completed, error)
+- **Boxed Parameter/Output Sections**: Clearly delineated tool input/output for better readability
+- **Syntax Highlighted JSON**: Beautiful formatting for JSON parameters and results
+- **Clickable URLs**: Terminal hyperlinks for any URLs found in tool outputs
+- **Clipboard Support**: Copy tool results directly to clipboard with interactive buttons
+- **Keyboard Shortcuts**: Intuitive keyboard navigation for tool output exploration
+
+These enhancements make working with MCP tools more intuitive and visually appealing. The new display system can be toggled using environment variables if compatibility issues arise.
+
+### Environment Variables
+
+- `BIBBLE_DISABLE_ENHANCED_TOOLS`: Set to `true` to disable enhanced tool displays
+- `BIBBLE_TOOL_DISPLAY_MODE`: Set to `basic`, `compact`, or `full` (default)
+
 ## Configuration
 
 Bibble stores its configuration in a `.bibble` directory in your home directory. The configuration includes:
@@ -227,6 +246,16 @@ Failed to connect to MCP server "server-name": Connection closed
 - ✅ Git Bash
 - ✅ Most Unix terminals
 
+#### System Prompt Visibility
+
+**Problem**: Tools not appearing in the system prompt or model not recognizing available tools.
+
+**Solution**:
+1. Ensure you're using Bibble v1.4.0+ which fixes the tool visibility issue
+2. Check that all MCP servers are properly connected with `bibble diagnose`
+3. View the full system prompt with `bibble system-prompt` to confirm tools are listed
+4. If tools are missing, try restarting Bibble or reconnecting to MCP servers
+
 #### Node.js Installation Issues
 
 **Problem**: Bibble can't find Node.js, npm, or npx.
@@ -279,6 +308,7 @@ If you're still experiencing issues:
 
 ### Version Compatibility
 
+- **Bibble 1.4.0+**: Enhanced tool display system and fixed system prompt tool visibility
 - **Bibble 1.3.9+**: Universal terminal compatibility with multi-tier fallback
 - **Bibble 1.3.8**: Enhanced UI and visual improvements
 - **Bibble 1.3.0+**: Full MCP integration support
