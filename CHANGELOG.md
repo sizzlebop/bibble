@@ -2,7 +2,7 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
-## [1.3.9] - 2025-08-28
+## [1.3.10] - 2025-08-28
 
 ### 🚀 MAJOR RELIABILITY UPDATE - CROSS-TERMINAL COMPATIBILITY
 
