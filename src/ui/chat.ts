@@ -9,6 +9,7 @@ import { gradient, brandGradient } from "./gradient.js";
 import { symbols, chatSymbols } from "./symbols.js";
 import { BRAND_COLORS, t } from "./theme.js";
 import { BibbleTable } from "./tables.js";
+import { toolDisplay, ToolDisplayOptions } from "./tool-display.js";
 import boxen from "boxen";
 import ora from "ora";
 
@@ -307,6 +308,32 @@ export class ChatUI {
    * @param message Tool message to display
    */
   private displayToolCall(message: ChatMessage): void {
+    // Check if enhanced display is enabled (environment variable or config)
+    const useEnhanced = process.env.BIBBLE_ENHANCED_TOOLS !== 'false';
+    
+    if (useEnhanced) {
+      // Use the new enhanced tool display system
+      const displayOptions: Partial<ToolDisplayOptions> = {
+        showTimings: false, // We don't have timing info for completed calls
+        showParameters: false, // Parameters not available in this context
+        enableInteractive: process.stdin.isTTY,
+        maxJsonLines: 25,
+        maxTableRows: 15,
+      };
+      
+      toolDisplay.displayCall(message, displayOptions);
+      return;
+    }
+    
+    // Fallback to legacy display for compatibility
+    this.displayToolCallLegacy(message);
+  }
+  
+  /**
+   * Legacy tool call display (for backward compatibility)
+   * @param message Tool message to display
+   */
+  private displayToolCallLegacy(message: ChatMessage): void {
     // Create beautiful tool header with icon and name
     const toolHeader = `${terminal.hex(BRAND_COLORS.orange, chatSymbols.tech.tool)} ${gradient.fire('Tool Call')} [${t.cyan(message.toolName || 'Unknown')}]`;
     
