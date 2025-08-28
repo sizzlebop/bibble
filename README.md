@@ -129,6 +129,13 @@ bibble history
 - `bibble history export <id> <filename>` - Export chat history to a JSON file
 - `bibble history import <filename>` - Import chat history from a JSON file
 
+### System commands
+
+- `bibble setup` - Run the setup wizard
+- `bibble system-prompt` - View the system prompt with tools list
+- `bibble diagnose` - Diagnose environment and terminal compatibility
+- `bibble diagnose --verbose` - Show detailed diagnostic information
+
 ## In-chat commands
 
 The following commands are available during a chat session:
@@ -158,6 +165,124 @@ To configure MCP servers, use:
 ```bash
 bibble config mcp-servers
 ```
+
+## Troubleshooting
+
+### Environment Diagnostics
+
+Bibble includes built-in diagnostic tools to help troubleshoot common issues:
+
+```bash
+# Basic diagnostic information
+bibble diagnose
+
+# Detailed system analysis
+bibble diagnose --verbose
+```
+
+The diagnostic command will check:
+- Platform and terminal information
+- Node.js, npm, and npx executable paths and versions
+- Environment variables and PATH configuration
+- MCP server connectivity issues
+
+### Common Issues
+
+#### MCP Server Connection Failures
+
+**Problem**: You see "Connection closed" errors when starting Bibble, especially in terminals other than Warp.
+
+**Solution**:
+1. Run `bibble diagnose` to check your environment
+2. Ensure Node.js and npm are properly installed and accessible
+3. Check that your PATH includes Node.js and npm directories
+4. Try running from a different terminal (Command Prompt, PowerShell, or Git Bash on Windows)
+
+**Symptoms**:
+```
+Failed to connect to MCP server "server-name": Connection closed
+```
+
+**Advanced Troubleshooting**:
+- Run `bibble diagnose --verbose` for detailed information
+- Try running `node --version` and `npx --version` in your terminal
+- If using Windows, try running your terminal as Administrator
+- Check if antivirus software is blocking Node.js processes
+
+#### Terminal Compatibility
+
+**Problem**: Bibble works in one terminal but not others.
+
+**Solution**: Bibble v1.3.9+ includes multi-tier fallback systems for cross-terminal compatibility:
+- **Primary Strategy**: Uses resolved executable paths
+- **Fallback Strategies**: Direct commands, corepack, and bundled npm approaches
+- **Graceful Degradation**: Continues working even if some servers fail
+
+**Supported Terminals**:
+- ✅ Warp Terminal
+- ✅ Windows Terminal
+- ✅ Hyper
+- ✅ Command Prompt
+- ✅ PowerShell
+- ✅ Git Bash
+- ✅ Most Unix terminals
+
+#### Node.js Installation Issues
+
+**Problem**: Bibble can't find Node.js, npm, or npx.
+
+**Solutions**:
+1. **Install Node.js**: Download from [nodejs.org](https://nodejs.org/)
+2. **Check Installation**:
+   ```bash
+   node --version
+   npm --version
+   npx --version
+   ```
+3. **Path Issues**: Add Node.js to your PATH environment variable
+4. **NVM Users**: Make sure your Node.js version is activated
+5. **Windows Users**: Try reinstalling Node.js with "Add to PATH" option checked
+
+#### API Key Issues
+
+**Problem**: API key errors or authentication failures.
+
+**Solutions**:
+1. Run the setup wizard: `bibble setup`
+2. Manually set API keys: `bibble config api-key`
+3. Check your API key is valid and has sufficient credits
+4. Verify the correct API endpoint is configured
+
+#### Performance Issues
+
+**Problem**: Slow startup or response times.
+
+**Solutions**:
+1. Check your internet connection
+2. Try a different model or provider
+3. Reduce the number of enabled MCP servers
+4. Clear chat history if it's very large: `bibble history clear`
+
+### Getting Help
+
+If you're still experiencing issues:
+
+1. **Run Diagnostics**: `bibble diagnose --verbose`
+2. **Check Logs**: Look for error messages in the terminal output
+3. **Update Bibble**: `npm install -g @pinkpixel/bibble@latest`
+4. **Check GitHub Issues**: Visit the [GitHub repository](https://github.com/pinkpixel-dev/bibble/issues)
+5. **Report Bugs**: Create a new issue with:
+   - Your operating system and terminal
+   - Output from `bibble diagnose --verbose`
+   - Steps to reproduce the issue
+   - Error messages or unexpected behavior
+
+### Version Compatibility
+
+- **Bibble 1.3.9+**: Universal terminal compatibility with multi-tier fallback
+- **Bibble 1.3.8**: Enhanced UI and visual improvements
+- **Bibble 1.3.0+**: Full MCP integration support
+- **Node.js 16+**: Required for all Bibble versions
 
 ## Development
 

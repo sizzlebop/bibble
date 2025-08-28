@@ -2,6 +2,68 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.3.9] - 2025-08-28
+
+### 🚀 MAJOR RELIABILITY UPDATE - CROSS-TERMINAL COMPATIBILITY
+
+### Added
+- **🔧 Environment Resolver System**: Comprehensive cross-platform executable detection
+  - Created `src/utils/env-resolver.ts` - Universal Node.js, npm, and npx path resolver
+  - Cross-platform executable detection via `which`, `where`, and `Get-Command`
+  - Fallback to common installation paths (Program Files, Homebrew, NVM, Volta, asdf, etc.)
+  - Cached resolution for performance optimization
+- **🛡️ Multi-Tier Fallback System**: Robust MCP server connection strategies
+  - **Primary Strategy**: Resolved executable paths with environment enhancement
+  - **Direct Command Fallback**: Original command execution without path resolution
+  - **Corepack Fallback**: Node.js-based package execution for npm compatibility
+  - **Bundled npm Fallback**: Direct Node.js execution for simplified npx functionality
+- **🩺 Enhanced Diagnostic Command**: Comprehensive environment troubleshooting
+  - Added `--verbose` flag to `bibble diagnose` for detailed system information
+  - Platform detection (OS, shell, terminal identification)
+  - Executable resolution with version checking
+  - PATH entries analysis and environment variable inspection
+  - Real-time npx execution testing in verbose mode
+- **🔄 Graceful Degradation**: Non-blocking MCP server failures
+  - Connection summaries showing successful vs failed server connections
+  - Fallback strategy notifications when primary connection fails
+  - Continued operation even if some MCP servers fail to connect
+
+### Fixed
+- **🎯 CRITICAL: Terminal Compatibility Issues**: Fixed MCP server failures across different terminals
+  - Resolved "Connection closed" errors in Windows Terminal, Hyper, and other non-Warp terminals
+  - Fixed environment variable and PATH discrepancies between terminal environments
+  - Ensured consistent Node.js/npm/npx executable resolution across all terminals
+- **🔧 Environment Path Resolution**: Robust executable detection system
+  - Fixed Windows-specific .cmd file execution issues
+  - Enhanced PATH environment variable handling
+  - Improved error messages with actionable troubleshooting suggestions
+- **⚡ MCP Server Reliability**: Enhanced connection stability
+  - Multi-strategy connection attempts prevent single-point failures
+  - Better error handling with user-friendly messages
+  - Reference to diagnostic command for troubleshooting guidance
+
+### Changed
+- **🔍 Diagnostic System**: Enhanced environment analysis capabilities
+  - More detailed platform and executable information
+  - Better error reporting with specific remediation suggestions
+  - Verbose mode for comprehensive system analysis
+- **🛠️ Error Handling**: Improved user experience with actionable messages
+  - Clear, descriptive error messages instead of technical stack traces
+  - Specific suggestions for common issues (missing executables, permission errors)
+  - Reference to diagnostic tools for self-service troubleshooting
+
+### Technical Details
+- **Architecture**: New modular environment resolution system with comprehensive fallback strategies
+- **Cross-Platform**: Tested and verified compatibility across Windows, macOS, and Linux
+- **Performance**: Cached executable resolution for optimal startup performance
+- **Reliability**: Multi-tier fallback ensures maximum MCP server connectivity
+
+### Impact
+- **Before**: Bibble only worked reliably in Warp terminal, failed with "Connection closed" errors in other terminals
+- **After**: Universal terminal compatibility - works consistently across Windows Terminal, Hyper, Command Prompt, PowerShell, and all major terminals
+
+This update ensures Bibble works reliably across all terminal environments, eliminating the frustrating terminal-specific compatibility issues! 🎉
+
 ## [1.3.8] - 2025-08-23
 
 ### 🎉 MAJOR VISUAL TRANSFORMATION - BIBBLE GLAMOUR UPDATE

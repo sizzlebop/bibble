@@ -48,11 +48,6 @@ coverage/
 test/
 
 # Other
-.backup/
+beautify_plan/
+mcpollinations-output/
 reference/
-PLAN/
-PLAN/ANTHROPIC-REIMPLEMENTATION-PLAN.md
-PLAN/CLAUDE_AGENTS.md
-PLAN/CLAUDE_EXAMPLE_AGENT.md
-PLAN/CLAUDE_OVERVIEW.md
-.blackboxrules

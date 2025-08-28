@@ -3,6 +3,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { Config } from "../config/config.js";
 import { ListToolsRequest, ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { BibbleConfig } from "../config/storage.js";
+import { envResolver } from "../utils/env-resolver.js";
 
 // Tool types
 export type ServerName = string;
@@ -60,17 +61,46 @@ export class McpClient {
    */
   async addMcpServer(server: BibbleConfig["mcpServers"][0]): Promise<void> {
     try {
-      // Create transport
+      // Resolve the command path for cross-terminal compatibility
+      let resolvedCommand = server.command;
+      let resolvedArgs = server.args;
+      
+      // If using npx, resolve the full path to ensure terminal compatibility
+      if (server.command === 'npx') {
+        try {
+          const executablePaths = await envResolver.getExecutablePaths();
+          resolvedCommand = executablePaths.npx;
+          
+          // For Windows, if the path ends with .cmd, we need to handle it properly
+          if (process.platform === 'win32' && resolvedCommand.endsWith('.cmd')) {
+            // Use cmd.exe to run .cmd files reliably
+            resolvedArgs = ['/c', resolvedCommand, ...server.args];
+            resolvedCommand = 'cmd.exe';
+          }
+        } catch (error) {
+          console.warn(`Failed to resolve npx path, falling back to 'npx': ${error}`);
+          // Fallback to original command if resolution fails
+        }
+      }
+      
+      // Create enhanced environment with additional PATH entries
+      const enhancedEnv = {
+        ...process.env,
+        ...server.env,
+        PATH: process.env.PATH ?? ""
+      };
+      
+      // Create transport with resolved command
       const transport = new StdioClientTransport({
-        command: server.command,
-        args: server.args,
-        env: { ...server.env, PATH: process.env.PATH ?? "" },
+        command: resolvedCommand,
+        args: resolvedArgs,
+        env: enhancedEnv,
       });
 
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.3.8"
+        version: "1.3.9"
       });
 
       // Connect to server
@@ -108,7 +138,7 @@ export class McpClient {
   }
 
   /**
-   * Load all tools from configured servers
+   * Load all tools from configured servers with graceful degradation
    */
   async loadTools(): Promise<void> {
     const mcpServers = this.config.getMcpServers();
@@ -118,12 +148,252 @@ export class McpClient {
       return;
     }
 
-    // Connect to all servers in parallel
-    await Promise.all(
-      mcpServers
-        .filter(server => server.enabled)
-        .map(server => this.addMcpServer(server))
+    const enabledServers = mcpServers.filter(server => server.enabled);
+    const results = await Promise.allSettled(
+      enabledServers.map(server => this.addMcpServerWithFallbacks(server))
     );
+    
+    // Report connection summary
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    
+    if (failed > 0 && successful === 0) {
+      console.warn(`\n⚠️  Failed to connect to any MCP servers (${failed}/${enabledServers.length}). Some tools may not be available.`);
+    } else if (failed > 0) {
+      console.warn(`\n⚠️  Connected to ${successful}/${enabledServers.length} MCP servers. ${failed} server(s) failed to connect.`);
+    }
+  }
+  
+  /**
+   * Connect to MCP server with multiple fallback strategies
+   */
+  private async addMcpServerWithFallbacks(server: BibbleConfig["mcpServers"][0]): Promise<void> {
+    const strategies = [
+      () => this.addMcpServer(server), // Primary strategy with path resolution
+      () => this.addMcpServerWithDirectCommand(server), // Direct command fallback
+      () => this.addMcpServerWithCorepack(server), // Corepack fallback
+      () => this.addMcpServerWithBundledNpm(server), // Bundled npm fallback
+    ];
+    
+    let lastError: Error | null = null;
+    
+    for (const [index, strategy] of strategies.entries()) {
+      try {
+        await strategy();
+        if (index > 0) {
+          console.log(`✓ Connected to MCP server "${server.name}" using fallback strategy ${index + 1}`);
+        }
+        return; // Success!
+      } catch (error) {
+        lastError = error as Error;
+        // Continue to next strategy
+      }
+    }
+    
+    // All strategies failed - provide helpful error message but don't crash
+    const errorMessage = this.createUserFriendlyErrorMessage(server, lastError);
+    console.error(`Failed to connect to MCP server "${server.name}": ${errorMessage}`);
+    throw lastError;
+  }
+  
+  /**
+   * Fallback strategy using direct command without path resolution
+   */
+  private async addMcpServerWithDirectCommand(server: BibbleConfig["mcpServers"][0]): Promise<void> {
+    try {
+      // Create transport with original command (no path resolution)
+      const transport = new StdioClientTransport({
+        command: server.command,
+        args: server.args,
+        env: {
+          ...process.env,
+          ...server.env,
+          PATH: process.env.PATH ?? ""
+        },
+      });
+
+      // Create client
+      const mcp = new Client({
+        name: "bibble-mcp-client",
+        version: "1.3.9"
+      });
+
+      // Connect to server
+      await mcp.connect(transport);
+
+      // Get available tools
+      const toolsResult = await mcp.listTools();
+
+      // Register tools with client map
+      for (const tool of toolsResult.tools) {
+        this.clients.set(tool.name, mcp);
+        this.toolToServerMap.set(tool.name, server.name);
+      }
+
+      // Add tools to available tools list
+      this.availableTools.push(
+        ...toolsResult.tools.map((tool) => ({
+          type: "function",
+          function: {
+            name: tool.name,
+            description: tool.description || "",
+            parameters: tool.inputSchema,
+          },
+        } as ChatCompletionInputTool))
+      );
+    } catch (error) {
+      throw error; // Re-throw for strategy handling
+    }
+  }
+  
+  /**
+   * Fallback strategy using corepack for package execution
+   */
+  private async addMcpServerWithCorepack(server: BibbleConfig["mcpServers"][0]): Promise<void> {
+    // Only try corepack for npm-related commands
+    if (server.command !== 'npx') {
+      throw new Error('Corepack fallback only applicable for npx commands');
+    }
+    
+    try {
+      const executablePaths = await envResolver.getExecutablePaths();
+      const nodeExe = executablePaths.node;
+      
+      // Use node to run npx via corepack
+      const transport = new StdioClientTransport({
+        command: nodeExe,
+        args: ['-p', 'require("child_process").spawn("npx", process.argv.slice(1), {stdio: "inherit"}).on("close", process.exit)', ...server.args],
+        env: {
+          ...process.env,
+          ...server.env,
+          PATH: process.env.PATH ?? ""
+        },
+      });
+
+      // Create client
+      const mcp = new Client({
+        name: "bibble-mcp-client",
+        version: "1.3.9"
+      });
+
+      // Connect to server
+      await mcp.connect(transport);
+
+      // Get available tools
+      const toolsResult = await mcp.listTools();
+
+      // Register tools with client map
+      for (const tool of toolsResult.tools) {
+        this.clients.set(tool.name, mcp);
+        this.toolToServerMap.set(tool.name, server.name);
+      }
+
+      // Add tools to available tools list
+      this.availableTools.push(
+        ...toolsResult.tools.map((tool) => ({
+          type: "function",
+          function: {
+            name: tool.name,
+            description: tool.description || "",
+            parameters: tool.inputSchema,
+          },
+        } as ChatCompletionInputTool))
+      );
+    } catch (error) {
+      throw error; // Re-throw for strategy handling
+    }
+  }
+  
+  /**
+   * Fallback strategy using bundled npm directly
+   */
+  private async addMcpServerWithBundledNpm(server: BibbleConfig["mcpServers"][0]): Promise<void> {
+    // Only try bundled npm for npx commands
+    if (server.command !== 'npx') {
+      throw new Error('Bundled npm fallback only applicable for npx commands');
+    }
+    
+    try {
+      const executablePaths = await envResolver.getExecutablePaths();
+      const nodeExe = executablePaths.node;
+      
+      // Use node directly to emulate npx functionality
+      // This is a simplified approach - install package then run it
+      const packageName = server.args[0] || '';
+      if (!packageName) {
+        throw new Error('No package name provided for bundled npm fallback');
+      }
+      
+      // Try to run the package directly if it's globally available
+      const transport = new StdioClientTransport({
+        command: nodeExe,
+        args: ['-e', `
+          const { spawn } = require('child_process');
+          const proc = spawn('${packageName}', ${JSON.stringify(server.args.slice(1))}, { stdio: 'inherit' });
+          proc.on('close', code => process.exit(code));
+        `],
+        env: {
+          ...process.env,
+          ...server.env,
+          PATH: process.env.PATH ?? ""
+        },
+      });
+
+      // Create client
+      const mcp = new Client({
+        name: "bibble-mcp-client",
+        version: "1.3.9"
+      });
+
+      // Connect to server
+      await mcp.connect(transport);
+
+      // Get available tools
+      const toolsResult = await mcp.listTools();
+
+      // Register tools with client map
+      for (const tool of toolsResult.tools) {
+        this.clients.set(tool.name, mcp);
+        this.toolToServerMap.set(tool.name, server.name);
+      }
+
+      // Add tools to available tools list
+      this.availableTools.push(
+        ...toolsResult.tools.map((tool) => ({
+          type: "function",
+          function: {
+            name: tool.name,
+            description: tool.description || "",
+            parameters: tool.inputSchema,
+          },
+        } as ChatCompletionInputTool))
+      );
+    } catch (error) {
+      throw error; // Re-throw for strategy handling
+    }
+  }
+  
+  /**
+   * Create user-friendly error messages with actionable suggestions
+   */
+  private createUserFriendlyErrorMessage(server: BibbleConfig["mcpServers"][0], error: Error | null): string {
+    if (!error) return "Unknown error occurred";
+    
+    const message = error.message.toLowerCase();
+    
+    if (message.includes('enoent') || message.includes('not found')) {
+      return `Command '${server.command}' not found. Please ensure Node.js and npm are installed and in your PATH. Try running 'bibble diagnose' for more information.`;
+    }
+    
+    if (message.includes('eacces') || message.includes('permission denied')) {
+      return `Permission denied when running '${server.command}'. Try running your terminal as administrator or check file permissions.`;
+    }
+    
+    if (message.includes('connection closed') || message.includes('spawn')) {
+      return `Failed to start MCP server process. The server may not be installed correctly. Try: npx -y ${server.args.join(' ')}`;
+    }
+    
+    return error.message;
   }
 
    /**
