@@ -8,6 +8,7 @@ import { SecurityManager } from "../security/SecurityManager.js";
 import { classifyToolRisk } from "../security/ToolClassifier.js";
 import { createSecurityPrompt, showDenialMessage, showTimeoutMessage } from "../security/SecurityUI.js";
 import { ToolDeniedError, ToolBlockedError, ToolTimeoutError } from "../security/SecurityError.js";
+import { getBuiltInToolRegistry } from "../tools/built-in/index.js";
 
 // Tool types
 export type ServerName = string;
@@ -112,7 +113,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.3.10"
+        version: "1.4.5"
       });
 
       // Connect to server
@@ -121,7 +122,8 @@ export class McpClient {
       // Get available tools
       const toolsResult = await mcp.listTools();
 
-      // Removed connection logging to reduce terminal clutter
+      // Log successful connection so users know which servers started
+      console.log(`${server.name} MCP server connected successfully`);
 
       // Register tools with client map
       for (const tool of toolsResult.tools) {
@@ -227,7 +229,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.3.10"
+        version: "1.4.5"
       });
 
       // Connect to server
@@ -285,7 +287,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.3.10"
+        version: "1.4.5"
       });
 
       // Connect to server
@@ -354,7 +356,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.3.10"
+        version: "1.4.5"
       });
 
       // Connect to server
@@ -448,7 +450,35 @@ export class McpClient {
         const serverName = this.toolToServerMap.get(toolName) || 'unknown';
         
         try {
-            // Handle built-in tools (skip security for these)
+            // Check if this is a built-in tool
+            const builtInRegistry = getBuiltInToolRegistry();
+            const builtInTool = builtInRegistry.getTool(toolName);
+            
+            if (builtInTool) {
+                // Execute built-in tool
+                const result = await builtInRegistry.executeTool(toolName, toolArgs || {});
+                
+                // Convert built-in tool result to expected format
+                let content = '';
+                if (result.success) {
+                    if (result.message) {
+                        content = result.message;
+                    } else if (result.data) {
+                        // Format the data for better readability
+                        content = this.formatBuiltInToolResult(result.data, toolName);
+                    } else {
+                        content = 'Tool executed successfully';
+                    }
+                } else {
+                    content = result.error || 'Tool execution failed';
+                }
+                
+                return {
+                    content: content
+                };
+            }
+
+            // Handle legacy built-in tools (skip security for these)
             if (toolName === "task_complete") {
                 return this.handleTaskComplete();
             }
@@ -554,6 +584,101 @@ export class McpClient {
             };
         }
     }
+
+  /**
+   * Format built-in tool result for better display
+   * @param data Tool result data
+   * @param toolName Name of the tool
+   * @returns Formatted string
+   */
+  private formatBuiltInToolResult(data: any, toolName: string): string {
+    if (typeof data === 'string') {
+      return data;
+    }
+    
+    // Special formatting for specific tools
+    if (toolName === 'list_directory') {
+      return this.formatDirectoryListing(data);
+    }
+    
+    if (toolName === 'write_file' || toolName === 'read_file') {
+      return this.formatFileOperation(data);
+    }
+    
+    // Default JSON formatting with better readability
+    return JSON.stringify(data, null, 2);
+  }
+  
+  /**
+   * Format directory listing for better readability
+   * @param data Directory listing data
+   * @returns Formatted string
+   */
+  private formatDirectoryListing(data: any): string {
+    let result = `📁 Directory: ${data.directory}\n\n`;
+    
+    if (data.files && Array.isArray(data.files)) {
+      if (data.files.length === 0) {
+        result += "🔍 No files found.\n";
+      } else {
+        result += "📋 Contents:\n";
+        for (const file of data.files) {
+          const icon = file.type === 'directory' ? '📁' : '📄';
+          const size = file.size ? ` (${this.formatFileSize(file.size)})` : '';
+          result += `${icon} ${file.name}${size}\n`;
+        }
+      }
+    }
+    
+    if (data.summary) {
+      result += `\n📊 Summary: ${data.summary.totalFiles} files, ${data.summary.totalDirectories} directories\n`;
+    }
+    
+    return result;
+  }
+  
+  /**
+   * Format file operation result
+   * @param data File operation data
+   * @returns Formatted string
+   */
+  private formatFileOperation(data: any): string {
+    let result = '';
+    
+    if (data.path) {
+      result += `📄 File: ${data.path}\n`;
+    }
+    
+    if (data.bytesWritten !== undefined) {
+      result += `✅ Written: ${this.formatFileSize(data.bytesWritten)}\n`;
+    }
+    
+    if (data.content && typeof data.content === 'string') {
+      const preview = data.content.length > 200 ? 
+        data.content.substring(0, 200) + '...' : 
+        data.content;
+      result += `📝 Content preview:\n${preview}\n`;
+    }
+    
+    if (data.encoding) {
+      result += `🔤 Encoding: ${data.encoding}\n`;
+    }
+    
+    return result || JSON.stringify(data, null, 2);
+  }
+  
+  /**
+   * Format file size in human-readable format
+   * @param bytes File size in bytes
+   * @returns Formatted size string
+   */
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
 
   /**
    * Handle the task_complete built-in tool

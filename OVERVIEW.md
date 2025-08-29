@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.4.3
+**Version**: 1.4.5
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble
-*Last updated: August 29, 2025 - 05:11 UTC*
+*Last updated: August 29, 2025 - 09:45 UTC*
 
 ## Project Overview
 
@@ -375,6 +375,42 @@ Version 1.4.0 introduces a **REVOLUTIONARY TOOL CALLING INTERFACE** that transfo
 **🌟 Environment Variables:**
 - `BIBBLE_ENHANCED_TOOLS=true` (default): Enable enhanced tool display
 - `BIBBLE_ENHANCED_TOOLS=false`: Use legacy display for compatibility
+
+### Built-in Tools Integration (v1.4.4) - August 29, 2025
+
+Version 1.4.4 introduces **COMPREHENSIVE BUILT-IN TOOLS INTEGRATION** that eliminates the need for external MCP server dependencies while providing superior performance and reliability:
+
+**🛠️ Complete Built-in Tools Suite:**
+- **Filesystem Tools**: `read_file`, `write_file`, `create_directory`, `list_directory`, `move_file`, `copy_file`, `delete_file`, `get_file_info`, `find_files`
+- **Process Management**: `execute_command`, `get_processes`, `kill_process`, `monitor_process`
+- **Search Capabilities**: `search_files`, `search_in_file`, `grep_search` with powerful ripgrep integration
+- **Text Editing**: `find_replace_in_file`, `insert_text`, `delete_lines` with fuzzy matching fallback
+- **Configuration Management**: Integrated configuration system with security and validation
+
+**🎯 Key Benefits:**
+- **Self-Contained**: No external MCP server dependencies required
+- **Enhanced Performance**: Direct integration eliminates MCP overhead
+- **Higher Limits**: 10,000+ line file operations vs typical 1,000 line MCP limits
+- **Better Error Handling**: Native error handling with graceful degradation
+- **Security Features**: Path validation, access controls, and secure command execution
+
+**🏗️ Architecture Integration:**
+- **Location**: Complete implementation in `src/tools/built-in/` directory
+- **Organization**: Modular structure with config, filesystem, process, search, and edit categories
+- **Type Safety**: Comprehensive TypeScript interfaces and validation
+- **Agent Integration**: Seamless registration with Bibble's Agent class alongside existing MCP tools
+
+**🔧 Technical Implementation:**
+- **Registry System**: `BuiltInToolRegistry` manages tool registration and lifecycle
+- **Utilities**: Comprehensive utilities for security, validation, and cross-platform compatibility
+- **Configuration**: Integrated with existing Bibble configuration system
+- **Error Handling**: Consistent error patterns matching Bibble's existing architecture
+
+**⚡ Performance Features:**
+- **Streaming**: Large file handling with efficient streaming
+- **Background Processing**: Non-blocking operations for search and process management
+- **Memory Efficiency**: Optimized memory usage for large operations
+- **Cross-Platform**: Full Windows, macOS, and Linux compatibility
 
 ### Security Policy & Conversation Fixes (v1.4.2) - August 29, 2025
 

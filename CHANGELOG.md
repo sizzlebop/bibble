@@ -2,6 +2,63 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.4.5] - 2025-08-29
+
+### 🧹 CLEANUP & JSON PARSING FIXES
+
+### Fixed
+- **🔧 CRITICAL: JSON Parsing Errors**: Fixed tool call argument parsing errors caused by concatenated JSON objects
+  - Fixed issue where multiple tool calls resulted in malformed JSON like `{"path": "..."}{".content": "..."}`
+  - Implemented proper multi-tool call handling using Map-based tracking by tool call index
+  - Improved `processStreamResponse` to handle OpenAI streaming with multiple concurrent tool calls
+  - JSON parsing now gracefully falls back to empty object `{}` on parse errors instead of crashing
+- **🔧 Debug Output Removal**: Cleaned up all debug output from chat interface
+  - Removed all `[CHAT DEBUG]` messages cluttering the terminal output
+  - Removed `[DEBUG]` tool argument parsing messages
+  - Removed tool call logging that was showing in every tool execution
+  - Chat interface now shows clean, professional output without debug noise
+
+### Changed
+- **🛠️ Build Configuration**: Updated build script to include missing `zod-to-json-schema` external dependency
+- **⚡ Performance**: Improved tool call processing efficiency with better error handling
+- **🔌 MCP Server Startup**: Improved server connection logging with more accurate status messages
+  - Changed from "running on stdio" to "connected successfully" for better accuracy across transport types
+  - All MCP servers now consistently show their startup status in the terminal
+
+### Technical Details
+- **JSON Processing**: Enhanced `processStreamResponse` method to track multiple tool calls by index
+- **Error Recovery**: Improved graceful fallback when tool arguments fail to parse
+- **Clean Interfaces**: Removed development debug output for production-ready experience
+
+### Impact
+- **Before**: JSON parsing errors, cluttered debug output, concatenated tool arguments
+- **After**: Clean chat interface, reliable tool call parsing, professional user experience
+
+This release eliminates the frustrating JSON parsing errors and provides a much cleaner, more professional chat experience! 🎯
+
+## [1.4.4] - 2025-08-29
+
+### 🚀 Built-in Tools Integration & Reliability Improvements
+
+### Added
+- Built-in tools are now passed to the LLM as callable tools (not just documented in the prompt), ensuring the model can actually invoke them.
+- Clear usage examples for common tools (write_file, read_file, list_directory) in the system prompt.
+- Strong JSON argument formatting guidance in the system prompt to prevent concatenated JSON objects.
+
+### Fixed
+- Tool call argument parsing errors caused by concatenated JSON strings (e.g., `{...}{...}`) now log diagnostic info and safely fall back to `{}` while guidance reduces occurrence.
+- Improved tool result formatting for built-in tools so arrays and objects display as readable content rather than `[Array]`/`[Object]`.
+- Debug logs now accurately report counts of built-in vs MCP vs control tools at each turn.
+
+### Changed
+- Enhanced system prompt with explicit rules: "Tool arguments MUST be a single valid JSON object" and examples of correct vs incorrect usage.
+- Directory listing and file operation results show friendly, human-readable summaries.
+
+### Impact
+- The LLM consistently sees and uses built-in tools.
+- Fewer malformed JSON tool calls; clearer errors when they occur.
+- Better, more helpful tool output in the terminal.
+
 ## [1.4.3] - 2025-08-29
 
 ### 🎯 AGENT INTELLIGENCE & TOOL SYSTEM IMPROVEMENTS

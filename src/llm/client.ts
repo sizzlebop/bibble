@@ -319,11 +319,12 @@ export class LlmClient {
    * @returns Async generator of stream chunks
    */
   private async *processStreamResponse(response: any): AsyncGenerator<StreamChunk> {
-    let activeToolCall: {
+    // Track multiple tool calls by index
+    const activeToolCalls = new Map<number, {
       id: string;
       name: string;
       args: string;
-    } | null = null;
+    }>();
 
     // Process each chunk
     for await (const chunk of response) {
@@ -342,62 +343,66 @@ export class LlmClient {
 
       // Handle tool calls
       if (delta.tool_calls && delta.tool_calls.length > 0) {
-        const toolCall = delta.tool_calls[0];
-
-        // Initialize new tool call
-        if (toolCall.index === 0 && toolCall.id) {
-          activeToolCall = {
-            id: toolCall.id,
-            name: toolCall.function?.name || "",
-            args: toolCall.function?.arguments || "",
-          };
-        }
-
-        // Update active tool call
-        if (activeToolCall) {
-          if (toolCall.function?.name) {
-            activeToolCall.name = toolCall.function.name;
-          }
-          if (toolCall.function?.arguments) {
-            activeToolCall.args += toolCall.function.arguments;
+        for (const toolCall of delta.tool_calls) {
+          const index = toolCall.index ?? 0;
+          
+          // Initialize new tool call at this index
+          if (toolCall.id && !activeToolCalls.has(index)) {
+            activeToolCalls.set(index, {
+              id: toolCall.id,
+              name: toolCall.function?.name || "",
+              args: toolCall.function?.arguments || "",
+            });
+          } else if (activeToolCalls.has(index)) {
+            // Update existing tool call at this index
+            const existingToolCall = activeToolCalls.get(index)!;
+            
+            if (toolCall.function?.name) {
+              existingToolCall.name = toolCall.function.name;
+            }
+            if (toolCall.function?.arguments) {
+              existingToolCall.args += toolCall.function.arguments;
+            }
           }
         }
       }
 
-      // Check if this is the last chunk for the current tool call
-      if (chunk.choices[0]?.finish_reason === "tool_calls" && activeToolCall) {
-        try {
-          // Parse arguments - ensure we have valid JSON
-          let args;
+      // Check if this is the last chunk for tool calls
+      if (chunk.choices[0]?.finish_reason === "tool_calls" && activeToolCalls.size > 0) {
+        // Process all accumulated tool calls
+        for (const [index, activeToolCall] of activeToolCalls.entries()) {
           try {
-            args = JSON.parse(activeToolCall.args);
-          } catch (parseError) {
-            console.error("Error parsing tool call arguments:", parseError);
-            // If parsing fails, use the raw string as args
-            args = activeToolCall.args;
+            // Parse arguments - ensure we have valid JSON
+            let args;
+            try {
+              args = JSON.parse(activeToolCall.args);
+            } catch (parseError) {
+              // If parsing fails, use empty object as fallback
+              args = {};
+            }
+
+            // Yield tool call
+            yield {
+              type: "tool_call",
+              toolCall: {
+                id: activeToolCall.id,
+                name: activeToolCall.name,
+                args,
+              },
+            };
+          } catch (error) {
+            console.error("Error processing tool call:", error);
+
+            // Yield error information
+            yield {
+              type: "text",
+              text: `Error processing tool call: ${error instanceof Error ? error.message : String(error)}`,
+            };
           }
-
-          // Yield tool call
-          yield {
-            type: "tool_call",
-            toolCall: {
-              id: activeToolCall.id,
-              name: activeToolCall.name,
-              args,
-            },
-          };
-        } catch (error) {
-          console.error("Error processing tool call:", error);
-
-          // Yield error information
-          yield {
-            type: "text",
-            text: `Error processing tool call: ${error instanceof Error ? error.message : String(error)}`,
-          };
         }
 
-        // Reset active tool call
-        activeToolCall = null;
+        // Clear all tool calls
+        activeToolCalls.clear();
       }
     }
   }

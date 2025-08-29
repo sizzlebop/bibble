@@ -7,6 +7,8 @@ import { LlmClient } from "../llm/client.js";
 import { ChatMessage, MessageRole } from "../types.js";
 import { isSecurityError } from "../security/SecurityError.js";
 import { toolDisplay } from "../ui/tool-display.js";
+import { getBuiltInToolRegistry } from "../tools/built-in/index.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Default system prompt - non-configurable
 export const DEFAULT_SYSTEM_PROMPT = `
@@ -26,6 +28,9 @@ When calling tools, you MUST follow these rules:
 4. **Use the exact parameter names** shown in the tool documentation
 5. **Avoid redundant tool calls** - Don't repeat the same tool call with the same parameters
 6. **Choose the most direct tool for the task** - Don't use complex project management tools for simple operations
+7. **CRITICAL JSON FORMAT**: Tool arguments MUST be a single valid JSON object. NEVER concatenate multiple JSON objects.
+8. **CORRECT**: {"path": "file.txt", "content": "Hello"}
+9. **INCORRECT**: {"path": "file.txt"}{"content": "Hello"} - This will cause parsing errors!
 
 # TOOL SELECTION PRINCIPLES:
 
@@ -148,10 +153,34 @@ export class Agent extends McpClient {
     toolsList += "You have access to the following tools. Each tool has specific parameters that you MUST provide when calling it.\n\n";
     toolsList += "**CRITICAL**: Always check the required parameters before calling any tool. Never call a tool without providing all required parameters.\n\n";
     toolsList += "**TOOL SELECTION**: Choose the most direct tool for your task. Prefer tools that accomplish the goal in one step over multi-step workflow or planning tools when possible.\n\n";
+    
+    // Add explicit tool selection guidance
+    toolsList += "## 📋 TOOL SELECTION GUIDE\n\n";
+    toolsList += "**For File Operations** (create, read, write, delete files): Use BUILT-IN TOOLS like `write_file`, `read_file`, `list_directory`, etc.\n";
+    toolsList += "**For Image Generation**: Use MCP tools like `generateImage`, `editImage`\n";
+    toolsList += "**For Web Search**: Use MCP tools like `DuckDuckGoWebSearch`\n";
+    toolsList += "**For Task Management**: Use MCP tools like `plan_task`, `get_next_task`\n\n";
+    toolsList += "**NEVER** use image generation tools for file operations or vice versa!\n\n";
 
-    // Group tools by server
+    // Group tools by server, including built-in tools
     const toolsByServer = new Map<string, any[]>();
 
+    // Add built-in tools
+    const builtInRegistry = getBuiltInToolRegistry();
+    const builtInTools = builtInRegistry.getAllTools();
+    
+    if (builtInTools.length > 0) {
+      toolsByServer.set("Built-in Tools", builtInTools.map(tool => ({
+        type: "function",
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: zodToJsonSchema(tool.parameters)
+        }
+      })));
+    }
+
+    // Add MCP server tools
     for (const tool of this.availableTools) {
       const serverName = this.toolToServerMap.get(tool.function.name) || "unknown";
 
@@ -164,7 +193,15 @@ export class Agent extends McpClient {
 
     // Generate formatted list
     for (const [serverName, tools] of toolsByServer.entries()) {
-      toolsList += `## Server: ${serverName}\n\n`;
+      // Add clear categorization for built-in tools
+      if (serverName === "Built-in Tools") {
+        toolsList += `## ⚡ BUILT-IN TOOLS (Use these for file operations, command execution, etc.)\n\n`;
+        toolsList += `These are your primary tools for file system operations, running commands, and basic tasks.\n`;
+        toolsList += `**IMPORTANT**: For file operations like creating, reading, or writing files, ALWAYS use these built-in tools.\n\n`;
+      } else {
+        toolsList += `## 🔧 ${serverName} (MCP Server Tools)\n\n`;
+        toolsList += `External tools provided by MCP server integration.\n\n`;
+      }
 
       for (const tool of tools) {
         const { name, description, parameters } = tool.function;
@@ -218,6 +255,18 @@ export class Agent extends McpClient {
           toolsList += "\n";
         } else {
           toolsList += "**Required Parameters:** None\n\n";
+        }
+        
+        // Add usage examples for common tools
+        if (name === 'write_file') {
+          toolsList += "**Example Usage:**\n";
+          toolsList += "{\"path\": \"/path/to/file.txt\", \"content\": \"Hello World\"}\n\n";
+        } else if (name === 'list_directory') {
+          toolsList += "**Example Usage:**\n";
+          toolsList += "{\"path\": \"/path/to/directory\"}\n\n";
+        } else if (name === 'read_file') {
+          toolsList += "**Example Usage:**\n";
+          toolsList += "{\"path\": \"/path/to/file.txt\"}\n\n";
         }
       }
     }
@@ -372,11 +421,23 @@ export class Agent extends McpClient {
       const currentLast = this.messages[this.messages.length - 1];
 
       // Exit loop if an exit loop tool was called
-      if (
-        currentLast.role === MessageRole.Tool &&
-        currentLast.toolName &&
-        this.exitLoopTools.map((t) => t.function.name).includes(currentLast.toolName)
-      ) {
+      // Check for both OpenAI format (MessageRole.Tool) and Anthropic format (MessageRole.User with tool_result)
+      const isExitToolCall = 
+        // OpenAI format: Tool message with toolName
+        (currentLast.role === MessageRole.Tool &&
+         currentLast.toolName &&
+         this.exitLoopTools.map((t) => t.function.name).includes(currentLast.toolName)) ||
+        // Anthropic format: User message containing tool_result for exit tools
+        (currentLast.role === MessageRole.User &&
+         currentLast.content &&
+         typeof currentLast.content === 'string' &&
+         this.exitLoopTools.some(tool => {
+           const toolName = tool.function.name;
+           return currentLast.content!.includes(`"tool_use_id"`) && 
+                  currentLast.content!.includes(toolName);
+         }));
+      
+      if (isExitToolCall) {
         return;
       }
 
@@ -443,8 +504,21 @@ export class Agent extends McpClient {
     abortSignal?: AbortSignal;
     model: string;
   }): AsyncGenerator<string> {
-    // Combine MCP server tools with exit loop tools so the LLM can call them
-    const tools = [...this.availableTools, ...this.exitLoopTools];
+    // Get built-in tools and convert them to ChatCompletionInputTool format
+    const builtInRegistry = getBuiltInToolRegistry();
+    const builtInTools = builtInRegistry.getAllTools();
+    const builtInToolsForLLM: ChatCompletionInputTool[] = builtInTools.map(tool => ({
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: zodToJsonSchema(tool.parameters)
+      }
+    }));
+    
+    // Combine built-in tools, MCP server tools, and exit loop tools
+    const tools = [...builtInToolsForLLM, ...this.availableTools, ...this.exitLoopTools];
+    
 
     // Get model configuration
     const models = this.configInstance.get<Array<{
@@ -540,9 +614,6 @@ export class Agent extends McpClient {
       // Execute each tool call and display results
       for (const toolCall of toolCallsInTurn) {
         try {
-          // Log the tool call for debugging
-          console.log(`Tool call from Agent: ${toolCall.name} with args:`, JSON.stringify(toolCall.args));
-
           const toolResult = await this.callTool(toolCall.name, toolCall.args);
 
           // Handle tool result based on model type

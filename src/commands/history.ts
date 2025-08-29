@@ -2,7 +2,7 @@
 import inquirer from "inquirer";
 import fs from "fs";
 import path from "path";
-import { terminal } from "../ui/colors.js";
+import { terminal, Color } from "../ui/colors.js";
 import { chatHistory } from "../utils/history.js";
 import { HISTORY_DIR } from "../config/storage.js";
 
@@ -10,7 +10,7 @@ import { HISTORY_DIR } from "../config/storage.js";
  * Setup the history command
  * @param program Commander program
  */
-export function setupHistoryCommand(program: Command): void {
+export function setupHistoryCommand(program: Command): Command {
   const historyCommand = program
     .command("history")
     .description("Manage chat history");
@@ -31,7 +31,7 @@ export function setupHistoryCommand(program: Command): void {
       
       histories.forEach((entry, index) => {
         const date = new Date(entry.date).toLocaleString();
-        console.log(`${index + 1}. ${terminal.format(entry.title, "cyan")} (${entry.id})`);
+        console.log(`${index + 1}. ${terminal.format(entry.title, Color.Cyan)} (${entry.id})`);
         console.log(`   Date: ${date}`);
         console.log(`   Model: ${entry.model}`);
         console.log(`   Messages: ${entry.messages.length}`);

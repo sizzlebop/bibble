@@ -261,7 +261,7 @@ current = (current as any)[k];
    * Get security configuration
    */
   public getSecurityConfig(): BibbleConfig["security"] {
-    const defaultSecurityConfig = {
+    const defaultSecurityConfig: BibbleConfig["security"] = {
       defaultPolicy: "trusted",
       requireConfirmationGlobally: false,
       previewToolInputs: true,
@@ -271,7 +271,7 @@ current = (current as any)[k];
       serverPolicies: {},
       allowedTools: {},
       blockedTools: {}
-    } as const;
+    };
     
     const savedConfig = this.get("security", {});
     

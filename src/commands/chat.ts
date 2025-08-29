@@ -9,7 +9,7 @@ import { terminal } from "../ui/colors.js";
  * Setup the chat command
  * @param program Commander program
  */
-export function setupChatCommand(program: Command): void {
+export function setupChatCommand(program: Command): Command {
   const config = Config.getInstance();
 
   const chatCommand = program

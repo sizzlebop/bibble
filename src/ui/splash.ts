@@ -78,7 +78,7 @@ export class Splash {
     
     // Add version info
     if (showVersion) {
-      content += '\n' + theme.label('Version:', '1.3.10');
+      content += '\n' + theme.label('Version:', '1.4.5');
     }
     
     // Add helpful text
@@ -207,7 +207,7 @@ export class Splash {
       console.log('\n' + Splash.createSystemStatus({
         model,
         mcpServers,
-        version: '1.3.10',
+        version: '1.4.5',
         theme: 'Neon Dreams',
       }));
     }

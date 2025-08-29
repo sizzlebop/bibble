@@ -518,7 +518,10 @@ async function editMcpServer(servers: any[]): Promise<void> {
       message: "Arguments (comma-separated):",
       default: server.args.join(","),
       filter: (input) =>
-        input.split(",").map((arg) => arg.trim()).filter((arg) => arg.length > 0),
+        input
+        .split(",")
+        .map((arg: string) => arg.trim())
+        .filter((arg: string) => arg.length > 0),
     },
     {
       type: "confirm",

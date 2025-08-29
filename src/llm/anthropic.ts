@@ -104,7 +104,7 @@ export class AnthropicClient {
                     break;
                 }
 
-                const results: string[] = [];
+                const results: any[] = [];
                 for (const block of toolBlocks) {
                     try {
                         // Use the tool input directly as provided by Claude

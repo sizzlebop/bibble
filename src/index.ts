@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import chalk from "chalk";
 
 // Command modules
 import { setupChatCommand } from "./commands/chat.js";
@@ -7,7 +6,6 @@ import { setupConfigCommand } from "./commands/config.js";
 import { setupHistoryCommand } from "./commands/history.js";
 import { createHelpCommand } from "./commands/help.js";
 import { createSecurityCommand } from "./commands/security.js";
-import { createTestCommand } from "./commands/test.js";
 
 // Config initialization
 import { ensureConfigDirExists } from "./config/storage.js";
@@ -20,6 +18,12 @@ import { Agent } from "./mcp/agent.js";
 import { terminal, Color } from "./ui/colors.js";
 import { splash } from "./ui/splash.js";
 
+// Export built-in tools for external access
+export { getBuiltInToolRegistry } from "./tools/built-in/index.js";
+
+// Export Agent class for external access
+export { Agent } from "./mcp/agent.js";
+
 // Import environment resolver for diagnostics
 import { envResolver } from "./utils/env-resolver.js";
 
@@ -30,7 +34,7 @@ const program = new Command();
 program
   .name("bibble")
   .description("CLI chatbot with MCP support")
-  .version("1.4.3");
+  .version("1.4.5");
 
 // Initialize configuration
 ensureConfigDirExists();
@@ -46,11 +50,6 @@ program.addCommand(createHelpCommand());
 // Add security command
 program.addCommand(createSecurityCommand());
 
-// Add test command (for development/testing only)
-if (process.env.NODE_ENV === 'development' || process.argv.includes('--enable-test-commands')) {
-  program.addCommand(createTestCommand());
-}
-
 // Setup command
 program
   .command("setup")
@@ -65,9 +64,18 @@ program
   .description("View the system prompt with tools list")
   .action(async () => {
     try {
-      // Show a nice loading spinner
-      const spinner = splash.spinner("Loading MCP tools and generating system prompt...");
-      spinner.start();
+      // Check if we're in a TTY environment for spinner support
+      let spinner: any = null;
+      const isTTY = process.stdout.isTTY;
+      
+      if (isTTY) {
+        // Show a nice loading spinner if in TTY
+        spinner = splash.spinner("Loading MCP tools and generating system prompt...");
+        spinner.start();
+      } else {
+        // Just show text in non-TTY environments
+        console.log("Loading MCP tools and generating system prompt...");
+      }
       
       // Create an agent instance and initialize it to load tools
       const agent = new Agent();
@@ -77,7 +85,11 @@ program
       const conversation = agent.getConversation();
       const systemMessage = conversation.find(msg => msg.role === 'system');
       
-      spinner.succeed("System prompt generated successfully!");
+      if (spinner) {
+        spinner.succeed("System prompt generated successfully!");
+      } else {
+        console.log("System prompt generated successfully!");
+      }
       console.log();
       
       if (systemMessage) {

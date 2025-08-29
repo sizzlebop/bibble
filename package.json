@@ -1,6 +1,6 @@
 {
   "name": "@pinkpixel/bibble",
-  "version": "1.4.3",
+  "version": "1.4.5",
   "description": "CLI chatbot application with MCP support",
   "type": "module",
   "main": "dist/index.js",
@@ -8,7 +8,7 @@
     "bibble": "bin/bibble-cli.cjs"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --external commander,chalk,inquirer,markdown-it,openai,boxen,uuid,child_process,cross-spawn,@anthropic-ai/sdk",
+    "build": "tsup src/index.ts --format esm --external commander,chalk,inquirer,markdown-it,openai,boxen,uuid,child_process,cross-spawn,@anthropic-ai/sdk,isbinaryfile,zod,zod-to-json-schema",
     "dev": "tsup src/index.ts --format esm --dts --watch",
     "start": "node dist/index.js",
     "prepare": "npm run build",
@@ -41,6 +41,7 @@
     "figures": "^6.1.0",
     "gradient-string": "^3.0.0",
     "inquirer": "^12.6.2",
+    "isbinaryfile": "^5.0.6",
     "json-stringify-pretty-compact": "^4.0.0",
     "log-symbols": "^7.0.1",
     "markdown-it": "^14.1.0",
@@ -56,7 +57,9 @@
     "terminal-link": "^4.0.0",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0",
-    "wrap-ansi": "^9.0.0"
+    "wrap-ansi": "^9.0.0",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "tsup": "^8.5.0"
