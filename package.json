@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "bibble": "./bin/bibble-cli.cjs"
+    "bibble": "bin/bibble-cli.cjs"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --external commander,chalk,inquirer,markdown-it,openai,boxen,uuid,child_process,cross-spawn,@anthropic-ai/sdk",
