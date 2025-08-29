@@ -48,6 +48,5 @@ coverage/
 test/
 
 # Other
-beautify_plan/
-mcpollinations-output/
 reference/
+ROADMAPS/
