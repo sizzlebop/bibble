@@ -507,10 +507,34 @@ export class McpClient {
             // Log successful execution
             this.securityManager.log(serverName, toolName, 'allow', toolArgs, duration);
 
+            // Return the complete MCP result content
+            // MCP results can be text, images, or other content types
+            // We need to preserve all the information for the LLM to see
+            let fullContent = "No content returned from tool";
+            
+            if (result.content && Array.isArray(result.content) && result.content.length > 0) {
+                // Combine all content items into a single string
+                const contentParts = result.content.map((item: any) => {
+                    if (typeof item === 'string') {
+                        return item;
+                    } else if (item && typeof item === 'object') {
+                        if (item.type === 'text' && item.text) {
+                            return item.text;
+                        } else if (item.text) {
+                            return item.text;
+                        } else {
+                            // For non-text content, include the full object as JSON
+                            return JSON.stringify(item, null, 2);
+                        }
+                    }
+                    return String(item);
+                });
+                
+                fullContent = contentParts.join('\n\n');
+            }
+            
             return {
-                content: result.content && Array.isArray(result.content) && result.content.length > 0
-                    ? result.content[0].text || String(result.content[0])
-                    : "No content returned from tool"
+                content: fullContent
             };
         } catch (error) {
             const duration = Date.now() - startTime;

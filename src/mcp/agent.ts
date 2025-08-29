@@ -14,6 +14,8 @@ export const DEFAULT_SYSTEM_PROMPT = `
 
 You are an intelligent agent with access to tools. Your goal is to help users by using the available tools when needed to gather information, perform actions, or solve problems.
 
+IMPORTANT: Always provide conversational text to explain what you're doing BEFORE calling tools. This helps users understand your thought process and creates better streaming experience.
+
 # CRITICAL TOOL USAGE RULES:
 
 When calling tools, you MUST follow these rules:
@@ -22,36 +24,51 @@ When calling tools, you MUST follow these rules:
 2. **Always check the tool's required parameters** before calling it
 3. **Provide ALL required parameters** with appropriate values
 4. **Use the exact parameter names** shown in the tool documentation
+5. **Avoid redundant tool calls** - Don't repeat the same tool call with the same parameters
+6. **Choose the most direct tool for the task** - Don't use complex project management tools for simple operations
 
-## Example: DuckDuckGoWebSearch Tool
+# TOOL SELECTION PRINCIPLES:
 
-This tool requires:
-- **query** (string, required): The search query
+## Be Direct and Efficient
+- **For file operations**: Use tools that directly create, read, or modify files rather than workflow management tools
+- **For simple tasks**: Don't create elaborate plans when a single action will suffice
+- **For information gathering**: Get the information first, then act on it directly
 
-CORRECT usage:
-- To search for "AI news": Call DuckDuckGoWebSearch with query="AI news"
-- To search for "weather": Call DuckDuckGoWebSearch with query="weather"
+## Avoid Over-Engineering
+- **Don't plan when you can act**: If you have all the information needed, execute directly
+- **Don't use multiple tools when one suffices**: Choose the most appropriate single tool
+- **Don't repeat thinking**: If you've analyzed something, move to action
 
-INCORRECT usage (will cause errors):
-- Calling DuckDuckGoWebSearch without any parameters
-- Calling DuckDuckGoWebSearch with empty parameters {}
+## Tool Priority Guidelines
+- **Direct action tools** (file operations, searches, data retrieval) > Workflow/planning tools
+- **Task-specific tools** > General orchestration tools
+- **Simple operations** > Complex multi-step processes
 
-## Important:
-If you don't have the information needed for a required parameter, ask the user for it instead of calling the tool without parameters.
+## Example: Creating a Document
+GOOD: Research topic → Use appropriate file creation tool
+BAD: Research topic → Plan workflow → Create task structure → Think about steps → Finally create file
 
 # IMPORTANT WORKFLOW:
 
 1. **Understand the task** - Read the user's request carefully
-2. **Plan your approach** - Think about what tools you might need
-3. **Use tools systematically** - Call tools with proper parameters to gather information
-4. **Provide complete answers** - Use the information from tools to give thorough responses
-5. **Continue until complete** - Keep working until the user's request is fully addressed
+2. **Choose the most direct path** - Identify the simplest way to complete the task
+3. **Use tools efficiently** - Call the right tool with proper parameters
+4. **Avoid over-planning** - Don't create complex workflows for simple tasks
+5. **Act decisively** - Once you have the information, proceed directly to completion
 
-Remember: You have access to many tools that can help you gather information, perform searches, manage files, execute commands, and more. Use them effectively to provide the best possible assistance.
+# COMMUNICATION STYLE:
 
-You should plan before each function call and reflect on the outcomes of previous function calls. Balance thinking with action to solve problems effectively.
+- Always provide text explanations alongside tool usage
+- Explain what you're doing and why before calling tools
+- Be conversational and helpful
+- Stream your thoughts in real-time as you work
+- Focus on efficient execution over elaborate planning
 
-Work on the user's request systematically. When you complete a task, provide a clear response and finish.
+Remember: You have access to many tools. Choose the most appropriate and direct tool for each task. Prefer simple, direct actions over complex multi-step workflows when possible.
+
+# TASK COMPLETION:
+
+When you have successfully completed the user's request, call the 'task_complete' tool to end the conversation. This signals that the task is finished and no further action is needed.
 
 `;
 
@@ -130,6 +147,7 @@ export class Agent extends McpClient {
     let toolsList = "# Available Tools\n\n";
     toolsList += "You have access to the following tools. Each tool has specific parameters that you MUST provide when calling it.\n\n";
     toolsList += "**CRITICAL**: Always check the required parameters before calling any tool. Never call a tool without providing all required parameters.\n\n";
+    toolsList += "**TOOL SELECTION**: Choose the most direct tool for your task. Prefer tools that accomplish the goal in one step over multi-step workflow or planning tools when possible.\n\n";
 
     // Group tools by server
     const toolsByServer = new Map<string, any[]>();
@@ -367,11 +385,47 @@ export class Agent extends McpClient {
         return;
       }
 
-      // Simple and reliable turn ending logic
-      // If the last message is from the assistant (not a tool result), end the conversation
-      // This prevents the agent from continuing indefinitely
-      if (currentLast.role === MessageRole.Assistant) {
-        return;
+      // IMPROVED CONVERSATION TERMINATION LOGIC
+      // End conversation only when the assistant has truly completed the task
+      if (currentLast.role === MessageRole.Assistant && !currentLast.toolCalls) {
+        const content = currentLast.content?.toLowerCase() || '';
+        
+        // Check if this is an "about to do" message rather than completion
+        const isPreparationMessage = 
+          content.includes('i will now') ||
+          content.includes('i am going to') ||
+          content.includes('next, i will') ||
+          content.includes('let me now') ||
+          content.includes('i shall now') ||
+          content.includes('about to') ||
+          content.includes('please hold on') ||
+          content.includes('please wait') ||
+          content.includes('one moment') ||
+          content.includes('preparing') ||
+          content.includes('once i complete') ||
+          content.includes('once complete');
+        
+        // Check for completion signals
+        const isCompletionMessage = 
+          content.includes('task complete') ||
+          content.includes('finished') ||
+          content.includes('done') ||
+          content.includes('completed') ||
+          content.includes('is there anything else') ||
+          content.includes('do you need') ||
+          content.includes('would you like me to') ||
+          (content.includes('created') && content.includes('successfully')) ||
+          (content.includes('saved') && content.includes('successfully'));
+        
+        // Only end if this looks like a completion message, NOT a preparation message
+        if (isCompletionMessage && !isPreparationMessage) {
+          return;
+        }
+        
+        // Also end if the message is very short and seems final (likely an error case)
+        if (content.length < 100 && !isPreparationMessage && numOfTurns > 3) {
+          return;
+        }
       }
 
       // Set tool call expectation for next turn
@@ -389,9 +443,8 @@ export class Agent extends McpClient {
     abortSignal?: AbortSignal;
     model: string;
   }): AsyncGenerator<string> {
-    // We don't combine the tools lists to avoid including exit loop tools in the context
-    // Instead, we'll handle them separately in the callTool method
-    const tools = this.availableTools;
+    // Combine MCP server tools with exit loop tools so the LLM can call them
+    const tools = [...this.availableTools, ...this.exitLoopTools];
 
     // Get model configuration
     const models = this.configInstance.get<Array<{
@@ -438,50 +491,69 @@ export class Agent extends McpClient {
     let responseText = "";
     let firstChunk = true;
     let hasToolCall = false;
+    
+    // Track all tool calls in this turn
+    const toolCallsInTurn: Array<{id: string, name: string, args: any}> = [];
 
     // Process stream chunks
     for await (const chunk of stream) {
-      // Check for tool call
-      if (chunk.type === "tool_call") {
+      // Handle text chunks - yield immediately for real-time streaming
+      if (chunk.type === "text") {
+        responseText += chunk.text;
+        // CRITICAL: Yield text immediately as it arrives for live streaming
+        yield chunk.text;
+
+        // Exit on first chunk with no tool if specified
+        if (firstChunk && options.exitIfFirstChunkNoTool) {
+          firstChunk = false;
+        }
+        firstChunk = false;
+      } 
+      // Handle tool calls
+      else if (chunk.type === "tool_call") {
         hasToolCall = true;
+        
+        // Store tool call info
+        const { name, args } = chunk.toolCall;
+        let processedArgs = args;
+        if (processedArgs === null || processedArgs === undefined) {
+          processedArgs = {};
+        }
+        
+        toolCallsInTurn.push({
+          id: chunk.toolCall.id,
+          name,
+          args: processedArgs
+        });
+      }
+    }
 
+    // Process tool calls after streaming is complete
+    if (hasToolCall && toolCallsInTurn.length > 0) {
+      // Add assistant message with all tool calls
+      this.messages.push({
+        role: MessageRole.Assistant,
+        content: responseText,
+        toolCalls: toolCallsInTurn,
+      });
+
+      // Execute each tool call and display results
+      for (const toolCall of toolCallsInTurn) {
         try {
-          // Call the tool
-          const { name, args } = chunk.toolCall;
-
-          // Use the args directly as provided by Claude - following Anthropic's example
-          let processedArgs = args;
-          if (processedArgs === null || processedArgs === undefined) {
-            processedArgs = {};
-          }
-
           // Log the tool call for debugging
-          console.log(`Tool call from Agent: ${name} with args:`, JSON.stringify(processedArgs));
+          console.log(`Tool call from Agent: ${toolCall.name} with args:`, JSON.stringify(toolCall.args));
 
-          const toolResult = await this.callTool(name, processedArgs);
+          const toolResult = await this.callTool(toolCall.name, toolCall.args);
 
-          // For Anthropic models, we need to handle tool results differently
-          const isAnthropicModel = modelConfig?.provider === "anthropic" || options.model.toLowerCase().includes("claude");
-
+          // Handle tool result based on model type
           if (isAnthropicModel) {
-            // Add assistant message with tool call
-            this.messages.push({
-              role: MessageRole.Assistant,
-              content: responseText,
-              toolCalls: [{
-                id: chunk.toolCall.id,
-                name,
-                args: processedArgs,
-              }],
-            });
-
             // For Anthropic, send tool result as user message with tool_result content block
             this.messages.push({
               role: MessageRole.User,
               content: JSON.stringify([
                 {
                   type: "tool_result",
-                  tool_use_id: chunk.toolCall.id,
+                  tool_use_id: toolCall.id,
                   content: toolResult.content
                 }
               ])
@@ -489,27 +561,14 @@ export class Agent extends McpClient {
           } else {
             // For OpenAI models, use the existing format
             this.messages.push({
-              role: MessageRole.Assistant,
-              content: responseText,
-              toolCalls: [{
-                id: chunk.toolCall.id,
-                name,
-                args: processedArgs,
-              }],
-            });
-
-            this.messages.push({
               role: MessageRole.Tool,
               content: toolResult.content,
-              toolName: name,
-              toolCallId: chunk.toolCall.id,
+              toolName: toolCall.name,
+              toolCallId: toolCall.id,
             });
           }
 
-          // Format args for display - always use JSON.stringify for consistency
-          let displayArgs = JSON.stringify(processedArgs);
-
-          // Check if enhanced tool display is enabled
+          // Display tool results
           const useEnhancedDisplay = process.env.BIBBLE_ENHANCED_TOOLS !== 'false';
           
           if (useEnhancedDisplay) {
@@ -517,41 +576,31 @@ export class Agent extends McpClient {
             const toolMessage: ChatMessage = {
               role: MessageRole.Tool,
               content: toolResult.content,
-              toolName: name
+              toolName: toolCall.name
             };
             
             toolDisplay.displayCall(toolMessage);
-            yield '\n';
+            yield '\n'; // Ensure output is flushed
           } else {
             // For legacy display, emit tool call markers that the UI can detect
-            yield `\n<!TOOL_CALL_START:${name}:${JSON.stringify(toolResult.content)}:TOOL_CALL_END!>\n`;
+            yield `\n<!TOOL_CALL_START:${toolCall.name}:${JSON.stringify(toolResult.content)}:TOOL_CALL_END!>\n`;
           }
         } catch (error) {
           // Handle security errors with clean display
           if (isSecurityError(error)) {
             // For security errors, just show the clean message without stack trace
             const securityMessage = `Tool blocked by security policy`;
-            console.error(`Error calling tool ${name}:`, securityMessage);
-            yield `\n${securityMessage}\n`;
+            console.error(`Error calling tool ${toolCall.name}:`, securityMessage);
+            yield `\nTool "${toolCall.name}" was blocked by security policy.\n`;
           } else {
             // For other errors, show more detail but still clean
             console.error("Error handling tool call:", error);
-            yield `\nError handling tool call: ${error instanceof Error ? error.message : String(error)}\n`;
+            yield `\nError executing tool "${toolCall.name}": ${error instanceof Error ? error.message : String(error)}\n`;
           }
         }
-      } else if (chunk.type === "text") {
-        responseText += chunk.text;
-        yield chunk.text;
-
-        // Exit on first chunk with no tool if specified
-        if (firstChunk && options.exitIfFirstChunkNoTool) {
-          firstChunk = false;
-        }
       }
-    }
-
-    // If no tool call was made, add assistant message
-    if (!hasToolCall) {
+    } else {
+      // If no tool call was made, add assistant message
       this.messages.push({
         role: MessageRole.Assistant,
         content: responseText,

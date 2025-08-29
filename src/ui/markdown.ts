@@ -14,24 +14,24 @@ export class MarkdownRenderer {
   
   constructor() {
     // Configure marked with our beautiful Pink Pixel terminal renderer
-    // Use simple chalk colors to avoid issues with marked-terminal
+    // Proper styling functions for marked-terminal compatibility
     const terminalConfig = {
-      // Basic styling with chalk for compatibility
-      firstHeading: chalk.hex(BRAND_COLORS.pink).bold,
-      heading: chalk.hex(BRAND_COLORS.cyan).bold,
-      blockquote: chalk.hex(BRAND_COLORS.cyan).italic,
-      code: chalk.hex(BRAND_COLORS.purple).bgBlack,
-      codespan: chalk.hex(BRAND_COLORS.purple).bgBlack,
-      del: chalk.strikethrough,
-      em: chalk.hex(BRAND_COLORS.cyan).italic,
-      strong: chalk.hex(BRAND_COLORS.pink).bold,
-      hr: chalk.hex(BRAND_COLORS.pink),
-      link: chalk.hex(BRAND_COLORS.cyan).underline,
-      listitem: chalk.hex(BRAND_COLORS.pink),
-      paragraph: chalk.hex(BRAND_COLORS.bright),
-      table: chalk.hex(BRAND_COLORS.bright),
-      tablerow: chalk.hex(BRAND_COLORS.bright),
-      tablecell: chalk.hex(BRAND_COLORS.bright),
+      // Basic styling with proper function format for marked-terminal
+      firstHeading: (text: string) => chalk.hex(BRAND_COLORS.pink).bold(text),
+      heading: (text: string) => chalk.hex(BRAND_COLORS.cyan).bold(text),
+      blockquote: (text: string) => chalk.hex(BRAND_COLORS.cyan).italic(text),
+      code: (text: string) => chalk.hex(BRAND_COLORS.purple).bgBlack(text),
+      codespan: (text: string) => chalk.hex(BRAND_COLORS.purple).bgBlack(text),
+      del: (text: string) => chalk.strikethrough(text),
+      em: (text: string) => chalk.hex(BRAND_COLORS.cyan).italic(text),
+      strong: (text: string) => chalk.hex(BRAND_COLORS.pink).bold(text),
+      hr: (text: string) => chalk.hex(BRAND_COLORS.pink)(text),
+      link: (text: string) => chalk.hex(BRAND_COLORS.cyan).underline(text),
+      listitem: (text: string) => chalk.hex(BRAND_COLORS.pink)(text),
+      paragraph: (text: string) => chalk.hex(BRAND_COLORS.bright)(text),
+      table: (text: string) => chalk.hex(BRAND_COLORS.bright)(text),
+      tablerow: (text: string) => chalk.hex(BRAND_COLORS.bright)(text),
+      tablecell: (text: string) => chalk.hex(BRAND_COLORS.bright)(text),
       
       // Layout options
       width: 80,

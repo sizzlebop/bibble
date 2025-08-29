@@ -209,21 +209,25 @@ export class ChatUI {
         const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
         process.stdout.write(assistantPrompt);
 
-        // Process stream with beautiful styling and markdown rendering
+        // Process stream with beautiful styling and real-time streaming
         let fullResponse = "";
-        let responseBuffer = "";
+        let textBuffer = ""; // Buffer for accumulating text to render complete markdown blocks
         
         for await (const chunk of stream) {
           // Check for tool call markers
           const toolCallMatch = chunk.match(/<!TOOL_CALL_START:([^:]+):(.+):TOOL_CALL_END!>/);
           
           if (toolCallMatch) {
-            // If we have buffered response content, render it first
-            if (responseBuffer.trim()) {
-              // Render accumulated markdown content beautifully
-              const renderedMarkdown = markdown.render(responseBuffer);
-              process.stdout.write(renderedMarkdown);
-              responseBuffer = "";
+            // If we have buffered text, render it before the tool call
+            if (textBuffer.trim()) {
+              try {
+                const renderedMarkdown = markdown.render(textBuffer);
+                process.stdout.write(renderedMarkdown);
+              } catch (markdownError) {
+                // If markdown rendering fails, output as plain text
+                process.stdout.write(textBuffer);
+              }
+              textBuffer = "";
             }
             
             // Extract tool call info
@@ -247,21 +251,16 @@ export class ChatUI {
               process.stdout.write('\n' + assistantPrompt);
               
             } catch (error) {
-              // Fallback to styled text if parsing fails
-              responseBuffer += chunk;
+              // Fallback to direct output if parsing fails
+              textBuffer += chunk;
             }
           } else {
-            // Buffer the response content for markdown rendering
-            responseBuffer += chunk;
+            // CRITICAL FIX: Stream text directly for immediate display
+            // Simple approach: just output text chunks directly for real-time feel
+            process.stdout.write(chunk);
           }
           
           fullResponse += chunk;
-        }
-        
-        // Render any remaining buffered content
-        if (responseBuffer.trim()) {
-          const renderedMarkdown = markdown.render(responseBuffer);
-          process.stdout.write(renderedMarkdown);
         }
 
         // Add beautiful separator after response
