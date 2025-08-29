@@ -8,6 +8,7 @@ All notable changes to the Bibble project will be documented in this file.
 
 ### Fixed
 - **🔧 CRITICAL: JSON Parsing Errors**: Fixed tool call argument parsing errors caused by concatenated JSON objects
+- **🔧 Marked Compatibility**: Downgraded marked from v15.0.12 to v14.1.4 to maintain compatibility with marked-terminal v7.3.0 (fixes "Cannot read properties of undefined (reading 'brand')" error)
   - Fixed issue where multiple tool calls resulted in malformed JSON like `{"path": "..."}{".content": "..."}`
   - Implemented proper multi-tool call handling using Map-based tracking by tool call index
   - Improved `processStreamResponse` to handle OpenAI streaming with multiple concurrent tool calls
