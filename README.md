@@ -307,11 +307,7 @@ If you're still experiencing issues:
    - Error messages or unexpected behavior
 
 ### Version Compatibility
-
-- **Bibble 1.4.0+**: Enhanced tool display system and fixed system prompt tool visibility
-- **Bibble 1.3.9+**: Universal terminal compatibility with multi-tier fallback
-- **Bibble 1.3.8**: Enhanced UI and visual improvements
-- **Bibble 1.3.0+**: Full MCP integration support
+0
 - **Node.js 16+**: Required for all Bibble versions
 
 ## Development

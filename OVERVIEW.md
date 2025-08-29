@@ -17,7 +17,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
   - **Anthropic Claude models**: Claude Opus 4, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku
   - **Google Gemini models**: Gemini 2.5 Flash Preview, Gemini 2.5 Pro Preview, Gemini 2.0 Flash, Gemini 2.0 Flash Lite, Gemini 1.5 Flash, Gemini 1.5 Pro
   - **OpenAI-compatible endpoints** for third-party services
-- **Tool use** through the Model Context Protocol (MCP) with comprehensive external tool integration
+- **Tool use** through the Model Context Protocol (MCP) with user-configurable external tool integration
 - **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
 - **Chat history** tracking, export, and import with persistent storage
 - **Rich terminal UI** with markdown rendering and colored text output
@@ -298,16 +298,9 @@ Bibble implements comprehensive tool documentation and validation to improve too
 
 Bibble uses the `@modelcontextprotocol/sdk` package to connect to MCP servers via the `StdioClientTransport` interface. This allows it to communicate with servers that implement the MCP protocol, regardless of the programming language they're written in.
 
-**Currently Configured MCP Servers:**
-- **desktop-commander**: File system operations, command execution, and system interaction
-- **taskflow**: Task and project management with structured workflows
-- **web-scout**: Web search and content extraction capabilities
-- **datetime**: Date and time utilities and calculations
-- **context7**: Advanced context and documentation retrieval
-- **github**: GitHub repository management and API integration
-- **sequential-thinking**: Structured reasoning and problem-solving workflows
+**MCP Server Support:**
 
-These servers provide comprehensive tool coverage for development, research, task management, and system operations.
+Bibble supports any MCP-compatible servers that users choose to configure. The available tools and capabilities depend entirely on which servers the user has installed and configured. Users can configure their preferred MCP servers to extend Bibble's functionality with external tools and services.
 
 ## Anthropic Integration
 
@@ -372,7 +365,7 @@ Version 1.4.0 introduces a **REVOLUTIONARY TOOL CALLING INTERFACE** that transfo
 - **FIXED: Duplicate Tool Display**: Eliminated double tool call rendering between enhanced and legacy systems
 - **FIXED: Object Serialization**: Resolved "[object Object]" display issues with proper JSON stringification
 - **FIXED: MCP Tools System Prompt**: Corrected empty tools list in system prompt by deferring generation until after MCP server loading
-- **FIXED: Tool Discovery**: Models now properly recognize all 51+ available MCP tools
+- **FIXED: Tool Discovery**: Models now properly recognize all available MCP tools
 
 **📈 New Dependencies:**
 - `cli-highlight`: Professional JSON syntax highlighting
