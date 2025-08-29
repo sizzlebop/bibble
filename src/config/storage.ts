@@ -54,11 +54,31 @@ export interface BibbleConfig {
     args: string[];
     env?: Record<string, string>;
     enabled: boolean;
+    // Security settings (Phase 1)
+    securityPolicy?: "trusted" | "prompt" | "preview" | "strict";
+    allowedTools?: string[];
+    blockedTools?: string[];
+    requireConfirmation?: boolean;
+    maxExecutionTime?: number;
   }>;
   chat: {
     saveHistory: boolean;
     maxHistoryItems: number;
     userGuidelines?: string;
+  };
+  // Security configuration (Phase 1)
+  security: {
+    defaultPolicy: "trusted" | "prompt" | "preview" | "strict";
+    requireConfirmationGlobally: boolean;
+    previewToolInputs: boolean;
+    auditLogging: boolean;
+    toolTimeout: number; // milliseconds
+    sensitiveOperations: string[];
+    // Server-specific policies (stored in our client config, not server config)
+    serverPolicies: Record<string, "trusted" | "prompt" | "preview" | "strict">;
+    // Tool-specific policies (stored in our client config)
+    allowedTools: Record<string, string[]>; // serverName -> toolNames
+    blockedTools: Record<string, string[]>; // serverName -> toolNames
   };
   models: Array<{
     id: string;
@@ -109,6 +129,22 @@ export const defaultConfig: BibbleConfig = {
     saveHistory: true,
     maxHistoryItems: 50,
     userGuidelines: ""
+  },
+  // Default security configuration - start with trusted for backward compatibility
+  security: {
+    defaultPolicy: "trusted",
+    requireConfirmationGlobally: false,
+    previewToolInputs: true,
+    auditLogging: false, // Off by default to avoid log spam
+    toolTimeout: 30000, // 30 seconds
+    sensitiveOperations: [
+      "execute_command", "force_terminate", "kill_process", "move_file",
+      "delete_memory", "delete_task", "delete_subtask", "delete_note",
+      "remove_todos", "set_config_value"
+    ],
+    serverPolicies: {},
+    allowedTools: {},
+    blockedTools: {}
   },
   models: [
     // OpenAI models

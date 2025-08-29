@@ -6,6 +6,8 @@ import { setupChatCommand } from "./commands/chat.js";
 import { setupConfigCommand } from "./commands/config.js";
 import { setupHistoryCommand } from "./commands/history.js";
 import { createHelpCommand } from "./commands/help.js";
+import { createSecurityCommand } from "./commands/security.js";
+import { createTestCommand } from "./commands/test.js";
 
 // Config initialization
 import { ensureConfigDirExists } from "./config/storage.js";
@@ -40,6 +42,14 @@ setupHistoryCommand(program);
 
 // Add help command
 program.addCommand(createHelpCommand());
+
+// Add security command
+program.addCommand(createSecurityCommand());
+
+// Add test command (for development/testing only)
+if (process.env.NODE_ENV === 'development' || process.argv.includes('--enable-test-commands')) {
+  program.addCommand(createTestCommand());
+}
 
 // Setup command
 program

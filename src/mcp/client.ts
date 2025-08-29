@@ -4,6 +4,10 @@ import { Config } from "../config/config.js";
 import { ListToolsRequest, ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { BibbleConfig } from "../config/storage.js";
 import { envResolver } from "../utils/env-resolver.js";
+import { SecurityManager } from "../security/SecurityManager.js";
+import { classifyToolRisk } from "../security/ToolClassifier.js";
+import { createSecurityPrompt, showDenialMessage, showTimeoutMessage } from "../security/SecurityUI.js";
+import { ToolDeniedError, ToolBlockedError, ToolTimeoutError } from "../security/SecurityError.js";
 
 // Tool types
 export type ServerName = string;
@@ -39,9 +43,17 @@ export class McpClient {
   public readonly availableTools: ChatCompletionInputTool[] = [];
   public readonly toolToServerMap: Map<string, string> = new Map();
   private config = Config.getInstance();
+  private securityManager: SecurityManager;
 
   constructor(options: McpClientOptions = {}) {
     this.initializeServers(options.servers);
+    
+    // Initialize SecurityManager with centralized config accessor
+    this.securityManager = new SecurityManager(
+      () => this.config.getSecurityConfig(),
+      classifyToolRisk,
+      createSecurityPrompt
+    );
   }
 
   /**
@@ -432,42 +444,68 @@ export class McpClient {
      */
 
     async callTool(toolName: string, toolArgs: any): Promise<{ content: string }> {
-        // Handle built-in tools
-        if (toolName === "task_complete") {
-            return this.handleTaskComplete();
-        }
-
-        if (toolName === "ask_question") {
-            return this.handleAskQuestion();
-        }
-
-        // Handle MCP server tools
-        // Use the exact tool name as registered
-        const client = this.clients.get(toolName);
-
-        if (!client) {
-            return {
-                content: `Error: No MCP client found for tool: ${toolName}`
-            };
-        }
-
+        const startTime = Date.now();
+        const serverName = this.toolToServerMap.get(toolName) || 'unknown';
+        
         try {
-            // Use the tool arguments directly as provided by Claude
-            // Following Anthropic's MCP example - no complex processing needed
-            let processedArgs = toolArgs;
+            // Handle built-in tools (skip security for these)
+            if (toolName === "task_complete") {
+                return this.handleTaskComplete();
+            }
 
-            // Only handle null/undefined cases
+            if (toolName === "ask_question") {
+                return this.handleAskQuestion();
+            }
+
+            // Security check for MCP server tools
+            const decision = this.securityManager.evaluateToolCall(toolName, serverName, toolArgs);
+            
+            if (decision === 'deny') {
+                const reason = 'Tool blocked by security policy';
+                showDenialMessage(serverName, toolName, reason);
+                this.securityManager.log(serverName, toolName, 'deny', toolArgs);
+                throw new ToolBlockedError(toolName, serverName);
+            }
+            
+            if (decision === 'prompt') {
+                const approved = await this.securityManager.maybeConfirm(toolName, serverName, toolArgs);
+                if (!approved) {
+                    const reason = 'User denied execution';
+                    showDenialMessage(serverName, toolName, reason);
+                    this.securityManager.log(serverName, toolName, 'deny', toolArgs);
+                    throw new ToolDeniedError(toolName, serverName);
+                }
+            }
+
+            // Find the MCP client for this tool
+            const client = this.clients.get(toolName);
+
+            if (!client) {
+                this.securityManager.log(serverName, toolName, 'deny', toolArgs, undefined, 'No MCP client found');
+                return {
+                    content: `Error: No MCP client found for tool: ${toolName}`
+                };
+            }
+
+            // Process arguments
+            let processedArgs = toolArgs;
             if (processedArgs === null || processedArgs === undefined) {
                 processedArgs = {};
             }
 
-            // Log the arguments for debugging
             console.log(`Calling tool ${toolName} with arguments:`, JSON.stringify(processedArgs));
 
-            const result = await client.callTool({
+            // Execute with timeout
+            const toolPromise = client.callTool({
                 name: toolName,
                 arguments: processedArgs
             });
+            
+            const result = await this.securityManager.withTimeout(toolPromise, serverName);
+            const duration = Date.now() - startTime;
+            
+            // Log successful execution
+            this.securityManager.log(serverName, toolName, 'allow', toolArgs, duration);
 
             return {
                 content: result.content && Array.isArray(result.content) && result.content.length > 0
@@ -475,7 +513,18 @@ export class McpClient {
                     : "No content returned from tool"
             };
         } catch (error) {
+            const duration = Date.now() - startTime;
+            
+            // Handle timeout specifically
+            if (error instanceof Error && error.message.includes('timed out')) {
+                const timeoutMs = this.config.getSecurityConfig().toolTimeout;
+                showTimeoutMessage(serverName, toolName, timeoutMs);
+                this.securityManager.log(serverName, toolName, 'deny', toolArgs, duration, error);
+                throw new ToolTimeoutError(toolName, serverName, timeoutMs);
+            }
+            
             console.error(`Error calling tool ${toolName}:`, error);
+            this.securityManager.log(serverName, toolName, 'deny', toolArgs, duration, error);
             return {
                 content: `Error executing tool ${toolName}: ${error instanceof Error ? error.message : String(error)}`
             };

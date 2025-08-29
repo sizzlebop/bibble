@@ -5,6 +5,8 @@ import { ListToolsRequest, ListToolsResultSchema } from "@modelcontextprotocol/s
 import { BibbleConfig } from "../config/storage.js";
 import { LlmClient } from "../llm/client.js";
 import { ChatMessage, MessageRole } from "../types.js";
+import { isSecurityError } from "../security/SecurityError.js";
+import { toolDisplay } from "../ui/tool-display.js";
 
 // Default system prompt - non-configurable
 export const DEFAULT_SYSTEM_PROMPT = `
@@ -47,76 +49,10 @@ If you don't have the information needed for a required parameter, ask the user 
 
 Remember: You have access to many tools that can help you gather information, perform searches, manage files, execute commands, and more. Use them effectively to provide the best possible assistance.
 
-You MUST plan extensively before each function call, and reflect extensively on the outcomes of the previous function calls. DO NOT do this entire process by making function calls only, as this can impair your ability to solve the problem and think insightfully.
+You should plan before each function call and reflect on the outcomes of previous function calls. Balance thinking with action to solve problems effectively.
 
-You MUST iterate and keep going until your task is completed - the question must be fully answered, all files are written, a problem is solved, etc... depending on your task. But ALWAYS complete the task properly.
+Work on the user's request systematically. When you complete a task, provide a clear response and finish.
 
-Only terminate your turn when you are sure that the task is completed. Go through the problem step by step, and make sure to verify that your changes are correct. NEVER end your turn without having fully completed your task, and when you say you are going to make a tool call, make sure you ACTUALLY make the tool call, instead of ending your turn.
-
-Take your time and think through every step - remember to check your solution rigorously and watch out for boundary cases, especially with the changes you made. Your solution must be perfect. If not, continue working on it. At the end, you must test your code rigorously using the tools provided, and do it many times, to catch all edge cases. If it is not robust, iterate more and make it perfect. Failing to test your code sufficiently rigorously is the NUMBER ONE failure mode on these types of tasks; make sure you handle all edge cases, and run existing tests if they are provided.
-
-# Workflow
-
-## High-Level Strategy For Handling User Requests
-
-1. Understand the task, question or problem deeply. Carefully read the issue and think critically about what is required.
-2. Investigate. Explore relevant files, search for key functions, and gather context.
-3. If the user requested files to be created or changed, develop a clear, step-by-step plan. Break down the fix into manageable, incremental steps.
-4. Implement any fixes incrementally. Make small, testable changes.
-5. Debug as needed. Use debugging techniques to isolate and resolve issues.
-6. Test frequently. Run tests after each change to verify correctness.
-7. Iterate until the root cause is fixed and all tests pass.
-8. Reflect and validate comprehensively. After tests pass, think about the original intent, write additional tests to ensure correctness, and remember there are hidden tests that must also pass before the solution is truly complete.
-9. When answering user questions, be sure to gather as much relevant information as possible, think about all of the information gathered, and formulate the most accurate and thorough response possible before answering the user and ending your turn. DO NOT make up information or guess or speculate. Provide complete FACTUAL information only to the user.
-
-If a coding task is given to you, please refer to the detailed sections below for more information the steps needed before changing or creating code files.
-
-## 1. Deeply Understand the Problem
-Carefully read the issue and think hard about a plan to solve it before coding.
-
-## 2. Codebase Investigation
-- Explore relevant files and directories.
-- Search for key functions, classes, or variables related to the issue.
-- Read and understand relevant code snippets.
-- Identify the root cause of the problem.
-- Validate and update your understanding continuously as you gather more context.
-
-## 3. Develop a Detailed Plan
-- Outline a specific, simple, and verifiable sequence of steps to fix the problem.
-- Break down the fix into small, incremental changes.
-
-## 4. Making Code Changes
-- Before editing, always read the relevant file contents or section to ensure complete context.
-- If a patch is not applied correctly, attempt to reapply it.
-- Make small, testable, incremental changes that logically follow from your investigation and plan.
-
-## 5. Debugging
-- Make code changes only if you have high confidence they can solve the problem
-- When debugging, try to determine the root cause rather than addressing symptoms
-- Debug for as long as needed to identify the root cause and identify a fix
-- Use print statements, logs, or temporary code to inspect program state, including descriptive statements or error messages to understand what's happening
-- To test hypotheses, you can also add test statements or functions
-- Revisit your assumptions if unexpected behavior occurs.
-
-## 6. Testing
-- Run tests frequently using the appropriate testing strategy for the codebase.
-- After each change, verify correctness by running relevant tests.
-- If tests fail, analyze failures and revise your patch.
-- Write additional tests if needed to capture important behaviors or edge cases.
-- Ensure all tests pass before finalizing.
-
-## 7. Final Verification
-- Confirm the root cause is fixed.
-- Review your solution for logic correctness and robustness.
-- Iterate until you are extremely confident the fix is complete and all tests pass.
-
-## 8. Final Reflection and Additional Testing
-- Reflect carefully on the original intent of the user and the problem statement.
-- Think about potential edge cases or scenarios that may not be covered by existing tests.
-- Write additional tests that would need to pass to fully validate the correctness of your solution.
-- Run these new tests and ensure they all pass.
-- Be aware that there are additional hidden tests that must also pass for the solution to be successful.
-- Do not assume the task is complete just because the visible tests pass; continue refining until you are confident the fix is robust and comprehensive.
 `;
 
 // Agent configuration options
@@ -432,18 +368,14 @@ export class Agent extends McpClient {
       }
 
       // Simple and reliable turn ending logic
-      // If the last message is from the assistant (not a tool result),
-      // and we expected tools but didn't get any, then end the conversation
-      if (currentLast.role === MessageRole.Assistant && nextTurnShouldCallTools) {
+      // If the last message is from the assistant (not a tool result), end the conversation
+      // This prevents the agent from continuing indefinitely
+      if (currentLast.role === MessageRole.Assistant) {
         return;
       }
 
-      // Toggle tool call expectation
-      if (currentLast.role === MessageRole.Tool) {
-        nextTurnShouldCallTools = false; // Next turn should be Claude's response to the tool result
-      } else {
-        nextTurnShouldCallTools = true; // Next turn could involve tool calls
-      }
+      // Set tool call expectation for next turn
+      nextTurnShouldCallTools = currentLast.role !== MessageRole.Tool;
     }
   }
 
@@ -581,17 +513,31 @@ export class Agent extends McpClient {
           const useEnhancedDisplay = process.env.BIBBLE_ENHANCED_TOOLS !== 'false';
           
           if (useEnhancedDisplay) {
-            // For enhanced display, don't emit tool call markers since the tool message
-            // in conversation history will be displayed by the enhanced system
-            // Just yield a newline to maintain spacing
+            // For enhanced display, display the tool result immediately
+            const toolMessage: ChatMessage = {
+              role: MessageRole.Tool,
+              content: toolResult.content,
+              toolName: name
+            };
+            
+            toolDisplay.displayCall(toolMessage);
             yield '\n';
           } else {
             // For legacy display, emit tool call markers that the UI can detect
             yield `\n<!TOOL_CALL_START:${name}:${JSON.stringify(toolResult.content)}:TOOL_CALL_END!>\n`;
           }
         } catch (error) {
-          console.error("Error handling tool call:", error);
-          yield `\nError handling tool call: ${error instanceof Error ? error.message : String(error)}\n`;
+          // Handle security errors with clean display
+          if (isSecurityError(error)) {
+            // For security errors, just show the clean message without stack trace
+            const securityMessage = `Tool blocked by security policy`;
+            console.error(`Error calling tool ${name}:`, securityMessage);
+            yield `\n${securityMessage}\n`;
+          } else {
+            // For other errors, show more detail but still clean
+            console.error("Error handling tool call:", error);
+            yield `\nError handling tool call: ${error instanceof Error ? error.message : String(error)}\n`;
+          }
         }
       } else if (chunk.type === "text") {
         responseText += chunk.text;

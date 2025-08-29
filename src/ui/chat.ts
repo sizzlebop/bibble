@@ -10,6 +10,7 @@ import { symbols, chatSymbols } from "./symbols.js";
 import { BRAND_COLORS, t } from "./theme.js";
 import { BibbleTable } from "./tables.js";
 import { toolDisplay, ToolDisplayOptions } from "./tool-display.js";
+import { isSecurityError } from "../security/SecurityError.js";
 import boxen from "boxen";
 import ora from "ora";
 
@@ -280,8 +281,15 @@ export class ChatUI {
       // Save full response for history
       // This will be handled by the agent internally
     } catch (error) {
-      // Beautiful error display
-      console.log(`\n${terminal.hex(BRAND_COLORS.red, chatSymbols.status.error)} ${terminal.error('Error:')} ${error}`);
+      // Handle security errors with clean display
+      if (isSecurityError(error)) {
+        const cleanMessage = "Tool blocked by security policy";
+        console.log(`\n${terminal.hex(BRAND_COLORS.red, chatSymbols.status.error)} ${cleanMessage}`);
+      } else {
+        // For other errors, show the error message without stack trace
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`\n${terminal.hex(BRAND_COLORS.red, chatSymbols.status.error)} ${terminal.error('Error:')} ${errorMessage}`);
+      }
       this.displayMessageSeparator();
     }
   }

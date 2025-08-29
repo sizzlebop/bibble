@@ -1,0 +1,349 @@
+{
+  "defaultProvider": "openaiCompatible",
+  "apis": {
+    "openai": {
+      "baseUrl": "https://api.openai.com/v1",
+      "defaultModel": "gpt-4.1"
+    },
+    "openaiCompatible": {
+      "baseUrl": "https://text.pollinations.ai/openai",
+      "defaultModel": "openai",
+      "requiresApiKey": false
+    },
+    "anthropic": {
+      "baseUrl": "https://api.anthropic.com",
+      "defaultModel": "claude-sonnet-4-20250514"
+    },
+    "google": {
+      "baseUrl": "https://generativelanguage.googleapis.com",
+      "defaultModel": "gemini-2.0-flash"
+    }
+  },
+  "ui": {
+    "colorOutput": true,
+    "useMarkdown": true
+  },
+  "mcpServers": [
+    {
+      "name": "desktop-commander",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@wonderwhy-er/desktop-commander"
+      ],
+      "env": {
+        "fileWriteLineLimit": "10000",
+        "fileReadLineLimit": "10000"
+      },
+      "enabled": true
+    },
+    {
+      "name": "context7",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "env": {},
+      "enabled": true
+    },
+    {
+      "name": "datetime",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pinkpixel/datetime-mcp"
+      ],
+      "env": {},
+      "enabled": true
+    },
+    {
+      "name": "mcpollinations",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pinkpixel/mcpollinations"
+      ],
+      "env": {},
+      "enabled": true
+    },
+    {
+      "name": "sequential-thinking",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {},
+      "enabled": true
+    },
+    {
+      "name": "taskflow",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pinkpixel/taskflow-mcp"
+      ],
+      "env": {},
+      "enabled": true
+    },
+    {
+      "name": "web-scout",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pinkpixel/web-scout-mcp"
+      ],
+      "env": {},
+      "enabled": true
+    },
+    {
+      "name": "notifications",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pinkpixel/notification-mcp"
+      ],
+      "env": {
+        "MCP_NOTIFICATION_SOUND": "random"
+      },
+      "enabled": true
+    },
+    {
+      "name": "puppeteer",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {},
+      "enabled": true
+    }
+  ],
+  "chat": {
+    "saveHistory": true,
+    "maxHistoryItems": 50,
+    "userGuidelines": ""
+  },
+  "security": {
+    "defaultPolicy": "prompt",
+    "requireConfirmationGlobally": false,
+    "previewToolInputs": true,
+    "auditLogging": false,
+    "toolTimeout": 30000,
+    "sensitiveOperations": [
+      "execute_command",
+      "force_terminate",
+      "kill_process",
+      "move_file",
+      "delete_memory",
+      "delete_task",
+      "delete_subtask",
+      "delete_note",
+      "remove_todos",
+      "set_config_value"
+    ],
+    "serverPolicies": {
+      "mcpollinations": "trusted"
+    },
+    "allowedTools": {
+      "desktop-commander": [
+        "read_file"
+      ]
+    },
+    "blockedTools": {
+      "desktop-commander": [
+        "search_code"
+      ]
+    }
+  },
+  "models": [
+    {
+      "id": "gpt-4.1",
+      "provider": "openai",
+      "name": "GPT-4.1",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "isReasoningModel": false
+    },
+    {
+      "id": "o4-mini",
+      "provider": "openai",
+      "name": "o4-mini",
+      "maxCompletionTokens": 4096,
+      "reasoningEffort": "medium",
+      "isReasoningModel": true
+    },
+    {
+      "id": "o3",
+      "provider": "openai",
+      "name": "o3",
+      "maxCompletionTokens": 4096,
+      "reasoningEffort": "medium",
+      "isReasoningModel": true
+    },
+    {
+      "id": "o3-mini",
+      "provider": "openai",
+      "name": "o3-mini",
+      "maxCompletionTokens": 4096,
+      "reasoningEffort": "medium",
+      "isReasoningModel": true
+    },
+    {
+      "id": "o1",
+      "provider": "openai",
+      "name": "o1",
+      "maxCompletionTokens": 4096,
+      "reasoningEffort": "medium",
+      "isReasoningModel": true
+    },
+    {
+      "id": "o1-pro",
+      "provider": "openai",
+      "name": "o1-pro",
+      "maxCompletionTokens": 4096,
+      "reasoningEffort": "medium",
+      "isReasoningModel": true
+    },
+    {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "name": "GPT-4o",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "isReasoningModel": false
+    },
+    {
+      "id": "chatgpt-4o",
+      "provider": "openai",
+      "name": "ChatGPT-4o",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "isReasoningModel": false
+    },
+    {
+      "id": "gpt-4.1-mini",
+      "provider": "openai",
+      "name": "GPT-4.1 mini",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "isReasoningModel": false
+    },
+    {
+      "id": "gpt-4.1-nano",
+      "provider": "openai",
+      "name": "GPT-4.1 nano",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "isReasoningModel": false
+    },
+    {
+      "id": "gpt-4o-mini",
+      "provider": "openai",
+      "name": "GPT-4o mini",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "isReasoningModel": false
+    },
+    {
+      "id": "claude-opus-4-20250514",
+      "provider": "anthropic",
+      "name": "Claude Opus 4",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "claude-sonnet-4-20250514",
+      "provider": "anthropic",
+      "name": "Claude Sonnet 4",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "claude-3-7-sonnet-20250219",
+      "provider": "anthropic",
+      "name": "Claude 3.7 Sonnet",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "claude-3-5-sonnet-20241022",
+      "provider": "anthropic",
+      "name": "Claude 3.5 Sonnet",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "claude-3-5-haiku-20241022",
+      "provider": "anthropic",
+      "name": "Claude 3.5 Haiku",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "gemini-2.5-flash-preview-05-20",
+      "provider": "google",
+      "name": "Gemini 2.5 Flash Preview",
+      "maxTokens": 8192,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "gemini-2.5-pro-preview-05-06",
+      "provider": "google",
+      "name": "Gemini 2.5 Pro Preview",
+      "maxTokens": 8192,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "gemini-2.0-flash",
+      "provider": "google",
+      "name": "Gemini 2.0 Flash",
+      "maxTokens": 8192,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "gemini-2.0-flash-lite",
+      "provider": "google",
+      "name": "Gemini 2.0 Flash Lite",
+      "maxTokens": 8192,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "gemini-1.5-flash",
+      "provider": "google",
+      "name": "Gemini 1.5 Flash",
+      "maxTokens": 8192,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    },
+    {
+      "id": "gemini-1.5-pro",
+      "provider": "google",
+      "name": "Gemini 1.5 Pro",
+      "maxTokens": 8192,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "topK": 40
+    }
+  ]
+}

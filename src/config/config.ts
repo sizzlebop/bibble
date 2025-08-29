@@ -256,4 +256,93 @@ current = (current as any)[k];
 
     return model;
   }
+
+  /**
+   * Get security configuration
+   */
+  public getSecurityConfig(): BibbleConfig["security"] {
+    const defaultSecurityConfig = {
+      defaultPolicy: "trusted",
+      requireConfirmationGlobally: false,
+      previewToolInputs: true,
+      auditLogging: false,
+      toolTimeout: 30000,
+      sensitiveOperations: [],
+      serverPolicies: {},
+      allowedTools: {},
+      blockedTools: {}
+    } as const;
+    
+    const savedConfig = this.get("security", {});
+    
+    // Merge saved config with defaults to ensure all properties exist
+    return {
+      ...defaultSecurityConfig,
+      ...savedConfig
+    };
+  }
+
+  /**
+   * Set security policy for a server
+   * @param serverName Server name
+   * @param policy Security policy
+   */
+  public setServerSecurityPolicy(serverName: string, policy: "trusted" | "prompt" | "preview" | "strict"): void {
+    const currentConfig = this.getSecurityConfig();
+    currentConfig.serverPolicies[serverName] = policy;
+    this.set("security", currentConfig);
+  }
+
+  /**
+   * Get security policy for a server
+   * @param serverName Server name
+   * @returns Security policy or undefined if not set (will use default)
+   */
+  public getServerSecurityPolicy(serverName: string): "trusted" | "prompt" | "preview" | "strict" | undefined {
+    const securityConfig = this.getSecurityConfig();
+    return securityConfig.serverPolicies[serverName];
+  }
+
+  /**
+   * Set global security policy
+   * @param policy Global security policy
+   */
+  public setGlobalSecurityPolicy(policy: "trusted" | "prompt" | "preview" | "strict"): void {
+    // Ensure security config exists with defaults before updating specific field
+    const currentConfig = this.getSecurityConfig();
+    currentConfig.defaultPolicy = policy;
+    this.set("security", currentConfig);
+  }
+
+  /**
+   * Add a tool to the allowed list for a server
+   * @param serverName Server name
+   * @param toolName Tool name
+   */
+  public addAllowedTool(serverName: string, toolName: string): void {
+    const currentConfig = this.getSecurityConfig();
+    if (!currentConfig.allowedTools[serverName]) {
+      currentConfig.allowedTools[serverName] = [];
+    }
+    if (!currentConfig.allowedTools[serverName].includes(toolName)) {
+      currentConfig.allowedTools[serverName].push(toolName);
+    }
+    this.set("security", currentConfig);
+  }
+
+  /**
+   * Add a tool to the blocked list for a server
+   * @param serverName Server name
+   * @param toolName Tool name
+   */
+  public addBlockedTool(serverName: string, toolName: string): void {
+    const currentConfig = this.getSecurityConfig();
+    if (!currentConfig.blockedTools[serverName]) {
+      currentConfig.blockedTools[serverName] = [];
+    }
+    if (!currentConfig.blockedTools[serverName].includes(toolName)) {
+      currentConfig.blockedTools[serverName].push(toolName);
+    }
+    this.set("security", currentConfig);
+  }
 }

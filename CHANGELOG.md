@@ -2,6 +2,62 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.4.2] - 2025-08-29
+
+### 🔒 SECURITY & CONVERSATION FIXES
+
+### Fixed
+- **🔧 CRITICAL: Security Policy Display**: Fixed messy blocked tool output
+  - Cleaned up security error handling in `McpClient.callTool` method
+  - Tool blocked errors now display clean message: "Tool blocked by security policy"
+  - Eliminated cluttered error stack traces in terminal output
+  - Enhanced security error detection with `isSecurityError` utility
+- **🔧 CRITICAL: Trusted Tool Prompting**: Fixed security policy bypass for trusted tools
+  - Resolved issue where trusted tools were still prompting for confirmation
+  - Fixed security evaluation logic to properly respect 'trusted' server settings
+  - Ensured `SecurityManager.evaluateToolCall` properly returns 'allow' for trusted tools
+  - Eliminated unnecessary confirmation prompts for explicitly trusted MCP servers
+- **🔧 CRITICAL: Duplicate LLM Responses**: Fixed agent generating duplicate responses
+  - Simplified conversation loop termination logic in `Agent.conversationLoop`
+  - Eliminated complex and flawed `nextTurnShouldCallTools` logic
+  - Conversation now properly ends after assistant response, preventing infinite loops
+  - Removed redundant system prompt instructions that caused repetitive LLM behavior
+  - Fixed duplicate response generation where LLM would repeat entire responses
+- **🔧 System Prompt Optimization**: Cleaned up repetitive system prompt instructions
+  - Removed redundant "Stop when done" and "Focus on completing" instructions
+  - Simplified workflow instructions to single clear directive
+  - Eliminated prompt redundancy that was causing LLM response duplication
+
+### Changed
+- **🛡️ Security Error Handling**: Enhanced clean error display system
+  - Security errors now show user-friendly messages without technical details
+  - Preserved detailed logging for debugging while showing clean UI messages
+  - Improved terminal output readability for security policy violations
+- **🔄 Conversation Flow**: Simplified and more reliable conversation termination
+  - Streamlined turn-ending logic for consistent single responses
+  - Removed complex state management that caused conversation loop issues
+  - Enhanced conversation stability and predictability
+
+### Technical Details
+- **Security**: Improved `ToolBlockedError` and `ToolDeniedError` handling in agent processing
+- **Conversation Logic**: Fixed conversation loop conditions in `src/mcp/agent.ts`
+- **System Prompt**: Optimized prompt clarity and removed redundant instructions
+- **Error Display**: Enhanced security error presentation in tool display system
+
+### Impact
+- **Before**: Messy security errors, duplicate responses, trusted tools still prompting
+- **After**: Clean security messages, single responses, proper trusted tool behavior
+
+This release resolves critical security policy UX issues and eliminates the frustrating duplicate response problem, providing a much cleaner and more reliable user experience! 🎯
+
+## [1.4.1] - 2025-08-28
+
+### Fixed
+- **🔧 Markdown Rendering**: Fixed bugs in markdown rendering for assistant responses
+  - Improved markdown-to-terminal conversion for better readability
+  - Enhanced text formatting consistency across different response types
+  - Fixed rendering issues with special characters and formatting in AI responses
+
 ## [1.4.0] - 2025-08-28
 
 ### 🎨 MAJOR UI ENHANCEMENT - ENHANCED TOOL CALLING DISPLAY

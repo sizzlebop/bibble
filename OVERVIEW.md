@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.4.0
+**Version**: 1.4.2
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble
-*Last updated: August 28, 2025*
+*Last updated: August 29, 2025*
 
 ## Project Overview
 
@@ -382,6 +382,48 @@ Version 1.4.0 introduces a **REVOLUTIONARY TOOL CALLING INTERFACE** that transfo
 **🌟 Environment Variables:**
 - `BIBBLE_ENHANCED_TOOLS=true` (default): Enable enhanced tool display
 - `BIBBLE_ENHANCED_TOOLS=false`: Use legacy display for compatibility
+
+### Security Policy & Conversation Fixes (v1.4.2) - August 29, 2025
+
+Version 1.4.2 addresses critical security policy UX issues and eliminates the duplicate response problem for a **CLEANER AND MORE RELIABLE USER EXPERIENCE**:
+
+**🔒 Security Policy Improvements:**
+- **FIXED: Security Policy Display**: Cleaned up messy blocked tool output
+  - Tool blocked errors now display clean message: "Tool blocked by security policy"
+  - Eliminated cluttered error stack traces in terminal output
+  - Enhanced security error detection with `isSecurityError` utility
+  - Preserved detailed logging for debugging while showing clean UI messages
+- **FIXED: Trusted Tool Prompting**: Fixed security policy bypass for trusted tools
+  - Resolved issue where trusted tools were still prompting for confirmation
+  - Fixed security evaluation logic to properly respect 'trusted' server settings
+  - Ensured `SecurityManager.evaluateToolCall` properly returns 'allow' for trusted tools
+  - Eliminated unnecessary confirmation prompts for explicitly trusted MCP servers
+
+**🔄 Conversation Loop Reliability:**
+- **FIXED: Duplicate LLM Responses**: Fixed agent generating duplicate responses
+  - Simplified conversation loop termination logic in `Agent.conversationLoop`
+  - Eliminated complex and flawed `nextTurnShouldCallTools` logic
+  - Conversation now properly ends after assistant response, preventing infinite loops
+  - Fixed duplicate response generation where LLM would repeat entire responses
+- **FIXED: System Prompt Optimization**: Cleaned up repetitive system prompt instructions
+  - Removed redundant "Stop when done" and "Focus on completing" instructions
+  - Simplified workflow instructions to single clear directive
+  - Eliminated prompt redundancy that was causing LLM response duplication
+
+**🛡️ Enhanced Error Handling:**
+- **Security Error Display**: User-friendly messages without technical details
+- **Conversation Stability**: Streamlined turn-ending logic for consistent single responses
+- **Error Recovery**: Improved error handling with graceful degradation
+
+**Technical Improvements:**
+- Enhanced `ToolBlockedError` and `ToolDeniedError` handling in agent processing
+- Fixed conversation loop conditions in `src/mcp/agent.ts`
+- Optimized prompt clarity and removed redundant instructions
+- Improved security error presentation in tool display system
+
+**Impact:**
+- **Before**: Messy security errors, duplicate responses, trusted tools still prompting
+- **After**: Clean security messages, single responses, proper trusted tool behavior
 
 ### Pink Pixel Glamour Transformation (v1.3.8) - August 23, 2025
 
