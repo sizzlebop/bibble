@@ -77,7 +77,9 @@ export const brandSymbols = {
   terminal: '💻',
   robot: '🤖',
   gear: '⚙️',
-  chip: '🧠',
+  brain: '🧠',
+  chart: '📊',
+  disk: '💾',
   satellite: '🛰️',
   
   // Status emojis
@@ -85,6 +87,7 @@ export const brandSymbols = {
   thinking: '🤔',
   detective: '🕵️‍♀️',
   wizard: '🧙‍♂️',
+  success: '✅',
   
   // Hearts and love
   heart: '❤️',
@@ -213,7 +216,20 @@ export const symbolUtils = {
    * Get a status symbol with fallback
    */
   status(type: 'success' | 'error' | 'warning' | 'info'): string {
-    return statusSymbols[type] || symbols[type] || '•';
+    // First try statusSymbols
+    if (statusSymbols[type]) {
+      return statusSymbols[type];
+    }
+    
+    // Then map to appropriate symbols as fallback
+    const symbolMap = {
+      success: symbols.tick,
+      error: symbols.cross,
+      warning: symbols.warning,
+      info: symbols.info,
+    } as const;
+    
+    return symbolMap[type] || '•';
   },
   
   /**
@@ -268,6 +284,7 @@ export const s = {
   fire: brandSymbols.fire,
   lightning: brandSymbols.lightning,
   party: brandSymbols.party,
+  success: brandSymbols.success,
   
   // Common
   bullet: symbols.bullet,

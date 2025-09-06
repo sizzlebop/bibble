@@ -15,7 +15,7 @@ import { isSetupNeeded, runSetupWizard } from "./config/setup.js";
 import { Agent } from "./mcp/agent.js";
 
 // Import our gorgeous theme system
-import { terminal, Color } from "./ui/colors.js";
+import { Terminal, Color, terminal } from "./ui/colors.js";
 import { splash } from "./ui/splash.js";
 
 // Export built-in tools for external access
@@ -139,15 +139,15 @@ program
       
       // Executable paths
       console.log(terminal.style.subtitle("⚡ Executable Resolution"));
-      console.log(`${terminal.format("Node.js:", Color.Gray)} ${diagnostic.node.path ? terminal.success(diagnostic.node.path) : terminal.error("Not found")}`);
+      console.log(`${terminal.format("Node.js:", Color.Gray)} ${diagnostic.node.path ? terminal.ok(diagnostic.node.path) : terminal.error("Not found")}`);
       if (diagnostic.node.version) {
         console.log(`${terminal.format("         Version:", Color.Gray)} ${terminal.info(diagnostic.node.version)}`);
       }
-      console.log(`${terminal.format("npm:", Color.Gray)} ${diagnostic.npm.path ? terminal.success(diagnostic.npm.path) : terminal.error("Not found")}`);
+      console.log(`${terminal.format("npm:", Color.Gray)} ${diagnostic.npm.path ? terminal.ok(diagnostic.npm.path) : terminal.error("Not found")}`);
       if (diagnostic.npm.version) {
         console.log(`${terminal.format("     Version:", Color.Gray)} ${terminal.info(diagnostic.npm.version)}`);
       }
-      console.log(`${terminal.format("npx:", Color.Gray)} ${diagnostic.npx.path ? terminal.success(diagnostic.npx.path) : terminal.error("Not found")}`);
+      console.log(`${terminal.format("npx:", Color.Gray)} ${diagnostic.npx.path ? terminal.ok(diagnostic.npx.path) : terminal.error("Not found")}`);
       if (diagnostic.npx.version) {
         console.log(`${terminal.format("     Version:", Color.Gray)} ${terminal.info(diagnostic.npx.version)}`);
       }

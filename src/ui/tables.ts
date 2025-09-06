@@ -2,11 +2,15 @@
 // Phase 4: Data Display & Tables implementation
 
 import Table from 'cli-table3';
-import { theme, t } from './theme.js';
+import { theme } from './theme.js';
 import { s, brandSymbols } from './symbols.js';
-import { gradient } from './gradient.js';
+import { t }from "./colors.js";
+import { BRAND_COLORS, BrandColorName, BrandColorsType, Colors } from './colors.js';
+import { g } from './gradient.js';
+import { Style } from 'cli-highlight';
+import Chalk from 'chalk';
 
-/**
+/**,
  * Table styling presets for different data types
  */
 export const TABLE_STYLES = {
@@ -64,12 +68,13 @@ export const TABLE_STYLES = {
 
 export type TableStyle = keyof typeof TABLE_STYLES;
 
+
+
 /**
  * Enhanced table class with Pink Pixel theming
  */
 export class BibbleTable {
   private table: Table.Table;
-  private tableStyle: TableStyle;
 
   constructor(options: {
     head?: string[];
@@ -79,21 +84,27 @@ export class BibbleTable {
   } = {}) {
     const {
       head = [],
-      style = 'default',
+      style = "default",
       colWidths,
       wordWrap = true
     } = options;
 
-    this.tableStyle = style;
     const tableConfig = TABLE_STYLES[style];
 
     // Create styled headers with Pink Pixel theme
-    const styledHead = head.map(h => t.cyan(h));
+    const styledHead = head.map(h => theme.cyan(h));
+
+    // Create a mutable copy of the style config to satisfy cli-table3 types
+    const mutableStyle = {
+      ...tableConfig.style,
+      head: [...tableConfig.style.head],
+      border: [...tableConfig.style.border],
+    };
 
     this.table = new Table({
       head: styledHead,
       chars: tableConfig.chars,
-      style: tableConfig.style,
+      style: mutableStyle,
       colWidths,
       wordWrap,
     });
@@ -108,16 +119,16 @@ export class BibbleTable {
       
       // Auto-style based on content patterns
       if (cellStr.match(/^(success|ok|ready|connected|active)$/i)) {
-        return t.green(cellStr);
+        return theme.ok(cellStr);
       }
       if (cellStr.match(/^(error|failed|disconnected|inactive)$/i)) {
-        return t.red(cellStr);
+        return theme.err(cellStr);
       }
       if (cellStr.match(/^(warning|pending|loading)$/i)) {
-        return t.orange(cellStr);
+        return theme.warn(cellStr);
       }
       if (cellStr.match(/^\d+$/)) {
-        return t.cyan(cellStr);
+        return theme.cyan(cellStr);
       }
       
       return cellStr;
@@ -164,7 +175,7 @@ export const tables = {
     version?: string;
   }>): string {
     if (!servers.length) {
-      return t.dim('No MCP servers configured');
+      return theme.dim('No MCP servers configured');
     }
 
     const table = new BibbleTable({
@@ -181,7 +192,7 @@ export const tables = {
       ]);
     });
 
-    return `\n${t.h2('MCP Servers')} ${brandSymbols.lightning}\n${table.toString()}`;
+    return `\n${theme.h2('MCP Servers')} ${brandSymbols.lightning}\n${table.toString()}`;
   },
 
   /**
@@ -194,7 +205,7 @@ export const tables = {
     avgTime: string;
   }>): string {
     if (!tools.length) {
-      return t.dim('No tool usage data available');
+      return theme.dim('No tool usage data available');
     }
 
     const table = new BibbleTable({
@@ -211,7 +222,7 @@ export const tables = {
       ]);
     });
 
-    return `\n${t.h2('Tool Usage Statistics')} ${brandSymbols.chart}\n${table.toString()}`;
+    return `\n${theme.h2('Tool Usage Statistics')} ${brandSymbols.chart}\n${table.toString()}`;
   },
 
   /**
@@ -234,34 +245,34 @@ export const tables = {
         
         // Format different value types
         if (typeof value === 'boolean') {
-          displayValue = value ? t.green('✓ enabled') : t.red('✗ disabled');
+          displayValue = value ? theme.ok('✓ enabled') : theme.err('✗ disabled');
         } else if (typeof value === 'number') {
-          displayValue = t.cyan(String(value));
+          displayValue = theme.cyan(String(value));
         } else if (Array.isArray(value)) {
           if (value.length === 0) {
-            displayValue = t.dim('(empty array)');
+            displayValue = theme.dim('(empty array)');
           } else {
-            displayValue = t.dim(`[${value.length} items]`);
+            displayValue = theme.dim(`[${value.length} items]`);
           }
         } else if (key.toLowerCase().includes('key') || key.toLowerCase().includes('token')) {
-          displayValue = t.dim('<hidden>');
+          displayValue = theme.dim('<hidden>');
         } else if (key.toLowerCase().includes('url')) {
-          displayValue = t.cyan(String(value));
+          displayValue = theme.cyan(String(value));
         } else if (key.toLowerCase().includes('model')) {
-          displayValue = t.pink(String(value));
+          displayValue = theme.pink(String(value));
         } else if (key.toLowerCase().includes('provider')) {
-          displayValue = t.orange(String(value));
+          displayValue = theme.warn(String(value));
         } else if (!value || (typeof value === 'string' && value === '')) {
-          displayValue = t.dim('(not set)');
+          displayValue = theme.dim('(not set)');
         }
 
         table.addRow([
-          t.cyan(key),
+          theme.cyan(key),
           displayValue
         ]);
       });
 
-    return `\n${t.h2('Configuration')} ${brandSymbols.gear}\n${table.toString()}`;
+    return `\n${theme.h2('Configuration')} ${brandSymbols.gear}\n${table.toString()}`;
   },
 
   /**
@@ -299,7 +310,7 @@ export const tables = {
     model: string;
   }>): string {
     if (!chats.length) {
-      return t.dim('No chat history available');
+      return theme.dim('No chat history available');
     }
 
     const table = new BibbleTable({
@@ -309,15 +320,15 @@ export const tables = {
 
     chats.forEach(chat => {
       table.addRow([
-        t.dim(chat.id.slice(0, 8)),
-        chat.title,
-        chat.date,
-        chat.messages,
-        chat.model
+        theme.dim(chat.id.slice(0, 8)),
+        theme.cyan(chat.title),
+        theme.dim(chat.date),
+        theme.magenta(chat.messages),
+        theme.pink(chat.model)
       ]);
     });
 
-    return `\n${t.h2('Chat History')} ${brandSymbols.history}\n${table.toString()}`;
+    return `\n${theme.h2('Chat History')} ${brandSymbols.disk}\n${table.toString()}`;
   },
 
   /**
@@ -345,7 +356,7 @@ export const tables = {
       ]);
     });
 
-    return `\n${t.h2('Available Models')} ${brandSymbols.brain}\n${table.toString()}`;
+    return `\n${theme.h2('Available Models')} ${brandSymbols.brain}\n${table.toString()}`;
   },
 
   /**
@@ -356,18 +367,18 @@ export const tables = {
       let displayValue = String(value);
       
       if (typeof value === 'boolean') {
-        displayValue = value ? t.green('✓') : t.red('✗');
+        displayValue = value ? theme.ok('✓') : theme.err('✗');
       } else if (typeof value === 'number') {
-        displayValue = t.cyan(String(value));
+        displayValue = theme.cyan(String(value));
       }
 
-      return `${s.pointer} ${t.dim(key + ':')} ${displayValue}`;
+      return `${s.pointer} ${theme.dim(key + ':')} ${displayValue}`;
     });
 
     const output = lines.join('\n');
     
     if (title) {
-      return `\n${t.h2(title)}\n${output}`;
+      return `\n${theme.h2(title)}\n${output}`;
     }
     
     return output;
@@ -383,29 +394,29 @@ export const tables = {
   }>): string {
     const lines = items.map(item => {
       let icon = s.info;
-      let colorFunc = t.dim;
+      let colorFunc = theme.dim;
 
       switch (item.status) {
         case 'ok':
           icon = s.success;
-          colorFunc = t.green;
+          colorFunc = theme.ok;
           break;
         case 'warning':
-          icon = s.warning;
-          colorFunc = t.orange;
+          icon = s.warn;
+          colorFunc = theme.warn;
           break;
         case 'error':
-          icon = s.error;
-          colorFunc = t.red;
+          icon = s.err;
+          colorFunc = theme.err;
           break;
         case 'info':
           icon = s.info;
-          colorFunc = t.cyan;
+          colorFunc = theme.cyan;
           break;
       }
 
-      const value = item.value ? ` ${t.dim('→')} ${colorFunc(String(item.value))}` : '';
-      return `${icon} ${t.dim(item.label)}${value}`;
+      const value = item.value ? ` ${theme.dim('→')} ${colorFunc(String(item.value))}` : '';
+      return `${icon} ${theme.dim(item.label)}${value}`;
     });
 
     return lines.join('\n');
@@ -424,7 +435,7 @@ export function createTable(
   } = {}
 ): string {
   if (!data.length) {
-    return t.dim('No data available');
+    return theme.dim('No data available');
   }
 
   const { title, style = 'default', excludeColumns = [] } = options;
@@ -446,7 +457,7 @@ export function createTable(
   let output = table.toString();
   
   if (title) {
-    output = `\n${t.h2(title)}\n${output}`;
+    output = `\n${theme.h2(title)}\n${output}`;
   }
   
   return output;

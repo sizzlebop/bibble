@@ -1,9 +1,12 @@
 {
   "name": "@pinkpixel/bibble",
-  "version": "1.4.6",
+  "version": "1.5.0",
   "description": "An AI agent/chatbot with built-in tools and MCP support that lives in your terminal",
   "type": "module",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=18"
+  },
   "bin": {
     "bibble": "bin/bibble-cli.cjs"
   },
@@ -22,8 +25,8 @@
     "ai",
     "llm"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Pink Pixel",
+  "license": "Apache 2.0",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.60.0",
     "@google/generative-ai": "^0.24.1",
@@ -62,6 +65,7 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
+    "@types/marked-terminal": "^6.1.1",
     "tsup": "^8.5.0"
   }
 }

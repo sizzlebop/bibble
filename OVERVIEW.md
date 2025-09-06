@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.4.5
+**Version**: 1.4.6
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble
-*Last updated: August 29, 2025 - 09:45 UTC*
+*Last updated: September 6, 2025 - 02:21 UTC*
 
 ## Project Overview
 
@@ -67,7 +67,24 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 │   │   └── client.ts     # MCP client for connecting to servers
 │   ├── llm/              # LLM integration
 │   │   ├── anthropic.ts  # Anthropic client for Claude models
+│   │   ├── google.ts     # Google Gemini client
 │   │   └── client.ts     # LLM client for multiple providers
+│   ├── security/         # Security management system
+│   │   ├── SecurityManager.ts    # Core security policy enforcement
+│   │   ├── ToolClassifier.ts     # Tool risk classification system
+│   │   ├── SecurityUI.ts         # User approval interface
+│   │   └── SecurityError.ts      # Security-specific error handling
+│   ├── tools/            # Built-in tools system
+│   │   └── built-in/         # Native tool implementations
+│   │       ├── config/           # Tool configuration management
+│   │       ├── edit/             # Text editing tools
+│   │       ├── filesystem/       # File system operations
+│   │       ├── process/          # Process management
+│   │       ├── search/           # Code and file search
+│   │       ├── types/            # TypeScript type definitions
+│   │       ├── utilities/        # Cross-platform utilities
+│   │       ├── registry.ts       # Built-in tool registry
+│   │       └── index.ts          # Main export and registration
 │   ├── ui/               # Terminal UI components
 │   │   ├── chat.ts       # Chat UI for interactive sessions
 │   │   ├── colors.ts     # Terminal color utilities
@@ -194,6 +211,36 @@ The `Agent` class is the sophisticated core component that orchestrates conversa
 - **Streaming Integration**: Seamless integration with streaming LLM responses
 - **Provider Agnostic**: Works consistently across OpenAI, Anthropic, and compatible providers
 - **Safety Features**: Multiple safety mechanisms to prevent infinite loops and resource exhaustion
+
+### Security System
+
+Bibble implements a comprehensive security framework to safely manage external tool access and user data protection:
+
+**Core Security Components:**
+- **SecurityManager**: Central security policy enforcement with configurable risk tolerance
+- **ToolClassifier**: Intelligent tool risk assessment based on operation types and parameters
+- **SecurityUI**: Beautiful user approval interface with detailed risk information
+- **SecurityError**: Specialized error handling for security-related issues
+
+**Security Features:**
+- **Tool Risk Classification**: Automatic categorization of tools by risk level (Low, Medium, High, Critical)
+- **Server Trust Levels**: Configurable trust settings for MCP servers (trusted, untrusted, prompt)
+- **User Approval Workflows**: Interactive prompts for risky operations with detailed explanations
+- **Policy Enforcement**: Granular control over tool execution based on risk and trust levels
+- **Audit Logging**: Comprehensive logging of all security decisions and tool executions
+- **Clean Error Display**: User-friendly security messages without technical clutter
+
+**Risk Assessment Categories:**
+- **File Operations**: Path validation, write protection, directory traversal prevention
+- **Process Management**: Command execution validation, privilege escalation detection
+- **Network Access**: URL validation, external service connection monitoring
+- **System Information**: Sensitive data exposure prevention
+
+**Configuration Options:**
+- **Security Levels**: Strict, Moderate, Permissive policy enforcement
+- **Trusted Servers**: Whitelist specific MCP servers for automatic approval
+- **Risk Tolerance**: Configure acceptable risk levels for different operation types
+- **Audit Settings**: Control security logging verbosity and retention
 
 ### MCP Client
 
@@ -375,6 +422,30 @@ Version 1.4.0 introduces a **REVOLUTIONARY TOOL CALLING INTERFACE** that transfo
 **🌟 Environment Variables:**
 - `BIBBLE_ENHANCED_TOOLS=true` (default): Enable enhanced tool display
 - `BIBBLE_ENHANCED_TOOLS=false`: Use legacy display for compatibility
+
+### Latest Improvements (v1.4.6) - August 29, 2025
+
+Version 1.4.6 includes critical **JSON PARSING FIXES AND CLEANUP** that enhance reliability and user experience:
+
+**🔧 Critical JSON Parsing Fixes:**
+- **FIXED: Tool Call Argument Parsing**: Resolved errors caused by concatenated JSON objects in tool calls
+- **FIXED: Multi-Tool Call Handling**: Improved handling of multiple concurrent tool calls using Map-based tracking
+- **FIXED: Marked Compatibility**: Downgraded marked dependency to maintain compatibility with marked-terminal
+- **FIXED: Graceful JSON Fallback**: Added proper error recovery when JSON parsing fails
+
+**🧹 Debug Output Cleanup:**
+- **Removed Debug Clutter**: Eliminated all `[CHAT DEBUG]` and `[DEBUG]` messages from terminal output
+- **Professional Interface**: Chat interface now displays clean, production-ready output
+- **Improved Logging**: Enhanced MCP server connection status messages for better accuracy
+
+**⚡ Performance & Reliability:**
+- **Enhanced Processing**: Improved tool call processing efficiency with better error handling
+- **Build Improvements**: Updated build configuration to include missing dependencies
+- **Connection Stability**: More reliable MCP server startup and connection management
+
+**Impact:**
+- **Before**: JSON parsing errors, cluttered debug output, unreliable multi-tool calls
+- **After**: Reliable tool parsing, clean professional interface, stable multi-tool execution
 
 ### Built-in Tools Integration (v1.4.4) - August 29, 2025
 

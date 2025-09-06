@@ -1,231 +1,132 @@
-// Central theme system for Bibble with Pink Pixel branding ✨
-
 import chalk from 'chalk';
-import supportsColor from 'supports-color';
+import { gradient } from './gradient.js';
+import { chatSymbols, s } from './symbols.js';
+import { spinners } from './spinners.js';
 
-/**
- * Pink Pixel brand color palette 🎨
- */
+// Define brand colors directly in theme to avoid circular dependencies
 export const BRAND_COLORS = {
-  // Primary Pink Pixel colors
-  pink: '#FF5FD1',     // Hot Pink - Pink Pixel signature!
-  cyan: '#7AE7FF',     // Neon Cyan - Electric aqua
-  green: '#00FF9C',    // Electric Green - Success states
-  orange: '#FFD166',   // Bright Orange - Warnings
-  red: '#FF4D4D',      // Vibrant Red - Errors
-  purple: '#C792EA',   // Soft Purple - Special accents
-  
-  // Supporting colors
-  dim: '#666666',      // Dimmed text
-  bright: '#FFFFFF',   // Bright white
-  black: '#000000',    // Pure black
+  pink: '#FF5FD1',    // hot pink/magenta
+  magenta: '#FF44AA', 
+  cyan: '#7AE7FF',    // bright cyan/aqua
+  purple: '#C792EA',  // soft purple 
+  indigo: '#3F52CB',  // deep blue
+  blue: '#4FC3F7',    // bright blue
+  green: '#00FF9C',   // neon lime green
+  yellow: '#FFD166',  // bright orange/yellow
+  orange: '#FFD166',  // bright orange
+  red: '#FF4D4D',     // vibrant red
+  slate: '#94A3B8',   // neutral gray
+  white: '#FFFFFF',
+  black: '#000000',
 } as const;
 
-/**
- * Theme presets for different moods 🌈
- */
-export const THEME_PRESETS = {
-  neon: {
-    name: 'Neon Dreams',
-    brand: BRAND_COLORS.pink,
-    accent: BRAND_COLORS.cyan,
-    success: BRAND_COLORS.green,
-    warning: BRAND_COLORS.orange,
-    error: BRAND_COLORS.red,
-    dim: BRAND_COLORS.dim,
-  },
-  
-  dusk: {
-    name: 'Twilight Vibes',
-    brand: BRAND_COLORS.purple,
-    accent: '#82AAFF',
-    success: '#AEEA00',
-    warning: '#FFCB6B', 
-    error: '#EF5350',
-    dim: '#546E7A',
-  },
-  
-  cyber: {
-    name: 'Cyber Punk',
-    brand: BRAND_COLORS.cyan,
-    accent: BRAND_COLORS.pink,
-    success: BRAND_COLORS.green,
-    warning: BRAND_COLORS.orange,
-    error: BRAND_COLORS.red,
-    dim: BRAND_COLORS.dim,
-  },
-} as const;
 
-export type ThemePreset = keyof typeof THEME_PRESETS;
+// A type for functions that style text
+export type Stylizer = (text: string) => string;
 
-/**
- * Enhanced theme system with automatic color detection
- */
-export class Theme {
-  private currentTheme: keyof typeof THEME_PRESETS = 'neon';
-  private colorLevel: number;
-  private useColors: boolean;
-  
-  constructor() {
-    // Detect color support
-    const colorSupport = supportsColor.stdout;
-    const forceColor = process.env.FORCE_COLOR;
-    
-    // Determine if we should use colors
-    this.useColors = !process.env.NO_COLOR;
-    
-    // Set color level (0-3)
-    if (forceColor) {
-      this.colorLevel = parseInt(forceColor) || 3;
-    } else if (colorSupport) {
-      this.colorLevel = colorSupport.level;
-    } else {
-      this.colorLevel = 3; // Default to truecolor
-    }
-    
-    // Force colors for Bibble
-    if (this.useColors) {
-      process.env.FORCE_COLOR = '3';
-    }
-  }
-  
-  /**
-   * Get the current theme preset
-   */
-  get theme() {
-    return THEME_PRESETS[this.currentTheme];
-  }
-  
-  /**
-   * Set the active theme
-   */
-  setTheme(preset: ThemePreset) {
-    this.currentTheme = preset;
-  }
-  
-  /**
-   * Get all available themes
-   */
-  get availableThemes() {
-    return Object.keys(THEME_PRESETS) as ThemePreset[];
-  }
-  
-  /**
-   * Apply a color with fallback
-   */
-  private applyColor(color: string, text: string): string {
-    if (!this.useColors) {
-      return text;
-    }
-    
-    try {
-      return chalk.hex(color)(text);
-    } catch {
-      // Fallback to basic colors if hex fails
-      return chalk.white(text);
-    }
-  }
-  
-  /**
-   * Pink Pixel brand color methods 🌸
-   */
-  brand(text: string): string {
-    return this.applyColor(this.theme.brand, text);
-  }
-  
-  accent(text: string): string {
-    return this.applyColor(this.theme.accent, text);
-  }
-  
-  success(text: string): string {
-    return this.applyColor(this.theme.success, text);
-  }
-  
-  warning(text: string): string {
-    return this.applyColor(this.theme.warning, text);
-  }
-  
-  error(text: string): string {
-    return this.applyColor(this.theme.error, text);
-  }
-  
-  dim(text: string): string {
-    return this.applyColor(this.theme.dim, text);
-  }
-  
-  /**
-   * Style combinations for common UI elements
-   */
-  heading(text: string): string {
-    return this.brand(chalk.bold(text));
-  }
-  
-  subheading(text: string): string {
-    return this.accent(chalk.bold(text));
-  }
-  
-  label(label: string, value: string): string {
-    return `${this.dim(label)} ${this.accent(value)}`;
-  }
-  
-  code(text: string): string {
-    return this.accent(chalk.bgBlack(` ${text} `));
-  }
-  
-  link(text: string): string {
-    return this.accent(chalk.underline(text));
-  }
-  
-  /**
-   * Custom hex color support
-   */
-  hex(color: string, text: string): string {
-    return this.applyColor(color, text);
-  }
-  
-  /**
-   * Get raw chalk instance for advanced usage
-   */
-  get chalk() {
-    return chalk;
-  }
-  
-  /**
-   * Theme status info
-   */
-  getStatus() {
-    return {
-      theme: this.currentTheme,
-      themeName: this.theme.name,
-      colorLevel: this.colorLevel,
-      useColors: this.useColors,
-      supportsColor: !!supportsColor.stdout,
-    };
-  }
+// Brand primitives
+const brand = (s: string) => chalk.hex(BRAND_COLORS.pink).bold(s);
+const accent = (s: string) => chalk.hex(BRAND_COLORS.cyan)(s);
+const dim = (s: string) => chalk.dim(s);
+const code = (s: string) => chalk.bgBlackBright.white(` ${s} `);
+const text = (s: string) => chalk.white(s);
+const link = (s: string) => chalk.underline.hex(BRAND_COLORS.cyan)(s);
+const ok = (s: string) => chalk.hex(BRAND_COLORS.green).bold(s);
+const warn = (s: string) => chalk.hex(BRAND_COLORS.yellow).bold(s);
+const err = (s: string) => chalk.hex(BRAND_COLORS.red).bold(s);
+
+// Headings
+const heading = (s: string) => chalk.bold.hex(BRAND_COLORS.purple)(s);
+const subheading = (s: string) => chalk.bold.hex(BRAND_COLORS.cyan)(s);
+const firstHeading = (s: string) => gradient.pinkPixel(chalk.bold(s));
+
+// Labels
+function label(key: string, value: string) {
+  const k = chalk.gray(`[${key}]`);
+  const v = chalk.white(value);
+  return `${k} ${v}`;
 }
 
-// Export singleton theme instance
-export const theme = new Theme();
+// Hex helper
+const hex = (color: string, s: string) => chalk.hex(color)(s);
 
-/**
- * Quick theme utilities for common patterns
- */
-export const t = {
-  // Pink Pixel brand colors
-  pink: (text: string) => theme.brand(text),
-  cyan: (text: string) => theme.accent(text), 
-  green: (text: string) => theme.success(text),
-  orange: (text: string) => theme.warning(text),
-  red: (text: string) => theme.error(text),
-  dim: (text: string) => theme.dim(text),
-  
-  // Styled elements
-  h1: (text: string) => theme.heading(text),
-  h2: (text: string) => theme.subheading(text),
-  code: (text: string) => theme.code(text),
-  link: (text: string) => theme.link(text),
-  label: (k: string, v: string) => theme.label(k, v),
-  
-  // Custom colors
-  hex: (color: string, text: string) => theme.hex(color, text),
+// Common shorthands
+const pink = (s: string) => chalk.hex(BRAND_COLORS.pink)(s);
+const cyan = (s: string) => chalk.hex(BRAND_COLORS.cyan)(s);
+const purple = (s: string) => chalk.hex(BRAND_COLORS.purple)(s);
+
+// Additional styled text functions
+const em = (s: string) => chalk.italic(s);
+const listitem = (s: string) => s;
+const paragraph = (s: string) => s;
+const table = (s: string) => s;
+const tablerow = (s: string) => s;
+const tablecell = (s: string) => s;
+const tablecolumn = (s: string) => s;
+
+// Utility bag for ergonomic imports
+const theme = {
+  brand,
+  accent,
+  dim,
+  code,
+  text,
+  link,
+  ok,
+  warn,
+  err,
+  heading,
+  subheading,
+  firstHeading,
+  hex,
+  pink,
+  cyan,
+  purple,
+  em,
+  listitem,
+  paragraph,
+  table,
+  tablerow,
+  tablecell,
+  tablecolumn,
+  // alias used across codebase
+  info: link,
+  // Aliases
+  h1: firstHeading as Stylizer,
+  h2: heading as Stylizer,
+  h3: subheading as Stylizer,
+  // Gradient functions
+  pinkPixel: gradient.pinkPixel,
+  rainbow: gradient.rainbow,
+  fire: gradient.fire,
+  ocean: gradient.ocean,
+  aurora: gradient.aurora,
+  dark: gradient.dark,
+  bright: gradient.bright,
+  // Functional helpers
+  multiline: gradient.multiline,
+  label,
+  box: (s: string) => {
+    try {
+      // lazy require to avoid importing in environments without boxen
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const boxen = require('boxen');
+      return boxen(s, { padding: 1, margin: 1, borderStyle: 'round' });
+    } catch {
+      return s;
+    }
+  },
+  styleCodeContent: (code: string, _lang: string) => code
 };
+
+
+
+
+// Export everything cleanly
+export { label, theme };
+export type GradientFn = (text: string) => string;
+
+// Export shorthand for theme (used throughout codebase)
+export const t = theme;
+
+// BRAND_COLORS is already exported above, don't export again

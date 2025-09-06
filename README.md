@@ -146,6 +146,8 @@ The following commands are available during a chat session:
 - `/clear` - Clear the screen
 - `/save` - Save the current chat to history
 - `/reset` - Reset the current conversation
+- `/multiline` or `/paste` - Enter multi-line input mode for pasting documentation, code, etc.
+- ``` - Start code block mode (type ``` and continue with your code)
 
 ## Enhanced Tool Display System
 

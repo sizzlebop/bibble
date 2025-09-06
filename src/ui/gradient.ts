@@ -1,150 +1,66 @@
-// Gradient text utilities for gorgeous terminal effects 🌈
-
+// gradient.ts — gradient helpers built on gradient-string
 import gradientString from 'gradient-string';
-import { BRAND_COLORS } from './theme.js';
 
-/**
- * Pre-defined gradients using Pink Pixel brand colors
- */
-// Gradient functions with proper typing
-type GradientFn = (text: string) => string;
-
-export const GRADIENTS: Record<string, GradientFn> = {
-  // Pink Pixel signature gradients
-  pinkCyan: gradientString([BRAND_COLORS.pink, BRAND_COLORS.cyan]),
-  cyanGreen: gradientString([BRAND_COLORS.cyan, BRAND_COLORS.green]), 
-  rainbow: gradientString([
-    BRAND_COLORS.pink,
-    BRAND_COLORS.purple,
-    BRAND_COLORS.cyan,
-    BRAND_COLORS.green,
-    BRAND_COLORS.orange,
-  ]),
-  
-  // Themed gradients
-  fire: gradientString([BRAND_COLORS.orange, BRAND_COLORS.red]),
-  ocean: gradientString([BRAND_COLORS.cyan, '#0066CC']),
-  sunset: gradientString([BRAND_COLORS.orange, BRAND_COLORS.pink, BRAND_COLORS.purple]),
-  neon: gradientString([BRAND_COLORS.green, BRAND_COLORS.cyan, BRAND_COLORS.pink]),
-  
-  // Pastel versions (softer)
-  pastel: gradientString.pastel,
-  atlas: gradientString.atlas,
-  cristal: gradientString.cristal,
-  teen: gradientString.teen,
-  mind: gradientString.mind,
-  morning: gradientString.morning,
-  vice: gradientString.vice,
-  passion: gradientString.passion,
-  fruit: gradientString.fruit,
-  instagram: gradientString.instagram,
-  retro: gradientString.retro,
-  summer: gradientString.summer,
+// Define colors directly to avoid circular dependencies
+const BRAND_COLORS = {
+  pink: '#FF5FD1',
+  cyan: '#7AE7FF', 
+  blue: '#4FC3F7',
+  green: '#00FF9C',
+  yellow: '#FFD166',
+  red: '#FF4D4D'
 } as const;
 
-export type GradientName = keyof typeof GRADIENTS;
+/**
+ * Utility function to wrap gradient functions for multiline support
+ */
+export function wrapMultiline(gradientFn: (text: string) => string) {
+  return (text: string): string => {
+    return text.split('\n').map(line => gradientFn(line)).join('\n');
+  };
+}
+// Define our gradient presets
+const bright = wrapMultiline(gradientString([BRAND_COLORS.pink, BRAND_COLORS.cyan, BRAND_COLORS.blue, BRAND_COLORS.green, BRAND_COLORS.yellow, BRAND_COLORS.red]));
+const pinkPixel = wrapMultiline(gradientString([BRAND_COLORS.pink, BRAND_COLORS.cyan]));
+const pinkCyan = pinkPixel; // alias used in other modules
+const dark = wrapMultiline(gradientString(['#133661', '#353a4b', '#312147', '#0b2e2f']));
+const fire = wrapMultiline(gradientString(['#eb4242', '#fccd3e', '#ff803c']));
+const ocean = wrapMultiline(gradientString(['#64c8f0', '#259cd2', '#004770']));
+const aurora = wrapMultiline(gradientString(['#a072f0', '#6fddf5', '#9af5ad']));
+
+// Fallback to manual rainbow if not available in gradientString
+const rainbow = wrapMultiline(((gradientString as any).rainbow) ? 
+  (gradientString as any).rainbow : 
+  gradientString(['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff']));
 
 /**
- * Gradient text utility class
+ * Create a custom gradient from colors
  */
-export class GradientText {
-  /**
-   * Apply a gradient to text
-   * @param text Text to apply gradient to
-   * @param gradientName Gradient name or custom colors
-   * @returns Gradient text
-   */
-  static apply(text: string, gradientName: GradientName | string[]): string {
-    if (Array.isArray(gradientName)) {
-      // Custom gradient from color array
-      return gradientString(gradientName)(text);
-    }
-    
-    // Pre-defined gradient
-    const gradient = GRADIENTS[gradientName];
-    if (!gradient) {
-      // Fallback to rainbow if gradient not found
-      return GRADIENTS.rainbow(text);
-    }
-    
-    return gradient(text);
-  }
-  
-  /**
-   * Apply gradient to multiline text
-   * @param text Multiline text
-   * @param gradientName Gradient name or custom colors
-   * @returns Gradient text with proper line handling
-   */
-  static multiline(text: string, gradientName: GradientName | string[]): string {
-    if (Array.isArray(gradientName)) {
-      const g = gradientString(gradientName);
-      return (g as any).multiline ? (g as any).multiline(text) : g(text);
-    }
-    
-    // For multiline, we'll apply gradient to the whole text
-    // gradient-string handles multiline automatically in most cases
-    return GradientText.apply(text, gradientName);
-  }
-  
-  /**
-   * Pink Pixel signature gradient
-   */
-  static pinkPixel(text: string): string {
-    return GRADIENTS.pinkCyan(text);
-  }
-  
-  /**
-   * Animate text with shifting gradients (for banners)
-   */
-  static animated(text: string, gradientName: GradientName = 'rainbow'): string {
-    // For now, just apply the gradient
-    // Could be enhanced with actual animation in future
-    return GradientText.apply(text, gradientName);
-  }
+export function createGradient(colors: string[]) {
+  return wrapMultiline(gradientString(colors));
 }
 
 /**
- * Quick gradient utilities
+ * Main gradient object with all presets and utilities
  */
 export const gradient = {
-  // Pink Pixel brand gradients
-  pinkCyan: (text: string) => GRADIENTS.pinkCyan(text),
-  cyanGreen: (text: string) => GRADIENTS.cyanGreen(text),
-  rainbow: (text: string) => GRADIENTS.rainbow(text),
-  
-  // Themed gradients
-  fire: (text: string) => GRADIENTS.fire(text),
-  ocean: (text: string) => GRADIENTS.ocean(text),
-  sunset: (text: string) => GRADIENTS.sunset(text),
-  neon: (text: string) => GRADIENTS.neon(text),
-  
-  // Pre-built gradients
-  pastel: (text: string) => GRADIENTS.pastel(text),
-  vice: (text: string) => GRADIENTS.vice(text),
-  retro: (text: string) => GRADIENTS.retro(text),
-  
-  // Custom gradient
-  custom: (colors: string[], text: string) => gradientString(colors)(text),
-  
-  // Multiline support
-  multiline: (text: string, gradientName: GradientName = 'rainbow') => 
-    GradientText.multiline(text, gradientName),
-    
-  // Pink Pixel signature
-  pinkPixel: (text: string) => GradientText.pinkPixel(text),
+  bright,
+  dark,
+  pinkPixel,
+  pinkCyan,
+  fire,
+  ocean,
+  aurora,
+  rainbow,
+  multiline: (g: GradientFn, s: string) => wrapMultiline(g)(s),
+  createGradient,
+  wrapMultiline
 };
 
-/**
- * Create a custom gradient from hex colors
- */
-export function createGradient(...colors: string[]): GradientFn {
-  return gradientString(colors) as GradientFn;
-}
+// Export everything for easy access
+export type GradientFn = (text: string) => string;
+export type GradientType = typeof gradient;
 
-/**
- * Apply Pink Pixel brand gradient to ASCII art
- */
-export function brandGradient(text: string): string {
-  return gradient.pinkCyan(text);
-}
+// Export WrapMultiline for backwards compatibility with other files
+export { wrapMultiline as WrapMultiline };
+export type gradientType = typeof gradient;

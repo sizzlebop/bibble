@@ -2,6 +2,45 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.5.0] - 2025-09-06
+
+### 🎯 CRITICAL AGENT ARCHITECTURE IMPROVEMENTS
+
+### Fixed
+- **🔧 CRITICAL: Agent Control Flow Tools Missing**: Fixed missing control flow tools in agent system prompt
+  - Resolved issue where `task_complete` and `ask_question` tools were defined internally but not visible to the agent
+  - Added prominent "🛑 CONTROL FLOW TOOLS (CRITICAL - Use these to end conversations!)" category to tools list
+  - Enhanced system prompt with explicit instructions on when and how to use control flow tools
+  - Fixed infinite loop issues where agent would continue generating responses instead of ending turn
+  - Ensured proper conversation termination allowing users to respond appropriately
+- **🔧 Code Quality Enhancement**: Improved agent architecture with cleaner tool management
+  - Enhanced `generateToolsList()` method to properly include exit loop tools in system prompt
+  - Added clear usage instructions for `task_complete` and `ask_question` tools
+  - Implemented proper tool categorization with visual emphasis on critical control flow tools
+  - Enhanced conversation flow control with explicit "DO NOT continue generating text" instructions
+
+### Changed
+- **🧠 Agent Behavior**: Improved conversation turn management and user interaction flow
+  - Agent now properly recognizes when to end conversation turns using control flow tools
+  - Enhanced agent's ability to signal task completion or request more information
+  - Improved conversation state management preventing endless response generation
+- **🔄 System Prompt Enhancement**: Better tool visibility and usage guidance
+  - Control flow tools now prominently featured in agent's available tools list
+  - Clear categorization distinguishes critical control tools from regular functionality tools
+  - Enhanced instructions ensure agent understands proper conversation ending protocol
+
+### Technical Details
+- **Tool Management**: Fixed tool registration and system prompt generation order
+- **Agent Logic**: Improved conversation loop termination with proper tool-based control
+- **System Integration**: Enhanced agent initialization to include all necessary control flow tools
+- **UX Flow**: Restored proper conversational back-and-forth between user and agent
+
+### Impact
+- **Before**: Agent missing control flow tools, infinite response loops, poor conversation management
+- **After**: Proper conversation turns, clean task completion, responsive user interaction
+
+This release fixes critical agent behavior issues, ensuring proper conversation flow and eliminating frustrating infinite response loops! 🎯
+
 ## [1.4.5] - 2025-08-29
 
 ### 🧹 CLEANUP & JSON PARSING FIXES

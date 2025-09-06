@@ -12,9 +12,9 @@ import { CONFIG_FILE } from "./storage.js";
  * Run the initial setup wizard
  */
 export async function runSetupWizard(): Promise<void> {
-  const config = Config.getInstance();
+  const config = Config.getInstance(); // Get singleton instance
 
-  console.log(terminal.info("Welcome to Bibble! Let's set up your configuration."));
+  console.log(terminal.log("Welcome to Bibble! Let's set up your configuration."));
 
   // Step 1: Choose default provider
   const { provider } = await inquirer.prompt([
@@ -50,8 +50,8 @@ export async function runSetupWizard(): Promise<void> {
   await setupUIPreferences(config);
 
   console.log(terminal.success("Setup complete! You can now start using Bibble."));
-  console.log(terminal.info("To start a chat session, run: bibble chat"));
-  console.log(terminal.info("To modify configuration, run: bibble config"));
+  console.log(terminal.log("To start a chat session, run: bibble chat"));
+  console.log(terminal.log("To modify configuration, run: bibble config"));
 }
 
 /**

@@ -60,7 +60,7 @@ export class Splash {
       padding = 1,
       margin = 1,
       borderStyle = 'none',
-      borderColor = theme.theme.accent,
+      borderColor = theme.accent,
       subtitle = 'Your personal AI assistant/MCP tool calling agent that lives in your terminal',
       showVersion = true,
     } = options;
@@ -131,8 +131,8 @@ export class Splash {
     
     if (stats.mcpServers !== undefined) {
       const status = stats.mcpServers > 0 ? 
-        theme.success(`${stats.mcpServers} connected`) :
-        theme.warning('none connected');
+        theme.ok(`${stats.mcpServers} connected`) :
+        theme.warn('none connected');
       items.push(theme.label('⚡ MCP:', status));
     }
     
@@ -145,7 +145,7 @@ export class Splash {
     }
     
     // Add ready message
-    items.push('\n' + theme.success('🚀 Ready for magic!'));
+    items.push('\n' + theme.ok('🚀 Ready for magic!'));
     
     return items.join('   ');
   }
@@ -163,7 +163,7 @@ export class Splash {
     return {
       start: () => spinner.start(),
       succeed: (msg?: string) => {
-        spinner.succeed(theme.success(msg || 'Done!'));
+        spinner.succeed(theme.ok(msg || 'Done!'));
       },
       fail: (msg?: string) => {
         spinner.fail(theme.error(msg || 'Failed'));

@@ -1,18 +1,18 @@
 import readline from "readline";
-import { terminal } from "./colors.js";
+import { t, terminal } from "./colors.js";
 import { markdown } from "./markdown.js";
 import { ChatMessage, MessageRole } from "../types.js";
 import { Agent } from "../mcp/agent.js";
 import { chatHistory } from "../utils/history.js";
-import { createWelcomeBanner, splash } from "./splash.js";
-import { gradient, brandGradient } from "./gradient.js";
+import { createWelcomeBanner } from "./splash.js";
+import { gradient } from "./gradient.js";
+import { BRAND_COLORS } from "./theme.js";
 import { symbols, chatSymbols } from "./symbols.js";
-import { BRAND_COLORS, t } from "./theme.js";
 import { BibbleTable } from "./tables.js";
-import { toolDisplay, ToolDisplayOptions } from "./tool-display.js";
+import { EnhancedToolDisplay, ToolDisplayOptions } from "./tool-display.js";
 import { isSecurityError } from "../security/SecurityError.js";
 import boxen from "boxen";
-import ora from "ora";
+import { theme } from "./theme.js";
 
 /**
  * Chat UI options
@@ -95,7 +95,7 @@ export class ChatUI {
       );
 
       // Display messages
-      console.log(terminal.info("\nLoaded chat history:"));
+      console.log(terminal.ok("\nLoaded chat history:"));
 
       for (const message of messages) {
         this.displayMessage(message);
@@ -106,7 +106,7 @@ export class ChatUI {
         // TODO: Set agent conversation state from history
       }
     } else {
-      console.log(terminal.error("Chat history not found."));
+      console.log(terminal.err("Chat history not found."));
     }
   }
 
@@ -148,7 +148,7 @@ export class ChatUI {
           continue;
         }
 
-        console.log(terminal.warning(`Unknown command: ${command}`));
+        console.log(terminal.warn(`Unknown command: ${command}`));
         continue;
       }
 
@@ -164,11 +164,91 @@ export class ChatUI {
   private promptUser(): Promise<string> {
     return new Promise((resolve) => {
       // Create beautiful user prompt with icon and styling
-      const prompt = `\n${terminal.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: `;
+      const prompt = `\n${theme.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: `;
       
       this.rl.question(prompt, (answer) => {
-        resolve(answer.trim());
+        const trimmed = answer.trim();
+        
+        // Check for multi-line input commands
+        if (trimmed === '/multiline' || trimmed === '/paste') {
+          this.promptMultilineInput().then(resolve);
+          return;
+        }
+        
+        // Check for triple backticks (code block)
+        if (trimmed.startsWith('```')) {
+          // If it's a complete code block on one line, use it as-is
+          if (trimmed.endsWith('```') && trimmed.length > 6) {
+            resolve(trimmed);
+            return;
+          }
+          // Otherwise, enter multi-line mode
+          this.promptCodeBlockInput(trimmed).then(resolve);
+          return;
+        }
+        
+        resolve(trimmed);
       });
+    });
+  }
+
+  /**
+   * Prompt for multi-line input
+   * @returns Multi-line input
+   */
+  private promptMultilineInput(): Promise<string> {
+    return new Promise((resolve) => {
+      console.log(terminal.ok('\n📝 Multi-line input mode. Type your content (multiple lines allowed).'));
+      console.log(terminal.dim('   End with ";;;" on a new line to send.\n'));
+      
+      const lines: string[] = [];
+      
+      const readNextLine = () => {
+        this.rl.question('', (line) => {
+          if (line.trim() === ';;;') {
+            // End multi-line input
+            const result = lines.join('\n');
+            console.log(terminal.ok(`\n✅ Multi-line input complete (${lines.length} lines)\n`));
+            resolve(result);
+          } else {
+            lines.push(line);
+            readNextLine();
+          }
+        });
+      };
+      
+      readNextLine();
+    });
+  }
+
+  /**
+   * Prompt for code block input (started with ```)
+   * @param firstLine The first line that started with ```
+   * @returns Complete code block
+   */
+  private promptCodeBlockInput(firstLine: string): Promise<string> {
+    return new Promise((resolve) => {
+      console.log(terminal.ok('\n💻 Code block mode. Continue typing...'));
+      console.log(terminal.dim('   End with "```" on a new line to send.\n'));
+      
+      const lines: string[] = [firstLine];
+      
+      const readNextLine = () => {
+        this.rl.question('', (line) => {
+          lines.push(line);
+          
+          if (line.trim() === '```') {
+            // End code block
+            const result = lines.join('\n');
+            console.log(terminal.ok(`\n✅ Code block complete\n`));
+            resolve(result);
+          } else {
+            readNextLine();
+          }
+        });
+      };
+      
+      readNextLine();
     });
   }
 
@@ -184,7 +264,7 @@ export class ChatUI {
 
     // Ensure agent is initialized
     if (!this.agent) {
-      console.log(terminal.error("Agent not initialized."));
+      console.log(terminal.err("Agent not initialized."));
       return;
     }
 
@@ -193,7 +273,7 @@ export class ChatUI {
       this.abortController = new AbortController();
 
       // Show beautiful thinking indicator with safe implementation
-      const thinkingText = `\n${gradient.cyanGreen('Thinking...')}\n`;
+      const thinkingText = `\n${theme.cyan('Thinking...')}\n`;
       process.stderr.write(thinkingText);
 
       try {
@@ -206,7 +286,7 @@ export class ChatUI {
         // Clear the thinking message by writing to stderr
         
         // Create beautiful assistant prompt with robot icon
-        const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
+        const assistantPrompt = `${theme.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.ocean('Assistant')}: `;
         process.stdout.write(assistantPrompt);
 
         // Process stream with beautiful styling and real-time streaming
@@ -247,7 +327,7 @@ export class ChatUI {
               this.displayToolCall(toolMessage);
               
               // Continue assistant response after tool call if needed
-              const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
+              const assistantPrompt = `${theme.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.ocean('Assistant')}: `;
               process.stdout.write('\n' + assistantPrompt);
               
             } catch (error) {
@@ -300,12 +380,12 @@ export class ChatUI {
   private displayMessage(message: ChatMessage): void {
     switch (message.role) {
       case MessageRole.User:
-        const userPrompt = `${terminal.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: ${message.content}`;
+        const userPrompt = `${theme.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: ${message.content}`;
         console.log(`\n${userPrompt}`);
         break;
 
       case MessageRole.Assistant:
-        const assistantPrompt = `${terminal.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.cyanGreen('Assistant')}: `;
+        const assistantPrompt = `${theme.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.ocean('Assistant')}: `;
         console.log(`\n${assistantPrompt}${markdown.render(message.content)}`);
         this.displayMessageSeparator();
         break;
@@ -360,7 +440,7 @@ export class ChatUI {
    */
   private displayToolCallLegacy(message: ChatMessage): void {
     // Create beautiful tool header with icon and name
-    const toolHeader = `${terminal.hex(BRAND_COLORS.orange, chatSymbols.tech.tool)} ${gradient.fire('Tool Call')} [${t.cyan(message.toolName || 'Unknown')}]`;
+    const toolHeader = `${theme.hex(BRAND_COLORS.orange, chatSymbols.tech.tool)} ${gradient.fire('Tool Call')} [${t.cyan(message.toolName || 'Unknown')}]`;
     
     console.log(`\n${toolHeader}`);
     
@@ -472,7 +552,7 @@ export class ChatUI {
         return line.replace(/\d+/g, t.cyan('$&'));
       }
       // Default styling
-      return terminal.hex(BRAND_COLORS.text || '#FFFFFF', line);
+      return theme.hex(BRAND_COLORS.text || '#FFFFFF', line);
     });
     
     console.log(`\n${styledLines.join('\n')}`);
@@ -490,12 +570,18 @@ export class ChatUI {
       terminal.style.label("/clear", "Clear the screen"),
       terminal.style.label("/save", "Save the current chat to history"),
       terminal.style.label("/reset", "Reset the current conversation"),
+      "", // Empty line for separation
+      theme.hex(BRAND_COLORS.pink, "📝 Multi-line Input:"),
+      terminal.style.label("/multiline", "Enter multi-line input mode (end with ;;;)"),
+      terminal.style.label("/paste", "Same as /multiline - paste multi-line content"),
+      terminal.style.label("```", "Start code block mode (end with closing ```)"),
     ];
     
     // Format the help text with gradient title
     const content = 
       terminal.style.title("✨ Available Commands ✨") + "\n\n" +
-      commands.join("\n");
+      commands.join("\n") + "\n\n" +
+      theme.hex(BRAND_COLORS.cyan, "💡 Tip: You can now paste multi-line content using /multiline or by starting with ```");
       
     // Display in a nice box with custom styling
     const helpText = boxen(content, {
@@ -526,7 +612,7 @@ export class ChatUI {
 
     // Save to history
     const id = chatHistory.saveChat(conversation, undefined, this.model);
-    console.log(terminal.success(`Chat saved with ID: ${id}`));
+    console.log(terminal.ok(`Chat saved with ID: ${id}`));
   }
 
   /**

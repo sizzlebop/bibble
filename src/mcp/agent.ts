@@ -191,10 +191,22 @@ export class Agent extends McpClient {
       toolsByServer.get(serverName)?.push(tool);
     }
 
+    // Add CRITICAL control flow tools that MUST be prominently featured
+    toolsByServer.set("🛑 CONTROL FLOW TOOLS (CRITICAL - Use these to end conversations!)", this.exitLoopTools);
+
     // Generate formatted list
     for (const [serverName, tools] of toolsByServer.entries()) {
-      // Add clear categorization for built-in tools
-      if (serverName === "Built-in Tools") {
+      // Add special handling for critical control flow tools
+      if (serverName.includes("CONTROL FLOW TOOLS")) {
+        toolsList += `## ${serverName}\n\n`;
+        toolsList += `**CRITICAL INSTRUCTION**: When you have provided a helpful response and the user should respond, \n`;
+        toolsList += `you MUST call one of these tools to end the conversation turn:\n\n`;
+        toolsList += `- \`task_complete\`: Call this when you have completed the user's request\n`;
+        toolsList += `- \`ask_question\`: Call this when you need more information from the user\n\n`;
+        toolsList += `**DO NOT** continue generating text after calling these tools!\n\n`;
+      }
+      // Add clear categorization for built-in tools  
+      else if (serverName === "Built-in Tools") {
         toolsList += `## ⚡ BUILT-IN TOOLS (Use these for file operations, command execution, etc.)\n\n`;
         toolsList += `These are your primary tools for file system operations, running commands, and basic tasks.\n`;
         toolsList += `**IMPORTANT**: For file operations like creating, reading, or writing files, ALWAYS use these built-in tools.\n\n`;
@@ -397,17 +409,21 @@ export class Agent extends McpClient {
     abortSignal?: AbortSignal
   ): AsyncGenerator<string> {
     let numOfTurns = 0;
-    let nextTurnShouldCallTools = true;
 
     while (true) {
       try {
-        // Process a single turn
-        yield* this.processTurn({
+        // Process a single turn and ensure all streaming is complete
+        const turnGenerator = this.processTurn({
           exitLoopTools: this.exitLoopTools,
-          exitIfFirstChunkNoTool: numOfTurns > 0 && nextTurnShouldCallTools,
+          exitIfFirstChunkNoTool: false, // Simplified: don't exit early
           abortSignal,
           model,
         });
+        
+        // Yield all chunks from the turn, ensuring streaming completes
+        for await (const chunk of turnGenerator) {
+          yield chunk;
+        }
       } catch (err) {
         if (err instanceof Error && err.message === "AbortError") {
           return;
@@ -417,7 +433,7 @@ export class Agent extends McpClient {
 
       numOfTurns++;
 
-      // Get the last message
+      // Get the last message (now we know streaming is complete)
       const currentLast = this.messages[this.messages.length - 1];
 
       // Exit loop if an exit loop tool was called
@@ -446,51 +462,14 @@ export class Agent extends McpClient {
         return;
       }
 
-      // IMPROVED CONVERSATION TERMINATION LOGIC
-      // End conversation only when the assistant has truly completed the task
+      // SIMPLIFIED CONVERSATION TERMINATION LOGIC
+      // If assistant responds without tool calls, end the conversation turn
+      // This follows natural conversation flow: Agent responds → User responds
       if (currentLast.role === MessageRole.Assistant && !currentLast.toolCalls) {
-        const content = currentLast.content?.toLowerCase() || '';
-        
-        // Check if this is an "about to do" message rather than completion
-        const isPreparationMessage = 
-          content.includes('i will now') ||
-          content.includes('i am going to') ||
-          content.includes('next, i will') ||
-          content.includes('let me now') ||
-          content.includes('i shall now') ||
-          content.includes('about to') ||
-          content.includes('please hold on') ||
-          content.includes('please wait') ||
-          content.includes('one moment') ||
-          content.includes('preparing') ||
-          content.includes('once i complete') ||
-          content.includes('once complete');
-        
-        // Check for completion signals
-        const isCompletionMessage = 
-          content.includes('task complete') ||
-          content.includes('finished') ||
-          content.includes('done') ||
-          content.includes('completed') ||
-          content.includes('is there anything else') ||
-          content.includes('do you need') ||
-          content.includes('would you like me to') ||
-          (content.includes('created') && content.includes('successfully')) ||
-          (content.includes('saved') && content.includes('successfully'));
-        
-        // Only end if this looks like a completion message, NOT a preparation message
-        if (isCompletionMessage && !isPreparationMessage) {
-          return;
-        }
-        
-        // Also end if the message is very short and seems final (likely an error case)
-        if (content.length < 100 && !isPreparationMessage && numOfTurns > 3) {
-          return;
-        }
+        return;
       }
 
-      // Set tool call expectation for next turn
-      nextTurnShouldCallTools = currentLast.role !== MessageRole.Tool;
+      // Continue to next turn
     }
   }
 
