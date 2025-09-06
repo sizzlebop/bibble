@@ -1,6 +1,6 @@
 {
   "name": "@pinkpixel/bibble",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "An AI agent/chatbot with built-in tools and MCP support that lives in your terminal",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
     "bibble": "bin/bibble-cli.cjs"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --external commander,chalk,inquirer,markdown-it,openai,boxen,uuid,child_process,cross-spawn,@anthropic-ai/sdk,isbinaryfile,zod,zod-to-json-schema",
+    "build": "tsup src/index.ts --format esm --external commander,chalk,inquirer,markdown-it,openai,boxen,uuid,child_process,cross-spawn,@anthropic-ai/sdk,isbinaryfile,zod,zod-to-json-schema,cli-spinners",
     "dev": "tsup src/index.ts --format esm --dts --watch",
     "start": "node dist/index.js",
     "prepare": "npm run build",
@@ -36,6 +36,7 @@
     "chalk": "^5.6.0",
     "cli-highlight": "^2.1.11",
     "cli-progress": "^3.12.0",
+    "cli-spinners": "^3.2.0",
     "cli-table3": "^0.6.5",
     "cli-truncate": "^4.0.0",
     "clipboardy": "^4.0.0",
@@ -52,7 +53,6 @@
     "marked-terminal": "^7.3.0",
     "meow": "^13.2.0",
     "openai": "^5.16.0",
-    "ora": "^8.2.0",
     "string-width": "^8.0.0",
     "strip-ansi": "^7.1.0",
     "supports-color": "^10.2.0",

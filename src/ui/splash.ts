@@ -5,7 +5,8 @@ import boxen from 'boxen';
 import { gradient } from './gradient.js';
 import { theme } from './theme.js';
 import { s, brandSymbols } from './symbols.js';
-import ora from 'ora';
+import { spinners } from './spinners.js';
+import { statusManager, statusUtils } from './status-badges.js';
 
 /**
  * ASCII art banners for different occasions
@@ -37,7 +38,7 @@ export const ASCII_BANNERS = {
  * Banner configuration options
  */
 export interface BannerOptions {
-  gradient?: 'pinkCyan' | 'rainbow' | 'fire' | 'neon' | 'sunset';
+  gradient?: 'pinkCyan' | 'rainbow' | 'fire' | 'ocean' | 'bright' | 'dark' | 'aurora';
   padding?: number;
   margin?: number;
   borderStyle?: 'single' | 'double' | 'round' | 'bold' | 'none';
@@ -52,7 +53,7 @@ export interface BannerOptions {
  */
 export class Splash {
   /**
-   * Create the main BIBBLE welcome banner
+   * Create the main BIBBLE welcome banner with enhanced status
    */
   static createWelcome(options: BannerOptions = {}): string {
     const {
@@ -60,29 +61,38 @@ export class Splash {
       padding = 1,
       margin = 1,
       borderStyle = 'none',
-      borderColor = theme.accent,
+  borderColor = '#7AE7FF',
       subtitle = 'Your personal AI assistant/MCP tool calling agent that lives in your terminal',
       showVersion = true,
     } = options;
 
+    // Set status to initializing for welcome screen
+    statusManager.setState('initializing');
+
     // Apply gorgeous gradient to the BIBBLE banner
-    const coloredBanner = gradient[gradientName](ASCII_BANNERS.BIBBLE);
+  const coloredBanner = (gradient as any)[gradientName](ASCII_BANNERS.BIBBLE);
     
     // Create the content
     let content = coloredBanner;
     
-    // Add subtitle
+    // Add subtitle with enhanced styling
     if (subtitle) {
       content += '\n' + theme.dim(subtitle);
     }
     
-    // Add version info
+    // Add version info with status badge
     if (showVersion) {
-      content += '\n' + theme.label('Version:', '1.4.5');
+      const versionBadge = statusUtils.info('Version 1.6.0');
+      content += '\n' + versionBadge;
     }
     
-    // Add helpful text
-    content += '\n\n' + theme.accent('Type /help for chat commands') + ' ' + brandSymbols.sparkles;
+    // Add status indicator
+    const statusBadge = statusManager.renderAnimatedBadge('initializing');
+    content += '\n' + statusBadge;
+    
+    // Add helpful text with enhanced styling
+    const helpText = statusUtils.branded('Type /help for chat commands');
+    content += '\n\n' + helpText;
     
     // Wrap in box if border requested
     if (borderStyle !== 'none') {
@@ -103,14 +113,14 @@ export class Splash {
   static createFigletBanner(
     text: string, 
     font: string = 'Slant',
-    gradientName: 'pinkCyan' | 'rainbow' | 'fire' | 'neon' = 'pinkCyan'
+    gradientName: 'pinkCyan' | 'rainbow' | 'fire' | 'ocean' | 'bright' | 'dark' | 'aurora' = 'pinkCyan'
   ): string {
     try {
       const asciiText = figlet.textSync(text, { font });
-      return gradient[gradientName](asciiText);
+      return (gradient as any)[gradientName](asciiText);
     } catch (error) {
       // Fallback if figlet fails
-      return gradient[gradientName](text);
+      return (gradient as any)[gradientName](text);
     }
   }
   
@@ -151,25 +161,21 @@ export class Splash {
   }
   
   /**
-   * Create loading spinner with message
+   * Create loading spinner with message using centralized spinner system
    */
   static createSpinner(message: string): any {
-    const spinner = ora({
-      text: theme.dim(message),
-      color: 'cyan',
-      spinner: 'dots12',
-    });
+    const spinner = spinners.loading(theme.dim(message));
     
     return {
       start: () => spinner.start(),
       succeed: (msg?: string) => {
-        spinner.succeed(theme.ok(msg || 'Done!'));
+        spinner.succeed(msg || 'Done!');
       },
       fail: (msg?: string) => {
-        spinner.fail(theme.error(msg || 'Failed'));
+        spinner.fail(msg || 'Failed');
       },
       info: (msg?: string) => {
-        spinner.info(theme.accent(msg || 'Info'));
+        spinner.info(msg || 'Info');
       },
       stop: () => spinner.stop(),
     };
@@ -235,7 +241,7 @@ export class Splash {
       welcome: () => Splash.createWelcome(),
       rainbow: () => Splash.createWelcome({ gradient: 'rainbow' }),
       fire: () => Splash.createWelcome({ gradient: 'fire' }),
-      neon: () => Splash.createWelcome({ gradient: 'neon' }),
+  neon: () => Splash.createWelcome({ gradient: 'bright' }),
       pinkPixel: () => Splash.createPinkPixelSplash(),
       simple: (text: string) => gradient.pinkCyan(text),
     };
@@ -260,7 +266,7 @@ export const splash = {
   welcome: createWelcomeBanner,
   rainbow: () => Splash.createWelcome({ gradient: 'rainbow' }),
   fire: () => Splash.createWelcome({ gradient: 'fire' }),
-  neon: () => Splash.createWelcome({ gradient: 'neon' }),
+  neon: () => Splash.createWelcome({ gradient: 'bright' }),
   pinkPixel: () => Splash.createPinkPixelSplash(),
   startup: Splash.startupSequence,
   spinner: Splash.createSpinner,

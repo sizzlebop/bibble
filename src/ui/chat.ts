@@ -6,13 +6,14 @@ import { Agent } from "../mcp/agent.js";
 import { chatHistory } from "../utils/history.js";
 import { createWelcomeBanner } from "./splash.js";
 import { gradient } from "./gradient.js";
-import { BRAND_COLORS } from "./theme.js";
-import { symbols, chatSymbols } from "./symbols.js";
-import { BibbleTable } from "./tables.js";
+import { symbols, chatSymbols, brandSymbols } from "./symbols.js";
 import { EnhancedToolDisplay, ToolDisplayOptions } from "./tool-display.js";
+import { iconUtils, getToolIcon, getContentIcon, roleIcons, statusIcons } from "./tool-icons.js";
 import { isSecurityError } from "../security/SecurityError.js";
-import boxen from "boxen";
 import { theme } from "./theme.js";
+
+// Create enhanced tool display instance
+const toolDisplay = new EnhancedToolDisplay();
 
 /**
  * Chat UI options
@@ -156,15 +157,19 @@ export class ChatUI {
       await this.processUserInput(input);
     }
   }
-
   /**
    * Prompt for user input with beautiful styling
    * @returns User input
    */
   private promptUser(): Promise<string> {
     return new Promise((resolve) => {
-      // Create beautiful user prompt with icon and styling
-      const prompt = `\n${theme.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: `;
+      // Create beautiful user prompt with enhanced icon
+      const userIcon = iconUtils.coloredIcon(
+        roleIcons.user.icon,
+        roleIcons.user.fallback,
+        roleIcons.user.color
+      );
+      const prompt = `\n${userIcon} ${gradient.pinkCyan('You')}: `;
       
       this.rl.question(prompt, (answer) => {
         const trimmed = answer.trim();
@@ -198,7 +203,8 @@ export class ChatUI {
    */
   private promptMultilineInput(): Promise<string> {
     return new Promise((resolve) => {
-      console.log(terminal.ok('\n📝 Multi-line input mode. Type your content (multiple lines allowed).'));
+      const multilineIcon = iconUtils.coloredIcon('📝', symbols.bullet, theme.info);
+      console.log(terminal.ok(`\n${multilineIcon} Multi-line input mode. Type your content (multiple lines allowed).`));
       console.log(terminal.dim('   End with ";;;" on a new line to send.\n'));
       
       const lines: string[] = [];
@@ -208,7 +214,8 @@ export class ChatUI {
           if (line.trim() === ';;;') {
             // End multi-line input
             const result = lines.join('\n');
-            console.log(terminal.ok(`\n✅ Multi-line input complete (${lines.length} lines)\n`));
+            const successIcon = iconUtils.coloredIcon(statusIcons.completed.icon, statusIcons.completed.fallback, theme.success);
+            console.log(terminal.ok(`\n${successIcon} Multi-line input complete (${lines.length} lines)\n`));
             resolve(result);
           } else {
             lines.push(line);
@@ -228,7 +235,8 @@ export class ChatUI {
    */
   private promptCodeBlockInput(firstLine: string): Promise<string> {
     return new Promise((resolve) => {
-      console.log(terminal.ok('\n💻 Code block mode. Continue typing...'));
+      const codeIcon = iconUtils.coloredIcon('💻', symbols.squareSmallFilled, theme.secondary);
+      console.log(terminal.ok(`\n${codeIcon} Code block mode. Continue typing...`));
       console.log(terminal.dim('   End with "```" on a new line to send.\n'));
       
       const lines: string[] = [firstLine];
@@ -240,7 +248,8 @@ export class ChatUI {
           if (line.trim() === '```') {
             // End code block
             const result = lines.join('\n');
-            console.log(terminal.ok(`\n✅ Code block complete\n`));
+            const successIcon = iconUtils.coloredIcon(statusIcons.completed.icon, statusIcons.completed.fallback, theme.success);
+            console.log(terminal.ok(`\n${successIcon} Code block complete\n`));
             resolve(result);
           } else {
             readNextLine();
@@ -251,7 +260,6 @@ export class ChatUI {
       readNextLine();
     });
   }
-
   /**
    * Process user input with beautiful styling and loading states
    * @param input User input
@@ -272,8 +280,13 @@ export class ChatUI {
       // Reset abort controller
       this.abortController = new AbortController();
 
-      // Show beautiful thinking indicator with safe implementation
-      const thinkingText = `\n${theme.cyan('Thinking...')}\n`;
+      // Show beautiful thinking indicator with enhanced icons
+      const thinkingIcon = iconUtils.coloredIcon(
+        statusIcons.thinking.icon,
+        statusIcons.thinking.fallback,
+        theme.secondary
+      );
+      const thinkingText = `\n${thinkingIcon} ${theme.cyan('Thinking...')}\n`;
       process.stderr.write(thinkingText);
 
       try {
@@ -285,8 +298,13 @@ export class ChatUI {
 
         // Clear the thinking message by writing to stderr
         
-        // Create beautiful assistant prompt with robot icon
-        const assistantPrompt = `${theme.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.ocean('Assistant')}: `;
+        // Create beautiful assistant prompt with enhanced robot icon
+        const assistantIcon = iconUtils.coloredIcon(
+          roleIcons.assistant.icon,
+          roleIcons.assistant.fallback,
+          roleIcons.assistant.color
+        );
+        const assistantPrompt = `${assistantIcon} ${gradient.ocean('Assistant')}: `;
         process.stdout.write(assistantPrompt);
 
         // Process stream with beautiful styling and real-time streaming
@@ -327,7 +345,12 @@ export class ChatUI {
               this.displayToolCall(toolMessage);
               
               // Continue assistant response after tool call if needed
-              const assistantPrompt = `${theme.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.ocean('Assistant')}: `;
+              const assistantIcon = iconUtils.coloredIcon(
+                roleIcons.assistant.icon,
+                roleIcons.assistant.fallback,
+                roleIcons.assistant.color
+              );
+              const assistantPrompt = `${assistantIcon} ${gradient.ocean('Assistant')}: `;
               process.stdout.write('\n' + assistantPrompt);
               
             } catch (error) {
@@ -347,10 +370,8 @@ export class ChatUI {
         process.stdout.write("\n");
         this.displayMessageSeparator();
         
-        // CRITICAL: Force readline interface refresh to prevent freezing
-        // This fixes the issue where the prompt only accepts input once
-        this.rl.write("", { ctrl: false, name: "refresh" });
-        this.rl.prompt(false);
+        // Refresh prompt for next input
+        this.rl.prompt();
         
       } catch (streamError) {
         // Handle stream error
@@ -363,30 +384,39 @@ export class ChatUI {
       // Handle security errors with clean display
       if (isSecurityError(error)) {
         const cleanMessage = "Tool blocked by security policy";
-        console.log(`\n${terminal.hex(BRAND_COLORS.red, chatSymbols.status.error)} ${cleanMessage}`);
+        const errorIcon = iconUtils.coloredIcon(
+          statusIcons.error.icon,
+          statusIcons.error.fallback,
+          theme.error
+        );
+        console.log(`\n${errorIcon} ${cleanMessage}`);
       } else {
         // For other errors, show the error message without stack trace
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.log(`\n${terminal.hex(BRAND_COLORS.red, chatSymbols.status.error)} ${terminal.error('Error:')} ${errorMessage}`);
+        const errorIcon = iconUtils.coloredIcon(
+          statusIcons.error.icon,
+          statusIcons.error.fallback,
+          theme.error
+        );
+        console.log(`\n${errorIcon} ${terminal.error('Error:')} ${errorMessage}`);
       }
       this.displayMessageSeparator();
     }
   }
-
   /**
-   * Display a chat message with beautiful styling
+   * Display a chat message with beautiful styling and enhanced icons
    * @param message Message to display
    */
   private displayMessage(message: ChatMessage): void {
     switch (message.role) {
       case MessageRole.User:
-        const userPrompt = `${theme.hex(BRAND_COLORS.pink, chatSymbols.user.person)} ${gradient.pinkCyan('You')}: ${message.content}`;
+        const userPrompt = `${iconUtils.roleHeader('user')}: ${this.enhanceMessageContent(message.content)}`;
         console.log(`\n${userPrompt}`);
         break;
 
       case MessageRole.Assistant:
-        const assistantPrompt = `${theme.hex(BRAND_COLORS.cyan, chatSymbols.ai.robot)} ${gradient.ocean('Assistant')}: `;
-        console.log(`\n${assistantPrompt}${markdown.render(message.content)}`);
+        const assistantPrompt = `${iconUtils.roleHeader('assistant')}: `;
+        console.log(`\n${assistantPrompt}${markdown.render(this.enhanceMessageContent(message.content))}`);
         this.displayMessageSeparator();
         break;
 
@@ -400,16 +430,40 @@ export class ChatUI {
   }
 
   /**
-   * Display a beautiful separator between messages
+   * Enhance message content with contextual icons
+   * @param content Message content to enhance
+   * @returns Enhanced content with icons
+   */
+  private enhanceMessageContent(content: string): string {
+    let enhanced = content;
+    
+    // Add icons for different content types
+    const contentIcon = getContentIcon(content);
+    if (contentIcon) {
+      const icon = iconUtils.render(contentIcon.icon, contentIcon.fallback);
+      // Only add icon prefix for certain content types to avoid clutter
+      if (['code', 'json', 'url'].includes(contentIcon.type)) {
+        enhanced = `${icon} ${enhanced}`;
+      }
+    }
+    
+    return enhanced;
+  }
+
+  /**
+   * Display a beautiful separator between messages with enhanced styling
    */
   private displayMessageSeparator(): void {
-    // Create a subtle gradient separator line
-    const separator = gradient.pinkCyan('─'.repeat(50));
+    // Create a themed separator with sparkles
+    const sparkle = iconUtils.render(brandSymbols.sparkles, symbols.star);
+    const separator = gradient.pinkCyan('─'.repeat(20)) +
+      ` ${sparkle} ` +
+      gradient.pinkCyan('─'.repeat(20));
     console.log(`\n${separator}`);
   }
 
   /**
-   * Display a beautifully formatted tool call result
+   * Display a beautifully formatted tool call result with enhanced icons
    * @param message Tool message to display
    */
   private displayToolCall(message: ChatMessage): void {
@@ -431,200 +485,68 @@ export class ChatUI {
     }
     
     // Fallback to legacy display for compatibility
-    this.displayToolCallLegacy(message);
-  }
-  
-  /**
-   * Legacy tool call display (for backward compatibility)
-   * @param message Tool message to display
-   */
-  private displayToolCallLegacy(message: ChatMessage): void {
-    // Create beautiful tool header with icon and name
-    const toolHeader = `${theme.hex(BRAND_COLORS.orange, chatSymbols.tech.tool)} ${gradient.fire('Tool Call')} [${t.cyan(message.toolName || 'Unknown')}]`;
-    
-    console.log(`\n${toolHeader}`);
-    
+    console.log(`${iconUtils.toolHeader(message.toolName || 'tool')}\n`);
     try {
-      // Try to parse the content as JSON for structured display
-      const content = message.content || '';
-      
-      // Check if content looks like JSON
-      if (content.startsWith('{') || content.startsWith('[')) {
-        try {
-          const parsed = JSON.parse(content);
-          this.displayToolResultTable(parsed, message.toolName || 'Unknown');
-        } catch {
-          // If parsing fails, display as formatted text
-          this.displayToolResultText(content);
-        }
-      } else {
-        // Display as formatted text
-        this.displayToolResultText(content);
-      }
-    } catch (error) {
-      console.log(t.red(`Error displaying tool result: ${error}`));
+      const pretty = markdown.render(message.content);
+      process.stdout.write(pretty + "\n");
+    } catch {
+      process.stdout.write(String(message.content) + "\n");
     }
-    
+  }
+
+  /**
+   * Display help for chat commands
+   */
+  private displayHelp(): void {
+    const lines = [
+      `${terminal.h1('Chat Commands')}`,
+      `${terminal.dim('Use slash commands to control the chat:')}`,
+      `  ${terminal.ok('/help')}    ${terminal.dim('Show this help')}`,
+      `  ${terminal.ok('/clear')}   ${terminal.dim('Clear the screen')}`,
+      `  ${terminal.ok('/save')}    ${terminal.dim('Save this conversation to history')}`,
+      `  ${terminal.ok('/reset')}   ${terminal.dim('Reset the current conversation')}`,
+      `  ${terminal.ok('/exit')}    ${terminal.dim('Exit the chat (aliases: /quit)')}`,
+      `  ${terminal.ok('/multiline')} ${terminal.dim('Enter multi-line input mode (end with ;;;)')}`,
+      `  ${terminal.ok('```')}      ${terminal.dim('Start code block mode (end with ``` on its own line)')}`,
+    ];
+    console.log('\n' + lines.join('\n'));
     this.displayMessageSeparator();
   }
 
   /**
-   * Display tool result as structured table when possible
-   * @param data Parsed JSON data
-   * @param toolName Name of the tool
-   */
-  private displayToolResultTable(data: any, toolName: string): void {
-    if (Array.isArray(data) && data.length > 0) {
-      // Handle array of objects (like search results, file lists, etc.)
-      if (typeof data[0] === 'object' && data[0] !== null) {
-        const table = new BibbleTable({
-          head: Object.keys(data[0]).map(key => t.cyan(key)),
-          style: 'fancy'
-        });
-        
-        data.slice(0, 10).forEach(item => { // Limit to 10 rows for readability
-          const row = Object.values(item).map(value => 
-            String(value).length > 50 ? String(value).slice(0, 47) + '...' : String(value)
-          );
-          table.addRow(row);
-        });
-        
-        console.log(`\n${table.toString()}`);
-        
-        if (data.length > 10) {
-          console.log(t.dim(`... and ${data.length - 10} more items`));
-        }
-      } else {
-        // Handle simple arrays (like ["flux", "kontext", "turbo"])
-        const table = new BibbleTable({
-          head: [`${toolName} Results`],
-          style: 'clean'
-        });
-        
-        data.forEach(item => {
-          table.addRow([String(item)]);
-        });
-        
-        console.log(`\n${table.toString()}`);
-      }
-    } else if (typeof data === 'object' && data !== null) {
-      // Create key-value display for single object
-      const table = new BibbleTable({
-        head: ['Property', 'Value'],
-        style: 'fancy',
-        colWidths: [25, 50]
-      });
-      
-      Object.entries(data).forEach(([key, value]) => {
-        let displayValue = String(value);
-        if (displayValue.length > 100) {
-          displayValue = displayValue.slice(0, 97) + '...';
-        }
-        
-        table.addRow([t.cyan(key), displayValue]);
-      });
-      
-      console.log(`\n${table.toString()}`);
-    } else {
-      // Fallback to text display
-      this.displayToolResultText(JSON.stringify(data, null, 2));
-    }
-  }
-
-  /**
-   * Display tool result as formatted text
-   * @param content Text content to display
-   */
-  private displayToolResultText(content: string): void {
-    // Style the content with proper indentation and colors
-    const lines = content.split('\n');
-    const styledLines = lines.map(line => {
-      // Highlight URLs
-      if (line.match(/https?:\/\/[^\s]+/)) {
-        return line.replace(/(https?:\/\/[^\s]+)/g, t.cyan('$1'));
-      }
-      // Highlight file paths
-      if (line.match(/\/[\w\/.]+/) || line.match(/[A-Z]:\\[\w\\./]+/)) {
-        return t.green(line);
-      }
-      // Highlight numbers
-      if (line.match(/^\s*\d+/)) {
-        return line.replace(/\d+/g, t.cyan('$&'));
-      }
-      // Default styling
-      return theme.hex(BRAND_COLORS.text || '#FFFFFF', line);
-    });
-    
-    console.log(`\n${styledLines.join('\n')}`);
-  }
-
-  /**
-   * Display help information with colorful styling
-   */
-  private displayHelp(): void {
-    // Create colorful command list with symbols
-    const commands = [
-      terminal.style.label("/help", "Display this help"),
-      terminal.style.label("/exit", "Exit the chat"),
-      terminal.style.label("/quit", "Exit the chat"),
-      terminal.style.label("/clear", "Clear the screen"),
-      terminal.style.label("/save", "Save the current chat to history"),
-      terminal.style.label("/reset", "Reset the current conversation"),
-      "", // Empty line for separation
-      theme.hex(BRAND_COLORS.pink, "📝 Multi-line Input:"),
-      terminal.style.label("/multiline", "Enter multi-line input mode (end with ;;;)"),
-      terminal.style.label("/paste", "Same as /multiline - paste multi-line content"),
-      terminal.style.label("```", "Start code block mode (end with closing ```)"),
-    ];
-    
-    // Format the help text with gradient title
-    const content = 
-      terminal.style.title("✨ Available Commands ✨") + "\n\n" +
-      commands.join("\n") + "\n\n" +
-      theme.hex(BRAND_COLORS.cyan, "💡 Tip: You can now paste multi-line content using /multiline or by starting with ```");
-      
-    // Display in a nice box with custom styling
-    const helpText = boxen(content, {
-      padding: 1,
-      borderStyle: "round",
-      borderColor: "cyan",
-    });
-
-    console.log(helpText);
-  }
-
-  /**
-   * Save the current chat to history
+   * Save the current chat using the history manager
    */
   private saveChat(): void {
-    if (!this.agent) {
-      console.log(terminal.error("No active chat to save."));
-      return;
+    try {
+      if (!this.agent) {
+        console.log(terminal.warn('No active conversation to save.'));
+        return;
+      }
+      const messages = this.agent.getConversation();
+      const id = chatHistory.saveChat(messages, undefined, this.model);
+      if (id) {
+        console.log(terminal.ok(`Saved chat as ${id}`));
+      } else {
+        console.log(terminal.dim('History saving is disabled in config.'));
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.log(terminal.err(`Failed to save chat: ${msg}`));
     }
-
-    const conversation = this.agent.getConversation();
-
-    // Skip if no messages
-    if (conversation.length <= 1) {
-      console.log(terminal.warning("No chat messages to save."));
-      return;
-    }
-
-    // Save to history
-    const id = chatHistory.saveChat(conversation, undefined, this.model);
-    console.log(terminal.ok(`Chat saved with ID: ${id}`));
   }
 
   /**
-   * Reset the current chat
+   * Reset the current chat conversation
    */
   private resetChat(): void {
-    if (!this.agent) {
-      console.log(terminal.error("No active chat to reset."));
-      return;
+    if (this.agent) {
+      this.agent.resetConversation();
+      console.clear();
+      this.displayWelcome();
+      console.log(terminal.info('Conversation reset.'));
+      this.displayMessageSeparator();
+    } else {
+      console.log(terminal.warn('Agent not initialized.'));
     }
-
-    this.agent.resetConversation();
-    console.log(terminal.info("Chat reset. Starting a new conversation."));
   }
 }

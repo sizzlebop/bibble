@@ -2,8 +2,8 @@
 // Implements beautiful headers, progress indicators, boxed sections, and rich formatting
 
 import boxen from 'boxen';
-import ora, { Ora } from 'ora';
 import { highlight } from 'cli-highlight';
+import { PinkPixelSpinner, spinners } from './spinners.js';
 import stringifyPretty from 'json-stringify-pretty-compact';
 import terminalLink from 'terminal-link';
 import cliTruncate from 'cli-truncate';
@@ -18,7 +18,7 @@ export interface ToolExecution {
   status: ToolStatus;
   startTime?: Date;
   endTime?: Date;
-  spinner?: Ora;
+  spinner?: PinkPixelSpinner;
 }
 
 export interface ToolDisplayOptions {
@@ -72,11 +72,7 @@ export class EnhancedToolDisplay {
     };
 
     if (opts.showSpinner) {
-      execution.spinner = ora({
-        text: `Executing ${theme.cyan(toolName)}...`,
-        color: 'cyan',
-        spinner: 'dots',
-      }).start();
+      execution.spinner = spinners.tool(`Executing ${theme.cyan(toolName)}...`).start();
     }
 
     this.activeExecutions.set(executionId, execution);

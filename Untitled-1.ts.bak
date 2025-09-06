@@ -1,9 +1,9 @@
 import { marked, Renderer } from "marked";
 import { markedTerminal } from "marked-terminal";
 import chalk from "chalk";
-import { Config } from "../config/config.js";
-import { BRAND_COLORS, theme } from "./theme.js";
-import { Terminal } from "./colors.js";
+import { Config } from "./src/config/config.js";
+import { BRAND_COLORS, theme } from "./src/ui/theme.js";
+import { Terminal } from "./src/ui/colors.js";
 import TerminalRenderer from "marked-terminal":
 
 /**

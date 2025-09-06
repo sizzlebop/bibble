@@ -46,15 +46,14 @@ export class PromptUI {
   }): Promise<string> {
     const styledMessage = this.styleMessage(options.message);
     
-    const result = await inquirer.prompt([{
+    const result = await inquirer.prompt({
       type: 'input',
       name: 'value',
       message: styledMessage,
       default: options.default,
       validate: options.validate,
-      transform: options.transform,
-      prefix: options.prefix || theme.accent(symbols.question)
-    }]);
+      transformer: options.transform,
+    });
 
     return result.value;
   }
@@ -68,13 +67,12 @@ export class PromptUI {
   }): Promise<boolean> {
     const styledMessage = this.styleMessage(options.message);
     
-    const result = await inquirer.prompt([{
+    const result = await inquirer.prompt({
       type: 'confirm',
       name: 'confirmed',
       message: styledMessage,
       default: options.default ?? true,
-      prefix: theme.warning(symbols.question)
-    }]);
+    });
 
     return result.confirmed;
   }
@@ -97,15 +95,14 @@ export class PromptUI {
       short: choice.name
     }));
 
-    const result = await inquirer.prompt([{
+    const result = await inquirer.prompt({
       type: 'list',
       name: 'selected',
       message: styledMessage,
       choices: styledChoices,
       default: options.default,
       pageSize: options.pageSize || 10,
-      prefix: theme.accent(symbols.pointer)
-    }]);
+    });
 
     return result.selected;
   }
@@ -127,14 +124,14 @@ export class PromptUI {
       short: choice.name
     }));
 
-    const result = await inquirer.prompt([{
+    const result = await inquirer.prompt({
       type: 'checkbox',
       name: 'selected',
       message: styledMessage,
       choices: styledChoices,
-      validate: options.validate,
-      prefix: theme.accent(symbols.question)
-    }]);
+      // coerce to expected signature
+      validate: (choices: readonly any[]) => options.validate ? options.validate(choices as any) : true,
+    });
 
     return result.selected;
   }
@@ -149,14 +146,13 @@ export class PromptUI {
   }): Promise<string> {
     const styledMessage = this.styleMessage(options.message);
     
-    const result = await inquirer.prompt([{
+    const result = await inquirer.prompt({
       type: 'password',
       name: 'password',
       message: styledMessage,
-      mask: options.mask || symbols.bullet,
+      mask: options.mask || '*',
       validate: options.validate,
-      prefix: theme.warning(symbols.lock)
-    }]);
+    });
 
     return result.password;
   }
@@ -171,14 +167,13 @@ export class PromptUI {
   }): Promise<string> {
     const styledMessage = this.styleMessage(options.message);
     
-    const result = await inquirer.prompt([{
+    const result = await inquirer.prompt({
       type: 'editor',
       name: 'content',
       message: styledMessage,
       default: options.default,
       validate: options.validate,
-      prefix: theme.accent(symbols.edit)
-    }]);
+    });
 
     return result.content;
   }
@@ -210,14 +205,14 @@ export class PromptUI {
   }): Promise<T> {
     const styledMessage = gradient.pinkCyan(options.message);
     
-    console.log(`${theme.accent(symbols.loading)} ${styledMessage}...`);
+  console.log(`${theme.accent(symbols.loading)} ${styledMessage}...`);
     
     try {
       const result = await options.task();
-      console.log(`${theme.success(symbols.check)} ${theme.success('Done!')}`);
+  console.log(`${theme.success(symbols.check)} ${theme.success('Done!')}`);
       return result;
     } catch (error) {
-      console.log(`${theme.error(symbols.cross)} ${theme.error('Failed!')}`);
+  console.log(`${theme.error(symbols.cross)} ${theme.error('Failed!')}`);
       throw error;
     }
   }

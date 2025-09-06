@@ -28,7 +28,7 @@ export function taskList(tasks: Array<{ text: string; done?: boolean }>): string
 }
 
 export function keyValueList(entries: Record<string, string | number | boolean>): string {
-  const lines = Object.entries(entries).map(([k, v]) => `${theme.(k, String(v))}`);
+  const lines = Object.entries(entries).map(([k, v]) => theme.label(k, String(v)));
   return lines.join('\n');
 }
 
@@ -53,7 +53,7 @@ export function columns(
     const parts: string[] = [];
     for (const c of columns) {
       if (c.title && i === 0) {
-        parts.push(normalize(t.accent(c.title)));
+        parts.push(normalize(theme.accent(c.title)));
       } else {
         const idx = c.title ? i - 1 : i;
         const line = idx >= 0 && idx < c.lines.length ? c.lines[idx] : '';

@@ -4,9 +4,7 @@
 import Table from 'cli-table3';
 import { theme } from './theme.js';
 import { s, brandSymbols } from './symbols.js';
-import { t }from "./colors.js";
-import { BRAND_COLORS, BrandColorName, BrandColorsType, Colors } from './colors.js';
-import { g } from './gradient.js';
+import { BRAND_COLORS } from './colors.js';
 import { Style } from 'cli-highlight';
 import Chalk from 'chalk';
 
@@ -323,7 +321,7 @@ export const tables = {
         theme.dim(chat.id.slice(0, 8)),
         theme.cyan(chat.title),
         theme.dim(chat.date),
-        theme.magenta(chat.messages),
+  theme.accent(String(chat.messages)),
         theme.pink(chat.model)
       ]);
     });

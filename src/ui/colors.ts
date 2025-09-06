@@ -1,6 +1,6 @@
 // colors.ts — terminal interface and color utilities
 import { gradient } from './gradient.js';
-import { theme, BRAND_COLORS } from './theme.js';
+import { theme, BRAND_COLORS, Stylizer } from './theme.js';
 import chalk from 'chalk';
 
 // Re-export BRAND_COLORS from theme to maintain compatibility
@@ -8,17 +8,18 @@ export { BRAND_COLORS } from './theme.js';
 export type BrandColorName = keyof typeof BRAND_COLORS;
 
 // Optional enum for compatibility
-export enum Colors {
-  Default = 'default',
-  Red = 'red',
-  Green = 'green',
-  Yellow = 'yellow',
-  Blue = 'blue',
-  Magenta = 'magenta',
-  Cyan = 'cyan',
-  White = 'white',
-  Gray = 'gray',
-}
+// Keep a simple literal mapping to avoid enum/type merging issues in TS
+export const Colors = {
+  Default: 'default',
+  Red: 'red',
+  Green: 'green',
+  Yellow: 'yellow',
+  Blue: 'blue',
+  Magenta: 'magenta',
+  Cyan: 'cyan',
+  White: 'white',
+  Gray: 'gray',
+} as const;
 
 export class Terminal {
   // Style functions that pass through to theme
@@ -38,6 +39,13 @@ export class Terminal {
   error(text: string) { return theme.err(text); }
   success(text: string) { return theme.ok(text); }
   info(text: string) { return theme.info(text); }
+  warning(text: string) { return theme.warn(text); }
+  // Role aliases used in history command
+  system(text: string) { return theme.dim(text); }
+  user(text: string) { return theme.accent(text); }
+  assistant(text: string) { return theme.brand(text); }
+  tool(text: string) { return theme.secondary(text); }
+  log(text: string) { return theme.text(text); }
   
   // Brand colors
   pink(text: string) { return theme.pink(text); }
@@ -55,6 +63,7 @@ export class Terminal {
   dim(text: string) { return chalk.dim(text); }
   bold(text: string) { return chalk.bold(text); }
   format(key: string, color: string) { return `${chalk.gray(key + ':')} ${color}`; }
+  hex(color: string | Stylizer, text: string) { return theme.hex(color as any, text); }
   
   // Label helper for key-value pairs
   label(key: string, value: string) {
@@ -82,7 +91,7 @@ export class Terminal {
 }
 
 // Type exports for compatibility
-export type Colors = typeof Colors;
+export type ColorsType = typeof Colors;
 export type GradientType = typeof gradient;
 export type TerminalType = typeof Terminal;
 export type BrandColorsType = typeof BRAND_COLORS;
@@ -94,4 +103,5 @@ export const terminal = new Terminal();
 export const t = terminal;
 
 // Color enum for compatibility
-export { Colors as Color };
+export const Color = Colors;
+export type Color = keyof typeof Colors;

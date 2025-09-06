@@ -47,6 +47,12 @@ export const symbols = {
   heart: figures.heart,                  // ♥
   nodejs: figures.nodejs,                // ⬢
   mustache: figures.mustache,            // ෴
+  // Additional commonly referenced symbols
+  question: figures.questionMarkPrefix,
+  lock: '🔒',
+  edit: '✎',
+  loading: figures.ellipsis,
+  check: figures.tick,
 } as const;
 
 /**

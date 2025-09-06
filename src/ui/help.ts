@@ -16,7 +16,8 @@ import boxen from 'boxen';
 
 // Configure marked for terminal rendering
 marked.setOptions({
-  renderer: new TerminalRenderer({
+  // cast to any to satisfy marked's _Renderer type expectations in d.ts
+  renderer: new (TerminalRenderer as any)({
     reflowText: true,
     width: 80,
     showSectionPrefix: false,
@@ -31,7 +32,7 @@ export class HelpSystem {
   }
 
   private setupMarkdownRenderer() {
-    const renderer = new TerminalRenderer({
+  const renderer = new (TerminalRenderer as any)({
       reflowText: true,
       width: process.stdout.columns ? Math.min(process.stdout.columns - 4, 100) : 80,
       showSectionPrefix: false,
@@ -76,7 +77,7 @@ export class HelpSystem {
       }
     });
 
-    marked.setOptions({ renderer });
+  marked.setOptions({ renderer: renderer as any });
   }
 
   /**
@@ -157,10 +158,10 @@ While in a chat session, you can use these commands:
 
 ## Tips for Better Conversations
 
-${symbols.bulb} **Make requests clear and specific**  
-${symbols.bulb} **Use tools - Bibble has access to many MCP tools**  
-${symbols.bulb} **Ask for explanations if responses are unclear**  
-${symbols.bulb} **Use /save to preserve important conversations**  
+${symbols.star} **Make requests clear and specific**  
+${symbols.star} **Use tools - Bibble has access to many MCP tools**  
+${symbols.star} **Ask for explanations if responses are unclear**  
+${symbols.star} **Use /save to preserve important conversations**  
 
 ## Model Information
 ${gradient.pinkCyan('Current model capabilities vary by provider')}
@@ -255,10 +256,10 @@ bibble config set ui.colors true
 
 ## Model Selection Tips
 
-${symbols.bulb} **For coding tasks**: Claude 3.5 Sonnet or GPT-4o  
-${symbols.bulb} **For reasoning**: o1 or Claude 3 Opus  
-${symbols.bulb} **For speed**: GPT-4o Mini or Gemini Flash  
-${symbols.bulb} **For cost-efficiency**: Haiku or Mini models  
+${symbols.star} **For coding tasks**: Claude 3.5 Sonnet or GPT-4o  
+${symbols.star} **For reasoning**: o1 or Claude 3 Opus  
+${symbols.star} **For speed**: GPT-4o Mini or Gemini Flash  
+${symbols.star} **For cost-efficiency**: Haiku or Mini models  
 
 ## Switching Models
 You can switch models during setup or by using:

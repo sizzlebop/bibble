@@ -1,12 +1,14 @@
-﻿import { Command } from "commander";
+import { Command } from 'commander';
 import inquirer from "inquirer";
 import { Config } from "../config/config.js";
 import { terminal, Color } from "../ui/colors.js";
 import { BibbleConfig } from "../config/storage.js";
 import { tables, BibbleTable } from "../ui/tables.js";
 import { t } from "../ui/theme.js";
-import { status } from "../ui/spinners.js";
+import { spinners } from "../ui/spinners.js";
 import { brandSymbols } from "../ui/symbols.js";
+import { iconUtils, statusIcons } from "../ui/tool-icons.js";
+import { addThemeToConfigCommand } from "./theme.js";
 
 /**
  * Setup the config command
@@ -56,9 +58,19 @@ export function setupConfigCommand(program: Command): Command {
         }
 
         config.set(key, parsedValue);
-        console.log(terminal.success(`Configuration set: ${key} = ${JSON.stringify(parsedValue)}`));
+        const successIcon = iconUtils.coloredIcon(
+          statusIcons.completed.icon,
+          statusIcons.completed.fallback,
+          'green'
+        );
+        console.log(`${successIcon} ${terminal.success(`Configuration set: ${key} = ${JSON.stringify(parsedValue)}`)}`);
       } catch (error) {
-        console.error(terminal.error("Error setting configuration:"), error);
+        const errorIcon = iconUtils.coloredIcon(
+          statusIcons.error.icon,
+          statusIcons.error.fallback,
+          'red'
+        );
+        console.error(`${errorIcon} ${terminal.error("Error setting configuration:")}`), error;
       }
     });
 
@@ -71,19 +83,31 @@ export function setupConfigCommand(program: Command): Command {
         const value = config.get(key);
 
         if (value === undefined) {
-          console.log(terminal.warning(`Configuration key '${key}' not found.`));
+          const warningIcon = iconUtils.coloredIcon(
+            statusIcons.warning.icon,
+            statusIcons.warning.fallback,
+            'yellow'
+          );
+          console.log(`${warningIcon} ${terminal.warning(`Configuration key '${key}' not found.`)}`);
           return;
         }
 
         // Hide API keys for security
         if (key.endsWith(".apiKey")) {
-          console.log(terminal.info(`${key} = <hidden>`));
+          const infoIcon = iconUtils.coloredIcon('🔐', '•', 'cyan');
+          console.log(`${infoIcon} ${terminal.info(`${key} = <hidden>`)}`);
           return;
         }
 
-        console.log(terminal.info(`${key} = ${JSON.stringify(value, null, 2)}`));
+        const infoIcon = iconUtils.coloredIcon('📋', '•', 'cyan');
+        console.log(`${infoIcon} ${terminal.info(`${key} = ${JSON.stringify(value, null, 2)}`)}`);
       } catch (error) {
-        console.error(terminal.error("Error getting configuration:"), error);
+        const errorIcon = iconUtils.coloredIcon(
+          statusIcons.error.icon,
+          statusIcons.error.fallback,
+          'red'
+        );
+        console.error(`${errorIcon} ${terminal.error("Error getting configuration:")}`), error;
       }
     });
 
@@ -103,9 +127,11 @@ export function setupConfigCommand(program: Command): Command {
 
       if (confirm) {
         config.reset();
-        console.log(terminal.success("Configuration reset to defaults."));
+        const resetIcon = iconUtils.coloredIcon('🔄', '↻', 'green');
+        console.log(`${resetIcon} ${terminal.success("Configuration reset to defaults.")}`);
       } else {
-        console.log(terminal.info("Reset cancelled."));
+        const infoIcon = iconUtils.coloredIcon('ℹ️', 'i', 'cyan');
+        console.log(`${infoIcon} ${terminal.info("Reset cancelled.")}`);
       }
     });
 
@@ -133,7 +159,8 @@ export function setupConfigCommand(program: Command): Command {
       ]);
 
       config.setApiKey(provider, apiKey);
-      console.log(terminal.success(`API key for ${provider} saved successfully.`));
+      const keyIcon = iconUtils.coloredIcon('🔑', '✓', 'green');
+      console.log(`${keyIcon} ${terminal.success(`API key for ${provider} saved successfully.`)}`);
     });
 
   // Set default provider
@@ -268,6 +295,9 @@ export function setupConfigCommand(program: Command): Command {
       config.setUserGuidelines(guidelines);
       console.log(terminal.success("User guidelines saved successfully."));
     });
+
+  // Add theme management commands
+  addThemeToConfigCommand(configCommand);
 
   return configCommand;
 }
