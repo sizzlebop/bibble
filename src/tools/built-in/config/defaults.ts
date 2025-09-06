@@ -80,6 +80,14 @@ export const DEFAULT_CONFIG: BuiltInToolsConfig = {
     createBackups: true,
     maxUndoHistory: 50,
     validateSyntax: true
+  },
+  web: {
+    maxSearches: 3,
+    maxResultsPerSearch: 10,
+    maxContentExtractions: 6,
+    requestTimeoutMs: 120000,
+    rateLimitPerMinute: 15,
+    enableContentExtraction: true
   }
 };
 

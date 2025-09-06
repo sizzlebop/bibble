@@ -92,6 +92,14 @@ export interface BibbleConfig {
     topP?: number;
     topK?: number;
   }>;
+  // Web search engine configuration
+  webSearch?: {
+    preferredEngine?: 'duckduckgo' | 'bing' | 'google' | 'brave';
+    bingApiKey?: string;
+    googleApiKey?: string;
+    googleSearchEngineId?: string;
+    braveApiKey?: string;
+  };
 }
 
 // Default configuration

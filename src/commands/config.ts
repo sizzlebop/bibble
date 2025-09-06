@@ -70,7 +70,7 @@ export function setupConfigCommand(program: Command): Command {
           statusIcons.error.fallback,
           'red'
         );
-        console.error(`${errorIcon} ${terminal.error("Error setting configuration:")}`), error;
+        console.error(`${errorIcon} ${terminal.error("Error setting configuration:")}`, error);
         process.exit(1);
       }
       process.exit(0);
@@ -109,7 +109,7 @@ export function setupConfigCommand(program: Command): Command {
           statusIcons.error.fallback,
           'red'
         );
-        console.error(`${errorIcon} ${terminal.error("Error getting configuration:")}`), error;
+        console.error(`${errorIcon} ${terminal.error("Error getting configuration:")}`, error);
         process.exit(1);
       }
       process.exit(0);
@@ -294,6 +294,14 @@ export function setupConfigCommand(program: Command): Command {
     .description("Model configuration wizard - set provider, model, and parameters")
     .action(async () => {
       await modelConfigurationWizard();
+    });
+
+  // Configure web search engines and keys
+  configCommand
+    .command("web-search")
+    .description("Web search configuration wizard - set preferred engine and API keys")
+    .action(async () => {
+      await webSearchConfigurationWizard();
     });
 
   // Configure user guidelines
@@ -683,7 +691,7 @@ async function modelConfigurationWizard(): Promise<void> {
   
   if (modelChoices.length === 0 || (modelChoices.length === 1 && modelChoices[0].value === "__custom__")) {
     // Only custom input available
-    const { customModel } = await inquirer.prompt([
+    const { customModel } = await inquirer.prompt<any>([
       {
         type: "input",
         name: "customModel",
@@ -691,11 +699,11 @@ async function modelConfigurationWizard(): Promise<void> {
         default: defaultModelForProvider || (provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'),
         validate: (input: string) => input.trim().length > 0 || "Model ID is required",
       },
-    ]);
+    ] as any);
     modelId = customModel;
   } else {
     // Show list with custom option
-    const { selectedModel } = await inquirer.prompt([
+    const { selectedModel } = await inquirer.prompt<any>([
       {
         type: "list",
         name: "selectedModel",
@@ -703,10 +711,10 @@ async function modelConfigurationWizard(): Promise<void> {
         choices: modelChoices,
         default: defaultModelForProvider,
       },
-    ]);
+    ] as any);
     
     if (selectedModel === "__custom__") {
-      const { customModel } = await inquirer.prompt([
+      const { customModel } = await inquirer.prompt<any>([
         {
           type: "input",
           name: "customModel",
@@ -714,7 +722,7 @@ async function modelConfigurationWizard(): Promise<void> {
           default: defaultModelForProvider || (provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'),
           validate: (input: string) => input.trim().length > 0 || "Model ID is required",
         },
-      ]);
+      ] as any);
       modelId = customModel;
     } else {
       modelId = selectedModel;
@@ -757,6 +765,98 @@ async function modelConfigurationWizard(): Promise<void> {
   }
   
   process.exit(0);
+}
+
+/**
+ * Web search configuration wizard
+ */
+async function webSearchConfigurationWizard(): Promise<void> {
+  const config = Config.getInstance();
+
+  console.log(`\n${t.h1('🔎 Web Search Configuration')} ${brandSymbols.sparkles}\n`);
+  console.log(t.dim('Choose your preferred search engine and set API keys if needed.\\n'));
+
+  const current = {
+    preferredEngine: config.get('webSearch.preferredEngine', 'duckduckgo'),
+    bingApiKey: config.get('webSearch.bingApiKey'),
+    googleApiKey: config.get('webSearch.googleApiKey'),
+    googleSearchEngineId: config.get('webSearch.googleSearchEngineId'),
+    braveApiKey: config.get('webSearch.braveApiKey')
+  } as any;
+
+  const { preferredEngine } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'preferredEngine',
+      message: 'Preferred search engine:',
+      choices: [
+        { name: 'DuckDuckGo (no API key)', value: 'duckduckgo' },
+        { name: 'Bing (requires API key)', value: 'bing' },
+        { name: 'Google Custom Search (API key + CX)', value: 'google' },
+        { name: 'Brave (requires API key)', value: 'brave' }
+      ],
+      default: current.preferredEngine || 'duckduckgo'
+    }
+  ]);
+
+  // Ask for keys depending on engine
+  let bingApiKey = current.bingApiKey;
+  let googleApiKey = current.googleApiKey;
+  let googleSearchEngineId = current.googleSearchEngineId;
+  let braveApiKey = current.braveApiKey;
+
+  if (preferredEngine === 'bing') {
+    const ans = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'bingApiKey',
+        message: 'Enter Bing API key:',
+        default: current.bingApiKey || '',
+        validate: (input: string) => input.trim().length > 0 || 'Bing API key is required'
+      }
+    ]);
+    bingApiKey = ans.bingApiKey;
+  } else if (preferredEngine === 'google') {
+    const ans = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'googleApiKey',
+        message: 'Enter Google API key:',
+        default: current.googleApiKey || '',
+        validate: (input: string) => input.trim().length > 0 || 'Google API key is required'
+      },
+      {
+        type: 'input',
+        name: 'googleSearchEngineId',
+        message: 'Enter Google Custom Search Engine ID (cx):',
+        default: current.googleSearchEngineId || '',
+        validate: (input: string) => input.trim().length > 0 || 'Search engine ID (cx) is required'
+      }
+    ]);
+    googleApiKey = ans.googleApiKey;
+    googleSearchEngineId = ans.googleSearchEngineId;
+  } else if (preferredEngine === 'brave') {
+    const ans = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'braveApiKey',
+        message: 'Enter Brave API key:',
+        default: current.braveApiKey || '',
+        validate: (input: string) => input.trim().length > 0 || 'Brave API key is required'
+      }
+    ]);
+    braveApiKey = ans.braveApiKey;
+  }
+
+  // Persist configuration
+  config.set('webSearch.preferredEngine', preferredEngine);
+  if (bingApiKey) config.set('webSearch.bingApiKey', bingApiKey);
+  if (googleApiKey) config.set('webSearch.googleApiKey', googleApiKey);
+  if (googleSearchEngineId) config.set('webSearch.googleSearchEngineId', googleSearchEngineId);
+  if (braveApiKey) config.set('webSearch.braveApiKey', braveApiKey);
+
+  const successIcon = iconUtils.coloredIcon('✅', '✓', 'green');
+  console.log(`\n${successIcon} ${terminal.success('Web search configuration saved.')}`);
 }
 
 /**
@@ -973,7 +1073,7 @@ async function saveModelConfiguration(provider: string, modelId: string, modelCo
   config.set(`apis.${provider}.defaultModel`, modelId);
   
   // Update or add model configuration
-  const models = config.get('models', []);
+  const models = config.get<any[]>('models', [] as any[]);
   const existingModelIndex = models.findIndex((m: any) => m.id === modelId);
   
   const modelEntry = {

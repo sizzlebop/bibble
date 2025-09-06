@@ -35,6 +35,9 @@ import { findReplaceInFileTool } from './edit/find-replace-in-file.js';
 import { insertTextTool } from './edit/insert-text.js';
 import { deleteLinesTool } from './edit/delete-lines.js';
 
+// Import all web tools
+import { webSearchTool, quickWebSearchTool, researchStatusTool } from './web/web-search.js';
+
 export class BuiltInToolRegistry {
   private tools: Map<string, BuiltInTool> = new Map();
   private initialized = false;
@@ -74,6 +77,11 @@ export class BuiltInToolRegistry {
     this.registerTool(findReplaceInFileTool);
     this.registerTool(insertTextTool);
     this.registerTool(deleteLinesTool);
+
+    // Web tools
+    this.registerTool(webSearchTool);
+    this.registerTool(quickWebSearchTool);
+    this.registerTool(researchStatusTool);
   }
 
   /**
@@ -114,7 +122,7 @@ export class BuiltInToolRegistry {
   /**
    * Get tools by category
    */
-  getToolsByCategory(category: 'filesystem' | 'process' | 'search' | 'edit'): BuiltInTool[] {
+  getToolsByCategory(category: 'filesystem' | 'process' | 'search' | 'edit' | 'web'): BuiltInTool[] {
     return Array.from(this.tools.values()).filter(tool => tool.category === category);
   }
 
@@ -223,7 +231,7 @@ export class BuiltInToolRegistry {
       throw new Error('Tool must have a valid description');
     }
 
-    if (!['filesystem', 'process', 'search', 'edit'].includes(tool.category)) {
+    if (!['filesystem', 'process', 'search', 'edit', 'web'].includes(tool.category)) {
       throw new Error('Tool must have a valid category');
     }
 
@@ -300,7 +308,8 @@ export class BuiltInToolRegistry {
       filesystem: 0,
       process: 0,
       search: 0,
-      edit: 0
+      edit: 0,
+      web: 0
     };
 
     for (const tool of this.tools.values()) {

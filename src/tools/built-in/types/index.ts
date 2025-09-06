@@ -8,7 +8,7 @@ import { z } from 'zod';
 export interface BuiltInTool {
   name: string;
   description: string;
-  category: 'filesystem' | 'process' | 'search' | 'edit';
+  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web';
   parameters: z.ZodSchema;
   execute: (params: any) => Promise<ToolResult>;
 }
@@ -126,6 +126,14 @@ export interface BuiltInToolsConfig {
     createBackups: boolean;
     maxUndoHistory: number;
     validateSyntax: boolean;
+  };
+  web: {
+    maxSearches: number;
+    maxResultsPerSearch: number;
+    maxContentExtractions: number;
+    requestTimeoutMs: number;
+    rateLimitPerMinute: number;
+    enableContentExtraction: boolean;
   };
 }
 

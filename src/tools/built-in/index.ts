@@ -20,6 +20,7 @@ export * from './filesystem/index.js';
 export * from './process/index.js';
 export * from './search/index.js';
 export * from './edit/index.js';
+export * from './web/index.js';
 
 // Main tool registry
 export { BuiltInToolRegistry, getBuiltInToolRegistry, initializeBuiltInTools } from './registry.js';
