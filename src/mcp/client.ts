@@ -356,7 +356,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.4.5"
+        version: "1.7.0"
       });
 
       // Connect to server

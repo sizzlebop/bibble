@@ -27,6 +27,10 @@ Bibble is a command-line interface (CLI) chatbot application built in TypeScript
 - Real-time response streaming of model output
 - Contextual multi-turn conversations with chat memory
 - MCP client functionality for connecting to MCP-compatible servers
+- **🌐 BUILT-IN WEB SEARCH & RESEARCH TOOLS** - Multi-engine search with intelligent fallbacks
+- **🔍 Comprehensive Web Search** - DuckDuckGo, Bing, and Google integration with AI-powered query enhancement
+- **🧠 Advanced Research Assistant** - Event-driven research sessions with content extraction and analysis
+- **⚡ Quick Search Tools** - Fast information retrieval without external MCP server setup
 - Settings and configuration options accessible from the CLI
 - Detailed error handling and user feedback
 - **🎨 Beautiful Pink Pixel themed terminal interface with gorgeous ASCII banners**
@@ -161,6 +165,51 @@ Bibble v1.4.0 introduces a completely overhauled tool display system featuring:
 - **Keyboard Shortcuts**: Intuitive keyboard navigation for tool output exploration
 
 These enhancements make working with MCP tools more intuitive and visually appealing. The new display system can be toggled using environment variables if compatibility issues arise.
+
+## 🌐 Built-In Web Search & Research Tools
+
+**New in v1.7.0!** Bibble now includes comprehensive web search and research capabilities built directly into the application - no external MCP servers required!
+
+### 🔍 Web Search Features
+
+- **Multi-Engine Support**: Integrated DuckDuckGo (primary), Bing, and Google search with intelligent fallbacks
+- **AI-Powered Query Enhancement**: Smart query optimization for better search results
+- **Advanced Content Extraction**: Intelligent web scraping with rate limiting and content parsing
+- **Research Session Management**: Event-driven research workflows with progress tracking
+- **Cross-Platform Compatible**: Optimized for Windows environments with proper path handling
+
+### Available Built-In Web Tools
+
+1. **🔍 Web Search Tool** (`web-search`)
+   - Multi-engine search with DuckDuckGo, Bing, and Google fallbacks
+   - Configurable result counts and search depth
+   - Real-time progress monitoring
+   - Clean, formatted search results with metadata
+
+2. **⚡ Quick Search Tool** (`quick-search`)
+   - Fast single-query searches for immediate answers
+   - Streamlined interface for rapid information retrieval
+   - Minimal processing overhead for speed
+
+3. **📊 Research Session Status** (`research-status`)
+   - Monitor ongoing research operations
+   - Progress visualization and session management
+   - Result aggregation and consolidated findings
+
+### How to Use Web Search
+
+Once you start Bibble, the web search tools are automatically available. Simply ask questions that require web search, and Bibble will intelligently use the appropriate search tools:
+
+```
+> What are the latest developments in AI?
+🔍 Bibble will automatically search the web using the built-in tools...
+```
+
+Or explicitly request web search:
+```
+> Can you search for information about TypeScript 5.0 features?
+🌐 Bibble will use web-search tool to find current information...
+```
 
 ### Environment Variables
 
@@ -357,6 +406,9 @@ If you're still experiencing issues:
 │   ├── config/           # Configuration management
 │   ├── mcp/              # MCP client implementation
 │   ├── llm/              # LLM integration
+│   ├── tools/            # Built-in tools system
+│   │   └── built-in/
+│   │       └── web/      # Web search & research tools
 │   ├── ui/               # Terminal UI components
 │   ├── utils/            # Utility functions
 │   ├── index.ts          # Main entry point

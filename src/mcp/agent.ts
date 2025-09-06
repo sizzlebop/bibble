@@ -1,4 +1,4 @@
-﻿import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { McpClient, ChatCompletionInputTool } from "./client.js";
 import { Config } from "../config/config.js";
 import { ListToolsRequest, ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
