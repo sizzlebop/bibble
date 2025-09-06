@@ -207,7 +207,7 @@ current = (current as any)[k];
         // For Anthropic models, return default configuration
         const config = {
           provider: "anthropic",
-          maxTokens: 4096,
+          maxTokens: 20000,
           temperature: 0.7,
           topP: 0.9,
           topK: 40
@@ -230,7 +230,7 @@ current = (current as any)[k];
         // For Google Gemini models, return default configuration
         return {
           provider: "google",
-          maxTokens: 8192,
+          maxTokens: 20000,
           temperature: 0.7,
           topP: 0.9,
           topK: 40
@@ -239,7 +239,7 @@ current = (current as any)[k];
         // For OpenAI o-series models, return default configuration
         return {
           provider: "openai",
-          maxCompletionTokens: 4096,
+          maxCompletionTokens: 20000,
           reasoningEffort: "medium",
           isReasoningModel: true
         };
@@ -247,7 +247,7 @@ current = (current as any)[k];
         // For other OpenAI models, return default configuration
         return {
           provider: "openai",
-          maxTokens: 4096,
+          maxTokens: 20000,
           temperature: 0.7,
           isReasoningModel: false
         };

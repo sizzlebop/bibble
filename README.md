@@ -177,6 +177,40 @@ Bibble stores its configuration in a `.bibble` directory in your home directory.
 - MCP server configurations
 - User guidelines (additional instructions for the AI)
 
+### 🎛️ Model Configuration Wizard
+
+Bibble v1.6.1 introduces a user-friendly configuration wizard to easily set up your AI provider and model settings:
+
+```bash
+bibble config configure
+```
+
+The wizard guides you through:
+- **Provider Selection**: Choose from OpenAI, Anthropic, Google, or OpenAI Compatible
+- **Model Selection**: Pick from predefined models or enter custom model IDs
+- **Parameter Configuration**: Set temperature, max tokens, reasoning effort, and more
+  - **OpenAI Compatible**: Define custom parameters (name and value pairs) to ensure compatibility with your specific endpoint
+- **Automatic Saving**: All settings are saved automatically with confirmation
+
+### Other Configuration Commands
+
+```bash
+# Set up API keys
+bibble config api-key
+
+# Set default provider
+bibble config default-provider
+
+# View all settings
+bibble config list
+
+# Set specific values
+bibble config set <key> <value>
+
+# Reset to defaults
+bibble config reset
+```
+
 ## MCP Integration
 
 Bibble functions as an MCP client, allowing it to connect to MCP-compatible servers and use their tools. MCP (Model Context Protocol) is a protocol for connecting language models to external tools and services.

@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.4.6
+**Version**: 1.6.1  
 **Author**: Pink Pixel  
-**NPM Package**: @pinkpixel/bibble
-*Last updated: September 6, 2025 - 02:21 UTC*
+**NPM Package**: @pinkpixel/bibble  
+*Last updated: September 6, 2025 - 20:56 UTC*
 
 ## Project Overview
 
@@ -423,6 +423,84 @@ Version 1.4.0 introduces a **REVOLUTIONARY TOOL CALLING INTERFACE** that transfo
 - `BIBBLE_ENHANCED_TOOLS=true` (default): Enable enhanced tool display
 - `BIBBLE_ENHANCED_TOOLS=false`: Use legacy display for compatibility
 
+### 🎨 PHASE 3: ENHANCED ICON USAGE - MASSIVE VISUAL OVERHAUL (v1.6.0) - September 6, 2025
+
+Version 1.6.0 represents the **LARGEST VISUAL TRANSFORMATION** in Bibble's history, implementing a comprehensive icon enhancement system that transforms every aspect of the user interface:
+
+**🔧 Major New Features:**
+- **Comprehensive Icon System**: Created centralized `tool-icons.ts` module with 11 themed tool categories
+  - 🗂️ **Contextual Tool Icons**: Filesystem (📁), System (⚡), Web (🌐), Memory (🧠), Task (📋), GitHub (🐙), Docs (📚), AI (🎨), Time (⏰), Config (⚙️), Notification (🔔)
+  - 🎯 **Smart Category Detection**: Automatic tool categorization with appropriate icons and themed coloring
+  - 🌈 **Theme Integration**: All icons respect dynamic theme system with proper fallbacks
+
+- **Advanced Status Badge System**: Created comprehensive `status-badges.ts` with full state management
+  - 🎭 **9 Application States**: initializing, ready, thinking, processing, streaming, waiting, error, offline, connecting
+  - 📊 **Priority-Based Rendering**: Low, medium, high, critical priorities with appropriate visual feedback
+  - ⚡ **Animated Status Indicators**: Sparkle animations for active states with themed colors
+  - 🔄 **State History Tracking**: Status manager maintains state transitions for better UX
+
+**🎨 Enhanced Chat Experience:**
+- **Dynamic Role Headers**: Enhanced user (👤) and assistant (✨) icons with theme-aware coloring
+- **Content Type Detection**: Automatic icons for code blocks (💻), JSON data (📊), URLs (🔗), files (📁)
+- **Smart Message Enhancement**: Contextual icon prefixes for specific content types
+- **Beautiful Separators**: Themed gradient separators with sparkles (✨) between messages
+- **Enhanced Input Prompts**: 
+  - 📝 **Multiline Mode**: Beautiful input flow with completion feedback
+  - 💻 **Code Block Mode**: Programming context with syntax awareness
+  - 👤 **User Prompts**: Enhanced identity icons with theme integration
+
+**📊 Revolutionary Tool Result Display:**
+- **Smart Content Detection**: Automatic categorization with beautiful headers
+  - 📊 **JSON Data**: Syntax highlighting with color-coded keys, values, booleans, numbers
+  - 💻 **Code Content**: Line numbering with enhanced syntax detection
+  - 🔗 **URL Content**: Link icons with cyan coloring for all URLs
+  - 📁 **File Content**: Folder icons for directory paths
+  - ❌ **Error Content**: Prominent error highlighting with themed colors
+  - 📄 **Text Content**: Clean text display with improved typography
+
+- **Advanced Table Formatting**: 
+  - 🎯 **Contextual Headers**: Property-based icons (🔗 links, 📅 dates, 🔢 numbers, 👤 users, 📧 emails)
+  - 📈 **Data Count Indicators**: Clear item counts with themed styling
+  - 🔍 **Object Details**: Enhanced key-value displays with property icons
+  - ⋯ **Pagination**: Beautiful "and X more items" indicators with themed icons
+
+- **Enhanced List Display**:
+  - 🔢 **Sequential Numbering**: Beautiful emoji numbering (1️⃣-🔟, then ▶️)
+  - 🌐 **URL Detection**: Web icons for HTTP links
+  - 📄 **File Detection**: Document icons for file paths
+  - ✅ **Success/Error States**: Contextual feedback icons
+  - 🎯 **Pattern Recognition**: Smart content-based icon selection
+
+**⚡ Status & Progress Indicators:**
+- **Enhanced Loading States**: 
+  - 🤔 **Thinking Indicators**: Animated thinking icons with sparkles
+  - ⚙️ **Processing States**: Gear icons for active operations
+  - 📡 **Streaming Indicators**: Satellite icons for data streams
+  - ⏳ **Waiting States**: Hourglass icons for user input
+
+- **Progress Visualization**:
+  - 📊 **Progress Bars**: 20-character progress bars with percentage and fraction display
+  - 🎯 **Completion Tracking**: Current/total indicators with themed coloring
+  - 🏷️ **Labeled Progress**: Optional progress labels with context
+  - 🌈 **Themed Coloring**: All progress uses dynamic theme colors
+
+**🛠️ Technical Enhancements:**
+- **Cross-Platform Compatibility**: Emoji + Unicode fallbacks ensure icons work everywhere
+- **Performance Optimized**: Efficient icon rendering with intelligent caching
+- **Memory Efficient**: Smart content detection with minimal processing overhead
+- **Theme Responsive**: All enhancements respect user theme preferences
+- **Error Resilient**: Graceful degradation when icons aren't available
+
+**📈 Impact Metrics:**
+- **4 Major Tasks** ✅ All Successfully Completed
+- **12 Subtasks** ✅ Fully Implemented 
+- **11 Tool Categories** 🔧 With Contextual Icons
+- **9 Application States** 🎭 With Status Management
+- **6 Content Types** 📊 Auto-detected and Styled
+- **50+ Icon Mappings** 🎯 For Different Data Types
+
+This massive update transforms Bibble from a functional CLI tool into a **visually sophisticated, intuitive, and delightful terminal experience** that maintains excellent performance while providing rich visual context for every interaction! 🚀
+
 ### Latest Improvements (v1.4.6) - August 29, 2025
 
 Version 1.4.6 includes critical **JSON PARSING FIXES AND CLEANUP** that enhance reliability and user experience:
@@ -705,10 +783,26 @@ bibble setup
 ```
 
 The setup wizard will guide you through:
-- Selecting your default provider (OpenAI, Anthropic, or OpenAI-compatible)
+- Selecting your default provider (OpenAI, Anthropic, Google, or OpenAI-compatible)
 - Configuring API keys
 - Selecting your default model
 - Setting UI preferences
+
+#### 🎛️ Model Configuration Wizard (v1.6.1+)
+
+Use the comprehensive configuration wizard to easily set up provider and model settings:
+
+```bash
+bibble config configure
+```
+
+The wizard provides:
+- **Provider Selection**: Choose from OpenAI, Anthropic, Google, or OpenAI Compatible
+- **Flexible Model Selection**: Pick from predefined models or enter custom model IDs (perfect for new releases)
+- **Parameter Configuration**: Set model-specific parameters like temperature, max tokens, reasoning effort, thinking mode, etc.
+- **OpenAI Compatible Flexibility**: Define custom parameter names and values to ensure compatibility with any OpenAI-compatible endpoint
+- **Smart Defaults**: Intelligent parameter suggestions based on model type
+- **Automatic Saving**: All settings saved with clear confirmation
 
 You can also configure individual settings:
 
@@ -716,14 +810,17 @@ You can also configure individual settings:
 # Set up API keys
 bibble config api-key
 
+# Set default provider
+bibble config default-provider
+
 # Configure OpenAI-compatible endpoints
 bibble config openai-compatible
 
 # Configure MCP servers
 bibble config mcp-servers
 
-# Configure UI preferences
-bibble config ui
+# View all settings
+bibble config list
 ```
 
 ### Basic Usage
@@ -816,6 +913,65 @@ The package.json defines the binary entry point:
 ```
 
 This structure ensures compatibility across different Node.js environments and operating systems.
+
+## 🗺️ Future Development Roadmap (2025)
+
+Bibble has an **ambitious and well-planned development roadmap** for 2025, focusing on user experience enhancements, expanded capabilities, and maintaining the signature Pink Pixel aesthetic:
+
+### **📋 Priority Development Phases**
+
+#### **🏆 Phase 1: Code Quality & Consistency** *(1-2 weeks)*
+- **Spinner Code Deduplication**: Consolidate all spinner implementations into centralized `spinners.ts` system
+- **Code Cleanup**: Eliminate duplicate implementations and improve maintainability
+- **Consistency**: Ensure uniform Pink Pixel theming across all spinners
+
+#### **🎨 Phase 2: Theme System Enhancement** *(1-2 weeks)*  
+- **CLI Theme Commands**: `bibble config theme list/set/preview/reset`
+- **Multiple Theme Support**: Pink Pixel (default), Dark Mode, Light Mode, Neon, Ocean, Fire
+- **User Customization**: Custom color configuration and theme personalization
+- **Real-time Preview**: Live theme preview capabilities
+
+#### **🎭 Phase 3: Enhanced Visual Experience** *(1 week)*
+- **Expanded Icon Usage**: Enhanced icons throughout all chat sessions ✅ **COMPLETED v1.6.0**
+- **Message Type Icons**: Different contextual icons for various content types ✅ **COMPLETED v1.6.0**
+- **Status Indicators**: Visual progress and comprehensive state feedback ✅ **COMPLETED v1.6.0**
+
+#### **🔧 Phase 4: Native Tool Integration** *(3-4 weeks)*
+- **Web Search Tool**: DuckDuckGo/Bing API integration for instant search capabilities
+- **Web Scraping Tool**: Puppeteer-based content extraction with intelligent parsing  
+- **Documentation Access**: GitHub, npm, PyPI, MDN integration for developer resources
+- **API Integrations**: OpenWeather and HackerNews native tools for real-time data
+
+#### **🤖 Phase 5: LLM Provider Expansion** *(2-3 weeks)*
+- **Local LLM Support**: Ollama integration for privacy-focused and offline AI assistance
+- **Model Management**: Download, list, delete local models with intelligent recommendations
+- **System Requirements**: Hardware-based model suggestions and performance optimization
+
+#### **🗂️ Phase 6: Context-Aware Directory Intelligence** *(2-3 weeks)*
+- **Project Detection**: Recognize Node.js, Python, Rust, web, documentation projects
+- **Intelligent Assistance**: Context-aware suggestions and file operations
+- **Workspace Analysis**: Project structure understanding with improvement recommendations
+
+#### **🎪 Phase 7: Enhanced Animations & Visual Polish** *(1-2 weeks)*
+- **Chalk-Animation Integration**: Delightful startup and interaction animations
+- **Status Transitions**: Animated feedback for operations and state changes
+- **User Delight**: Engaging visual effects while maintaining professional utility
+
+### **📊 Strategic Goals**
+- **User Experience**: Make terminal AI interaction more intuitive and visually appealing
+- **Developer Focus**: Provide context-aware assistance for software development workflows  
+- **Privacy Options**: Local LLM support for users who prefer offline AI assistance
+- **Performance**: Maintain excellent performance while adding rich visual enhancements
+- **Accessibility**: Ensure all enhancements work across different terminal environments
+
+### **🎯 Success Metrics**
+- Theme switching working smoothly across all UI elements
+- Context-aware assistance providing relevant project-specific suggestions
+- Built-in tools reducing dependency on external MCP servers
+- Local LLM support functioning seamlessly for privacy-conscious users
+- Beautiful animations enhancing user experience without performance impact
+
+*This roadmap represents Bibble's evolution toward becoming the most comprehensive, beautiful, and intelligent AI CLI assistant available, embodying Pink Pixel's "Dream it, Pixel it" philosophy.*
 
 ## License
 

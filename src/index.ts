@@ -56,6 +56,7 @@ program
   .description("Run the setup wizard")
   .action(async () => {
     await runSetupWizard();
+    process.exit(0);
   });
 
 // System prompt command
@@ -109,7 +110,9 @@ program
     } catch (error) {
       console.error(terminal.error("Error generating system prompt:"), 
         error instanceof Error ? error.message : String(error));
+      process.exit(1);
     }
+    process.exit(0);
   });
 
 // Environment diagnostic command
@@ -190,7 +193,9 @@ program
     } catch (error) {
       console.error(terminal.error("Error during diagnostic:"), 
         error instanceof Error ? error.message : String(error));
+      process.exit(1);
     }
+    process.exit(0);
   });
 
 // Default command (chat with no subcommand)
@@ -213,6 +218,14 @@ program.action(async () => {
 async function main(): Promise<void> {
   try {
     await program.parseAsync(process.argv);
+    
+    // If we reach here, the command completed successfully
+    // For non-interactive commands, we should exit
+    const args = process.argv.slice(2);
+    if (args.length > 0 && !args.includes('chat')) {
+      // This is a non-interactive command (not chat), so exit
+      process.exit(0);
+    }
   } catch (error) {
     console.error(terminal.error("Error:"), 
       error instanceof Error ? error.message : String(error));

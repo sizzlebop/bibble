@@ -2,6 +2,71 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.6.1] - 2025-09-06
+
+### 🔧 Bug Fixes & UX Improvements
+
+#### CLI Command Exit Behavior
+- **Fixed hanging CLI commands**: All configuration commands now exit properly after completion
+  - ✅ Theme commands (`list`, `set`, `current`, `reset`) exit cleanly
+  - ✅ Config commands (`api-key`, `default-provider`, `get`, `set`, `reset`) exit cleanly
+  - ✅ System commands (`diagnose`, `system-prompt`, `setup`) exit cleanly
+- **Enhanced main program logic**: Non-interactive commands now exit after completion instead of remaining in memory
+
+#### Theme System Fixes
+- **Fixed theme list command error**: Resolved "Cannot read properties of undefined (reading '0')" error
+- **Improved BibbleTable style handling**: Added defensive style configuration with proper fallbacks
+- **Enhanced error recovery**: Theme list now displays simple formatted list if table rendering fails
+
+#### Configuration Provider Support
+- **Expanded provider choices**: Added missing providers in config commands
+  - ✅ OpenAI (GPT models)
+  - ✅ Anthropic (Claude models)  
+  - ✅ Google (Gemini models)
+  - ✅ OpenAI Compatible (Custom endpoints)
+- **Fixed provider display names**: More descriptive names for better user experience
+
+### 🎛️ Major New Feature: Model Configuration Wizard
+
+#### New Command: `bibble config configure`
+A comprehensive wizard that guides users through configuring their AI provider and model settings, similar to the MCP servers setup experience.
+
+#### Key Features:
+- **📊 Current Settings Display**: Shows current provider and model at startup
+- **🔌 Provider Selection**: Choose from OpenAI, Anthropic, Google, or OpenAI Compatible
+- **🎯 Flexible Model Selection**: 
+  - Pre-defined model list for each provider
+  - **Custom model input for all providers** (perfect for new releases)
+  - Smart defaults based on provider
+- **⚙️ Provider-Specific Parameters**:
+  - **Standard Models**: Temperature, Max Tokens, Top P/K
+  - **OpenAI Reasoning Models**: Max Completion Tokens, Reasoning Effort
+  - **Claude 3.7 Models**: Thinking mode, Thinking budget tokens
+  - **🔧 OpenAI Compatible**: Custom parameter input system - users define their own parameters (name and value) to avoid compatibility issues with different endpoints
+- **💾 Smart Configuration Management**: Updates provider defaults and model configurations
+- **📋 Configuration Summary**: Clear confirmation of all saved settings
+- **🎨 Beautiful UI**: Themed interface with emojis and proper visual hierarchy
+
+#### OpenAI Compatible Enhancement:
+- **Custom Parameter System**: Instead of hardcoded parameters, users can define their own parameter names and values
+- **Flexible Input**: Like the MCP server wizard - enter parameter name, then value, repeat as needed
+- **Endpoint Compatibility**: Prevents bad request errors by letting users specify only compatible parameters
+- **Type Detection**: Automatically converts numeric strings to numbers, booleans to booleans
+- **Examples Provided**: Shows common parameter names (temperature, max_tokens, top_p, etc.)
+
+#### Benefits:
+- **User-Friendly**: No more manual config file editing
+- **Future-Proof**: Support for custom model IDs as new models are released
+- **Comprehensive**: Handles all provider-specific parameters intelligently
+- **Safe**: Validates all inputs and provides helpful defaults
+
+### 📚 Documentation Updates
+- Updated help text for new configuration wizard
+- Enhanced command descriptions for better clarity
+- Improved error messages with contextual guidance
+
+---
+
 ## [1.6.0] - 2025-09-06
 
 ### 🎨 PHASE 3: ENHANCED ICON USAGE - MASSIVE VISUAL OVERHAUL ✨

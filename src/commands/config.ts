@@ -71,7 +71,9 @@ export function setupConfigCommand(program: Command): Command {
           'red'
         );
         console.error(`${errorIcon} ${terminal.error("Error setting configuration:")}`), error;
+        process.exit(1);
       }
+      process.exit(0);
     });
 
   // Get a configuration value
@@ -108,7 +110,9 @@ export function setupConfigCommand(program: Command): Command {
           'red'
         );
         console.error(`${errorIcon} ${terminal.error("Error getting configuration:")}`), error;
+        process.exit(1);
       }
+      process.exit(0);
     });
 
   // Reset configuration
@@ -133,6 +137,7 @@ export function setupConfigCommand(program: Command): Command {
         const infoIcon = iconUtils.coloredIcon('ℹ️', 'i', 'cyan');
         console.log(`${infoIcon} ${terminal.info("Reset cancelled.")}`);
       }
+      process.exit(0);
     });
 
   // Setup API key
@@ -145,7 +150,12 @@ export function setupConfigCommand(program: Command): Command {
           type: "list",
           name: "provider",
           message: "Select API provider:",
-          choices: ["openai"],
+          choices: [
+            { name: "OpenAI (GPT models)", value: "openai" },
+            { name: "Anthropic (Claude models)", value: "anthropic" },
+            { name: "Google (Gemini models)", value: "google" },
+            { name: "OpenAI Compatible (Custom endpoints)", value: "openaiCompatible" }
+          ],
         },
       ]);
 
@@ -161,6 +171,7 @@ export function setupConfigCommand(program: Command): Command {
       config.setApiKey(provider, apiKey);
       const keyIcon = iconUtils.coloredIcon('🔑', '✓', 'green');
       console.log(`${keyIcon} ${terminal.success(`API key for ${provider} saved successfully.`)}`);
+      process.exit(0);
     });
 
   // Set default provider
@@ -168,14 +179,13 @@ export function setupConfigCommand(program: Command): Command {
     .command("default-provider")
     .description("Set the default provider to use")
     .action(async () => {
-      // Get available providers
-      const providers = ["openai"];
-
-      // Check if openaiCompatible is configured
-      const openaiCompatibleBaseUrl = config.get("apis.openaiCompatible.baseUrl", "");
-      if (openaiCompatibleBaseUrl) {
-        providers.push("openaiCompatible");
-      }
+      // Get all available providers
+      const providers = [
+        { name: "OpenAI (GPT models)", value: "openai" },
+        { name: "Anthropic (Claude models)", value: "anthropic" },
+        { name: "Google (Gemini models)", value: "google" },
+        { name: "OpenAI Compatible (Custom endpoints)", value: "openaiCompatible" }
+      ];
 
       // Get current default provider
       const currentProvider = config.getDefaultProvider();
@@ -194,6 +204,7 @@ export function setupConfigCommand(program: Command): Command {
       // Save provider
       config.setDefaultProvider(provider);
       console.log(terminal.success(`Default provider set to ${provider}.`));
+      process.exit(0);
     });
 
   // Setup OpenAI-compatible endpoint
@@ -266,6 +277,7 @@ export function setupConfigCommand(program: Command): Command {
       }
 
       console.log(terminal.success("OpenAI-compatible endpoint configured successfully."));
+      process.exit(0);
     });
 
   // Configure MCP servers
@@ -274,6 +286,14 @@ export function setupConfigCommand(program: Command): Command {
     .description("Manage MCP server configurations")
     .action(async () => {
       await manageMcpServers();
+    });
+
+  // Configure model settings wizard
+  configCommand
+    .command("configure")
+    .description("Model configuration wizard - set provider, model, and parameters")
+    .action(async () => {
+      await modelConfigurationWizard();
     });
 
   // Configure user guidelines
@@ -294,6 +314,7 @@ export function setupConfigCommand(program: Command): Command {
 
       config.setUserGuidelines(guidelines);
       console.log(terminal.success("User guidelines saved successfully."));
+      process.exit(0);
     });
 
   // Add theme management commands
@@ -342,6 +363,7 @@ async function manageMcpServers(): Promise<void> {
     default:
       console.log(terminal.warning(`Unknown action: ${action}`));
   }
+  process.exit(0);
 }
 
 function listMcpServers(servers: any[]): void {
@@ -600,4 +622,372 @@ async function handleEnvEdit(currentEnv: Record<string, string>): Promise<Record
   if (action === "clear") return {};
   if (action === "add") return { ...currentEnv, ...(await collectEnvVars()) };
   return currentEnv;
+}
+
+/**
+ * Model configuration wizard
+ */
+async function modelConfigurationWizard(): Promise<void> {
+  const config = Config.getInstance();
+  
+  console.log(`\n${t.h1('🎛️ Model Configuration Wizard')} ${brandSymbols.sparkles}\n`);
+  console.log(t.dim('Configure your AI provider, model, and parameters\n'));
+  
+  // Show current settings
+  const currentProvider = config.getDefaultProvider();
+  const currentModel = config.getDefaultModel(currentProvider);
+  
+  console.log(t.h2('Current Settings:'));
+  console.log(t.cyan(`Provider: ${currentProvider}`));
+  console.log(t.cyan(`Model: ${currentModel || 'Not set'}`));
+  console.log('');
+  
+  // Step 1: Choose provider
+  const { provider } = await inquirer.prompt([
+    {
+      type: "list",
+      name: "provider",
+      message: "🔌 Select AI Provider:",
+      choices: [
+        { name: "🤖 OpenAI (GPT models)", value: "openai" },
+        { name: "🧠 Anthropic (Claude models)", value: "anthropic" },
+        { name: "🌟 Google (Gemini models)", value: "google" },
+        { name: "🔗 OpenAI Compatible (Custom endpoints)", value: "openaiCompatible" }
+      ],
+      default: currentProvider,
+    },
+  ]);
+  
+  // Step 2: Choose model
+  const availableModels = getAvailableModels(provider, config);
+  const defaultModelForProvider = config.get(`apis.${provider}.defaultModel`);
+  
+  // Create choices with predefined models + custom option
+  const modelChoices = [];
+  
+  // Add predefined models for this provider
+  if (availableModels.length > 0) {
+    modelChoices.push(...availableModels.map(model => ({
+      name: `${model.name} (${model.id})`,
+      value: model.id
+    })));
+    modelChoices.push({ name: "── Custom Model ──", value: "__custom__" });
+  }
+  
+  // For openaiCompatible or if no predefined models, always offer custom input
+  if (provider === 'openaiCompatible' || availableModels.length === 0) {
+    modelChoices.push({ name: "📝 Enter custom model ID", value: "__custom__" });
+  }
+  
+  let modelId: string;
+  
+  if (modelChoices.length === 0 || (modelChoices.length === 1 && modelChoices[0].value === "__custom__")) {
+    // Only custom input available
+    const { customModel } = await inquirer.prompt([
+      {
+        type: "input",
+        name: "customModel",
+        message: "🎯 Enter Model ID:",
+        default: defaultModelForProvider || (provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'),
+        validate: (input: string) => input.trim().length > 0 || "Model ID is required",
+      },
+    ]);
+    modelId = customModel;
+  } else {
+    // Show list with custom option
+    const { selectedModel } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "selectedModel",
+        message: "🎯 Select Model:",
+        choices: modelChoices,
+        default: defaultModelForProvider,
+      },
+    ]);
+    
+    if (selectedModel === "__custom__") {
+      const { customModel } = await inquirer.prompt([
+        {
+          type: "input",
+          name: "customModel",
+          message: "🎯 Enter Model ID:",
+          default: defaultModelForProvider || (provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'),
+          validate: (input: string) => input.trim().length > 0 || "Model ID is required",
+        },
+      ]);
+      modelId = customModel;
+    } else {
+      modelId = selectedModel;
+    }
+  }
+  
+  // Step 3: Configure parameters based on model type
+  const modelConfig = await configureModelParameters(provider, modelId, config);
+  
+  // Step 4: Save everything
+  await saveModelConfiguration(provider, modelId, modelConfig, config);
+  
+  // Step 5: Confirmation
+  const successIcon = iconUtils.coloredIcon('✅', '✓', 'green');
+  console.log(`\n${successIcon} ${terminal.success('Configuration saved successfully!')}`);
+  console.log('');
+  console.log(t.h2('Summary:'));
+  console.log(t.cyan(`Provider: ${provider}`));
+  console.log(t.cyan(`Model: ${modelId}`));
+  
+  // Display parameters based on provider
+  if (provider === 'openaiCompatible') {
+    // For OpenAI Compatible, show all custom parameters
+    Object.keys(modelConfig).forEach(key => {
+      if (key !== 'provider' && key !== 'isReasoningModel') {
+        const value = modelConfig[key];
+        const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
+        console.log(t.cyan(`${key}: ${displayValue}`));
+      }
+    });
+  } else {
+    // For other providers, show standard parameters
+    if (modelConfig.temperature !== undefined) console.log(t.cyan(`Temperature: ${modelConfig.temperature}`));
+    if (modelConfig.maxTokens !== undefined) console.log(t.cyan(`Max Tokens: ${modelConfig.maxTokens}`));
+    if (modelConfig.maxCompletionTokens !== undefined) console.log(t.cyan(`Max Completion Tokens: ${modelConfig.maxCompletionTokens}`));
+    if (modelConfig.topP !== undefined) console.log(t.cyan(`Top P: ${modelConfig.topP}`));
+    if (modelConfig.topK !== undefined) console.log(t.cyan(`Top K: ${modelConfig.topK}`));
+    if (modelConfig.reasoningEffort !== undefined) console.log(t.cyan(`Reasoning Effort: ${modelConfig.reasoningEffort}`));
+    if (modelConfig.thinking !== undefined) console.log(t.cyan(`Thinking Mode: Enabled (${modelConfig.thinkingBudgetTokens} tokens)`));
+  }
+  
+  process.exit(0);
+}
+
+/**
+ * Get available models for a provider
+ */
+function getAvailableModels(provider: string, config: Config): Array<{id: string, name: string, provider: string}> {
+  const allModels = config.get('models', []);
+  return allModels.filter((model: any) => model.provider === provider);
+}
+
+/**
+ * Configure model parameters based on provider and model
+ */
+async function configureModelParameters(provider: string, modelId: string, config: Config): Promise<any> {
+  const modelConfig = config.getModelConfig(modelId);
+  const isReasoningModel = modelConfig?.isReasoningModel || modelId.startsWith('o');
+  const isClaudeThinking = modelId.includes('3-7');
+  
+  console.log(`\n${t.h2('⚙️ Model Parameters')}`);
+  
+  // Handle OpenAI Compatible differently - let users define their own parameters
+  if (provider === 'openaiCompatible') {
+    console.log(t.dim('For OpenAI Compatible endpoints, you can define custom parameters\nthat are specific to your API endpoint.\n'));
+    
+    const customParams: any = {
+      provider,
+      isReasoningModel: false // Default for custom endpoints
+    };
+    
+    // Ask if they want to add parameters
+    const { addParams } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "addParams",
+        message: "🔧 Do you want to add custom parameters for this endpoint?",
+        default: true,
+      },
+    ]);
+    
+    if (addParams) {
+      console.log(t.dim('\nCommon parameters include: temperature, max_tokens, top_p, top_k, frequency_penalty, presence_penalty, etc.'));
+      console.log(t.dim('Enter parameters one by one. Press Enter with empty name to finish.\n'));
+      
+      while (true) {
+        const { paramName, paramValue, addMore } = await inquirer.prompt([
+          {
+            type: "input",
+            name: "paramName",
+            message: "📝 Parameter name (e.g., 'temperature', 'max_tokens'):",
+            validate: (input: string) => {
+              if (input.trim().length === 0) return true; // Allow empty to finish
+              return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(input) || "Parameter name must be a valid identifier (letters, numbers, underscores)";
+            },
+          },
+          {
+            type: "input",
+            name: "paramValue",
+            message: "📊 Parameter value:",
+            when: (answers: any) => answers.paramName.trim().length > 0,
+            validate: (input: string) => input.trim().length > 0 || "Parameter value is required",
+            filter: (input: string) => {
+              // Try to parse as number or boolean, otherwise keep as string
+              const trimmed = input.trim();
+              if (trimmed === 'true') return true;
+              if (trimmed === 'false') return false;
+              const num = parseFloat(trimmed);
+              if (!isNaN(num) && isFinite(num)) return num;
+              return trimmed;
+            },
+          },
+          {
+            type: "confirm",
+            name: "addMore",
+            message: "➕ Add another parameter?",
+            default: false,
+            when: (answers: any) => answers.paramName.trim().length > 0,
+          },
+        ]);
+        
+        // If no parameter name provided, break
+        if (!paramName || paramName.trim().length === 0) {
+          break;
+        }
+        
+        // Add the parameter
+        customParams[paramName] = paramValue;
+        
+        if (!addMore) {
+          break;
+        }
+      }
+    }
+    
+    return customParams;
+  }
+  
+  // For other providers, use the existing logic
+  const questions: any[] = [];
+  
+  // Common parameters for most models
+  if (!isReasoningModel) {
+    questions.push({
+      type: "number",
+      name: "temperature",
+      message: "🌡️ Temperature (0.0-2.0, controls randomness):",
+      default: modelConfig?.temperature || 0.7,
+      validate: (input: number) => (input >= 0 && input <= 2) || "Temperature must be between 0.0 and 2.0",
+    });
+  }
+  
+  // Max tokens (different for reasoning models)
+  if (isReasoningModel) {
+    questions.push({
+      type: "number",
+      name: "maxCompletionTokens",
+      message: "📝 Max Completion Tokens (output limit):",
+      default: modelConfig?.maxCompletionTokens || 4096,
+      validate: (input: number) => input > 0 || "Max completion tokens must be positive",
+    });
+    
+    questions.push({
+      type: "list",
+      name: "reasoningEffort",
+      message: "🧠 Reasoning Effort:",
+      choices: [
+        { name: "Low - Fast responses", value: "low" },
+        { name: "Medium - Balanced (recommended)", value: "medium" },
+        { name: "High - Thorough reasoning", value: "high" }
+      ],
+      default: modelConfig?.reasoningEffort || "medium",
+    });
+  } else {
+    questions.push({
+      type: "number",
+      name: "maxTokens",
+      message: "📝 Max Tokens (total context limit):",
+      default: modelConfig?.maxTokens || (provider === 'google' ? 8192 : 4096),
+      validate: (input: number) => input > 0 || "Max tokens must be positive",
+    });
+  }
+  
+  // Provider-specific parameters
+  if (provider === 'anthropic' || provider === 'google') {
+    questions.push({
+      type: "number",
+      name: "topP",
+      message: "🎯 Top P (0.0-1.0, nucleus sampling):",
+      default: modelConfig?.topP || 0.9,
+      validate: (input: number) => (input >= 0 && input <= 1) || "Top P must be between 0.0 and 1.0",
+    });
+    
+    questions.push({
+      type: "number",
+      name: "topK",
+      message: "🔝 Top K (token selection diversity):",
+      default: modelConfig?.topK || 40,
+      validate: (input: number) => input > 0 || "Top K must be positive",
+    });
+  }
+  
+  // Claude 3.7 thinking parameters
+  if (isClaudeThinking) {
+    questions.push({
+      type: "confirm",
+      name: "enableThinking",
+      message: "🤔 Enable thinking mode? (Shows reasoning process)",
+      default: true,
+    });
+    
+    questions.push({
+      type: "number",
+      name: "thinkingBudgetTokens",
+      message: "💭 Thinking budget tokens (for reasoning):",
+      default: 16000,
+      when: (answers: any) => answers.enableThinking,
+      validate: (input: number) => input > 0 || "Thinking budget must be positive",
+    });
+  }
+  
+  const answers = await inquirer.prompt(questions);
+  
+  // Build config object
+  const config_obj: any = {
+    provider,
+    isReasoningModel
+  };
+  
+  if (answers.temperature !== undefined) config_obj.temperature = answers.temperature;
+  if (answers.maxTokens !== undefined) config_obj.maxTokens = answers.maxTokens;
+  if (answers.maxCompletionTokens !== undefined) config_obj.maxCompletionTokens = answers.maxCompletionTokens;
+  if (answers.reasoningEffort !== undefined) config_obj.reasoningEffort = answers.reasoningEffort;
+  if (answers.topP !== undefined) config_obj.topP = answers.topP;
+  if (answers.topK !== undefined) config_obj.topK = answers.topK;
+  
+  if (answers.enableThinking && answers.thinkingBudgetTokens) {
+    config_obj.thinking = {
+      type: "enabled",
+      budget_tokens: answers.thinkingBudgetTokens
+    };
+    config_obj.thinkingBudgetTokens = answers.thinkingBudgetTokens;
+  }
+  
+  return config_obj;
+}
+
+/**
+ * Save model configuration
+ */
+async function saveModelConfiguration(provider: string, modelId: string, modelConfig: any, config: Config): Promise<void> {
+  // Set default provider
+  config.setDefaultProvider(provider);
+  
+  // Set default model for provider
+  config.set(`apis.${provider}.defaultModel`, modelId);
+  
+  // Update or add model configuration
+  const models = config.get('models', []);
+  const existingModelIndex = models.findIndex((m: any) => m.id === modelId);
+  
+  const modelEntry = {
+    id: modelId,
+    provider: modelConfig.provider,
+    name: models.find((m: any) => m.id === modelId)?.name || modelId,
+    ...modelConfig
+  };
+  
+  if (existingModelIndex >= 0) {
+    models[existingModelIndex] = modelEntry;
+  } else {
+    models.push(modelEntry);
+  }
+  
+  config.set('models', models);
 }

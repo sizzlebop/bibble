@@ -6,9 +6,9 @@ import { Agent } from "../mcp/agent.js";
 import { chatHistory } from "../utils/history.js";
 import { createWelcomeBanner } from "./splash.js";
 import { gradient } from "./gradient.js";
-import { symbols, chatSymbols, brandSymbols } from "./symbols.js";
+import { symbols, brandSymbols } from "./symbols.js";
 import { EnhancedToolDisplay, ToolDisplayOptions } from "./tool-display.js";
-import { iconUtils, getToolIcon, getContentIcon, roleIcons, statusIcons } from "./tool-icons.js";
+import { iconUtils, getContentIcon, roleIcons, statusIcons } from "./tool-icons.js";
 import { isSecurityError } from "../security/SecurityError.js";
 import { theme } from "./theme.js";
 

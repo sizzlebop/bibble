@@ -92,19 +92,21 @@ export class BibbleTable {
     // Create styled headers with Pink Pixel theme
     const styledHead = head.map(h => theme.cyan(h));
 
-    // Create a mutable copy of the style config to satisfy cli-table3 types
+    // Create a proper style config for cli-table3
     const mutableStyle = {
-      ...tableConfig.style,
-      head: [...tableConfig.style.head],
-      border: [...tableConfig.style.border],
+      'padding-left': tableConfig.style['padding-left'],
+      'padding-right': tableConfig.style['padding-right'],
+      head: tableConfig.style.head ? [...tableConfig.style.head] : ['cyan'],
+      border: tableConfig.style.border ? [...tableConfig.style.border] : ['grey'],
+      compact: tableConfig.style.compact || false,
     };
 
     this.table = new Table({
       head: styledHead,
       chars: tableConfig.chars,
       style: mutableStyle,
-      colWidths,
-      wordWrap,
+      colWidths: colWidths || undefined,
+      wordWrap: wordWrap || true,
     });
   }
 

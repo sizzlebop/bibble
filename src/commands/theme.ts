@@ -19,33 +19,50 @@ export function createThemeCommands(): Command {
     .description('List all available themes')
     .alias('ls')
     .action(() => {
-      const themeManager = ThemeManager.getInstance();
-      const themes = themeManager.getAvailableThemes();
-      const currentTheme = themeManager.getCurrentTheme();
-      
-      console.log(`\n${theme.h2('📋 Available Themes')}\n`);
-      
-      const table = new BibbleTable({
-        head: ['Theme', 'Name', 'Description', 'Current'],
-        style: 'clean'
-      });
-      
-      themes.forEach(themeData => {
-        const isCurrent = themeData.id === currentTheme;
-        const currentMarker = isCurrent ? 
-          theme.success(`${chatSymbols.status.success} Active`) : 
-          theme.dim('—');
+      try {
+        const themeManager = ThemeManager.getInstance();
+        const themes = themeManager.getAvailableThemes();
+        const currentTheme = themeManager.getCurrentTheme();
         
-        table.addRow([
-          `${themeData.emoji} ${themeData.id}`,
-          theme.brand(themeData.name),
-          theme.dim(themeData.description),
-          currentMarker
-        ]);
-      });
-      
-      console.log(table.toString());
-      console.log(`\n${theme.dim('Use')} ${theme.code('bibble config theme set <theme-name>')} ${theme.dim('to change themes')}\n`);
+        console.log(`\n${theme.h2('📋 Available Themes')}\n`);
+        
+        if (!themes || themes.length === 0) {
+          console.log(theme.warn('No themes available'));
+          return;
+        }
+        
+        // Use a simple formatted list instead of table to avoid cli-table3 issues
+        themes.forEach(themeData => {
+          const isCurrent = themeData.id === currentTheme;
+          const currentMarker = isCurrent ? 
+            theme.success(`${chatSymbols.status.success} Active`) : 
+            theme.dim('');
+          
+          const emoji = themeData.emoji || '🎨';
+          const id = themeData.id || 'unknown';
+          const name = theme.brand(themeData.name || 'Unknown');
+          const description = theme.dim(themeData.description || 'No description');
+          
+          console.log(`${emoji} ${theme.cyan(id.padEnd(12))} ${name.padEnd(20)} ${description} ${currentMarker}`);
+        });
+        console.log(`\n${theme.dim('Use')} ${theme.code('bibble config theme set <theme-name>')} ${theme.dim('to change themes')}\n`);
+        
+      } catch (error) {
+        console.error('Error listing themes:', error);
+        console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack available');
+        
+        // Fallback to simple list
+        console.log(`\n${theme.h2('📋 Available Themes')}\n`);
+        console.log('🎀 pinkPixel - Pink Pixel (default)');
+        console.log('🌙 dark - Dark Mode');
+        console.log('☀️ light - Light Mode');
+        console.log('💫 neon - Neon');
+        console.log('🌊 ocean - Ocean');
+        console.log('🔥 fire - Fire');
+        console.log(`\n${theme.dim('Use')} ${theme.code('bibble config theme set <theme-name>')} ${theme.dim('to change themes')}\n`);
+        process.exit(1);
+      }
+      process.exit(0);
     });
 
   // Preview a theme
@@ -68,7 +85,9 @@ export function createThemeCommands(): Command {
         
       } catch (error) {
         console.error(theme.err(`\n❌ Error previewing theme: ${error instanceof Error ? error.message : String(error)}\n`));
+        process.exit(1);
       }
+      process.exit(0);
     });
 
   // Set active theme
@@ -98,7 +117,9 @@ export function createThemeCommands(): Command {
         
       } catch (error) {
         console.error(theme.err(`\n❌ Error setting theme: ${error instanceof Error ? error.message : String(error)}\n`));
+        process.exit(1);
       }
+      process.exit(0);
     });
 
   // Get current theme
@@ -117,6 +138,7 @@ export function createThemeCommands(): Command {
       
       // Show current theme colors
       console.log(themeManager.previewTheme(currentTheme));
+      process.exit(0);
     });
 
   // Reset to default theme
@@ -141,6 +163,7 @@ export function createThemeCommands(): Command {
       console.log(`\n${theme.h3('🎨 Pink Pixel Theme:')}`);
       console.log(themeManager.previewTheme('pinkPixel'));
       console.log(`${theme.dim('Restart Bibble to see the theme changes take effect.')}\n`);
+      process.exit(0);
     });
 
   return themeCmd;

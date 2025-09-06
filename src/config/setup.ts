@@ -90,7 +90,7 @@ async function setupOpenAI(config: Config): Promise<void> {
         { name: "GPT-4o-mini", value: "gpt-4o-mini" },
         { name: "ChatGPT-4o", value: "chatgpt-4o" },
       ],
-      default: "o4-mini"
+      default: "GPT-4.1"
     }
   ]);
 
@@ -166,7 +166,7 @@ async function setupGoogle(config: Config): Promise<void> {
         { name: "Gemini 2.5 Flash Preview", value: "gemini-2.5-flash-preview-05-20" },
         { name: "Gemini 2.5 Pro Preview", value: "gemini-2.5-pro-preview-05-06" }
       ],
-      default: "gemini-2.0-flash"
+      default: "gemini-2.5-flash"
     }
   ]);
 
