@@ -124,6 +124,7 @@ bibble history
 - `bibble config api-key` - Set up API key for a provider
 - `bibble config mcp-servers` - Manage MCP server configurations
 - `bibble config web-search` - Configure preferred search engine and API keys
+- `bibble config timezone` - Configure default timezone for datetime tools
 - `bibble config user-guidelines` - Configure user guidelines
 
 ### History commands

@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.7.1  
+**Version**: 1.7.2  
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble  
-*Last updated: September 7, 2025 - 01:01 UTC*
+*Last updated: September 7, 2025 - 01:45 UTC*
 
 ## Project Overview
 
@@ -19,6 +19,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
   - **OpenAI-compatible endpoints** for third-party services
 - **Tool use** through the Model Context Protocol (MCP) with user-configurable external tool integration
 - **🌐 Built-in web search & research tools** with multi-engine support (DuckDuckGo, Bing, Google, Brave) and AI-powered content analysis with CLI-configurable preferred engine
+- **⏰ Native datetime tools** with comprehensive timezone support and user configuration for time-aware conversations
 - **Advanced research assistant** with event-driven research sessions and intelligent content extraction
 - **⚡ MCP Context Diet optimization** with on-demand tool discovery that dramatically reduces prompt size and improves performance
 - **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
@@ -84,6 +85,7 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 │   │       ├── filesystem/       # File system operations
 │   │       ├── process/          # Process management
 │   │       ├── search/           # Code and file search
+│   │       ├── time/             # Time and date tools
 │   │       ├── web/              # Web search and research tools
 │   │       │   ├── research/     # Research agent and content extraction
 │   │       │   ├── types/        # Web tool type definitions

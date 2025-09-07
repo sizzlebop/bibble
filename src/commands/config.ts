@@ -304,6 +304,14 @@ export function setupConfigCommand(program: Command): Command {
       await webSearchConfigurationWizard();
     });
 
+  // Configure default timezone
+  configCommand
+    .command("timezone")
+    .description("Configure default timezone for datetime tools")
+    .action(async () => {
+      await timezoneConfigurationWizard();
+    });
+
   // Configure user guidelines
   configCommand
     .command("user-guidelines")
@@ -857,6 +865,163 @@ async function webSearchConfigurationWizard(): Promise<void> {
 
   const successIcon = iconUtils.coloredIcon('✅', '✓', 'green');
   console.log(`\n${successIcon} ${terminal.success('Web search configuration saved.')}`);
+}
+
+/**
+ * Timezone configuration wizard
+ */
+async function timezoneConfigurationWizard(): Promise<void> {
+  const config = Config.getInstance();
+
+  console.log(`\n${t.h1('🕒 Default Timezone Configuration')} ${brandSymbols.sparkles}\n`);
+  console.log(t.dim('Set the default timezone for Bibble\'s datetime tools.\\n'));
+
+  const currentTimezone = config.get('timezone.default', 'auto');
+  const isAutoDetected = currentTimezone === 'auto';
+  
+  // Show current setting
+  if (isAutoDetected) {
+    const systemTimezone = getSystemTimezone();
+    console.log(`${t.dim('Current setting:')} ${t.cyan('Auto-detect')} ${t.dim(`(currently using ${systemTimezone})`)}\n`);
+  } else {
+    console.log(`${t.dim('Current setting:')} ${t.cyan(currentTimezone)}\n`);
+  }
+
+  const { timezoneChoice } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'timezoneChoice',
+      message: 'Default timezone setting:',
+      choices: [
+        { name: 'Auto-detect from system (recommended)', value: 'auto' },
+        { name: 'Set specific timezone', value: 'custom' },
+        { name: 'Always use UTC', value: 'utc' }
+      ],
+      default: isAutoDetected ? 'auto' : (currentTimezone === 'UTC' ? 'utc' : 'custom')
+    }
+  ]);
+
+  let selectedTimezone = 'auto';
+  
+  if (timezoneChoice === 'custom') {
+    // Common timezone choices
+    const commonTimezones = [
+      { name: '🇺🇸 America/New_York (Eastern)', value: 'America/New_York' },
+      { name: '🇺🇸 America/Chicago (Central)', value: 'America/Chicago' },
+      { name: '🇺🇸 America/Denver (Mountain)', value: 'America/Denver' },
+      { name: '🇺🇸 America/Los_Angeles (Pacific)', value: 'America/Los_Angeles' },
+      { name: '🇬🇧 Europe/London (GMT)', value: 'Europe/London' },
+      { name: '🇩🇪 Europe/Berlin (CET)', value: 'Europe/Berlin' },
+      { name: '🇫🇷 Europe/Paris (CET)', value: 'Europe/Paris' },
+      { name: '🇯🇵 Asia/Tokyo (JST)', value: 'Asia/Tokyo' },
+      { name: '🇨🇳 Asia/Shanghai (CST)', value: 'Asia/Shanghai' },
+      { name: '🇮🇳 Asia/Kolkata (IST)', value: 'Asia/Kolkata' },
+      { name: '🇦🇺 Australia/Sydney (AEDT)', value: 'Australia/Sydney' },
+      { name: '🌍 Other timezone (enter manually)', value: 'other' }
+    ];
+
+    const { timezone } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'timezone',
+        message: 'Select timezone:',
+        choices: commonTimezones,
+        default: commonTimezones.find(tz => tz.value === currentTimezone)?.value || 'America/New_York'
+      }
+    ]);
+
+    if (timezone === 'other') {
+      const { customTimezone } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'customTimezone',
+          message: 'Enter timezone (IANA format, e.g., Europe/Stockholm):',
+          default: currentTimezone !== 'auto' && currentTimezone !== 'UTC' ? currentTimezone : '',
+          validate: (input: string) => {
+            if (!input.trim()) return 'Timezone is required';
+            if (isValidTimezone(input.trim())) {
+              return true;
+            }
+            return 'Invalid timezone. Use IANA format (e.g., America/New_York, Europe/London, Asia/Tokyo)';
+          }
+        }
+      ]);
+      selectedTimezone = customTimezone.trim();
+    } else {
+      selectedTimezone = timezone;
+    }
+  } else if (timezoneChoice === 'utc') {
+    selectedTimezone = 'UTC';
+  } else {
+    selectedTimezone = 'auto';
+  }
+
+  // Save configuration
+  config.set('timezone.default', selectedTimezone);
+
+  const successIcon = iconUtils.coloredIcon('✅', '✓', 'green');
+  
+  // Show confirmation message
+  if (selectedTimezone === 'auto') {
+    const systemTimezone = getSystemTimezone();
+    console.log(`\n${successIcon} ${terminal.success('Timezone set to auto-detect')}`);
+    console.log(`${t.dim('System detected timezone:')} ${t.cyan(systemTimezone)}`);
+  } else {
+    console.log(`\n${successIcon} ${terminal.success(`Timezone set to ${selectedTimezone}`)}`);
+    
+    // Show current time in the selected timezone
+    try {
+      const now = new Date();
+      const timeInZone = now.toLocaleString('en-US', { 
+        timeZone: selectedTimezone,
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+      });
+      console.log(`${t.dim('Current time:')} ${t.cyan(timeInZone)}`);
+    } catch (error) {
+      // Ignore formatting errors
+    }
+  }
+}
+
+/**
+ * Validate if a timezone identifier is supported
+ */
+function isValidTimezone(timezone: string): boolean {
+  try {
+    // Use Intl.supportedValuesOf to get all supported timezones if available
+    if (typeof Intl !== 'undefined' && 'supportedValuesOf' in Intl) {
+      const supportedTimezones = (Intl as any).supportedValuesOf('timeZone');
+      return supportedTimezones.includes(timezone);
+    }
+    
+    // Fallback: Try to create a date and format it in the timezone
+    new Intl.DateTimeFormat('en', { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the system's detected timezone
+ */
+function getSystemTimezone(): string {
+  try {
+    const systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (systemTimezone && isValidTimezone(systemTimezone)) {
+      return systemTimezone;
+    }
+  } catch {
+    // Fallback if detection fails
+  }
+  return 'UTC';
 }
 
 /**

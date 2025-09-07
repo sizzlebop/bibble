@@ -2,6 +2,58 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.7.2] - 2025-09-07
+
+### ⏰ NATIVE DATETIME TOOL INTEGRATION - ENHANCED TIME AWARENESS
+
+Added a comprehensive native datetime tool that brings time and timezone awareness directly into Bibble's built-in tools ecosystem!
+
+#### 🔧 New Built-In Tool: Datetime (`datetime`)
+- **Current Date & Time**: Get precise current date and time information
+- **Timezone Support**: Full IANA timezone database support (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo')
+- **Flexible Defaults**: Uses user-configured timezone, system timezone, or UTC fallback
+- **Multiple Formats**: Provides ISO 8601, Unix timestamp, and human-readable formats
+- **Smart Validation**: Graceful handling of invalid timezones with helpful error messages
+
+#### 🛠️ Configuration Integration
+- **Timezone Configuration**: New `bibble config timezone` command with interactive wizard
+- **Auto-Detection**: Automatic system timezone detection option
+- **Custom Selection**: Choose from common global timezones with flag emojis 🌍🇺🇸🇬🇧🇯🇵
+- **Manual Input**: Direct IANA timezone specification with validation
+- **Persistent Storage**: User timezone preferences stored in configuration
+
+#### ⚙️ Technical Implementation
+- **Built-In Tool Registry**: Integrated into the "time" category with proper icon support ⏰
+- **TypeScript Types**: Comprehensive type definitions and parameter validation
+- **Error Handling**: Robust error handling with user-friendly messages
+- **Testing Coverage**: Extensive programmatic tests for all functionality
+- **Cross-Platform**: Full Windows, macOS, and Linux compatibility
+
+#### 🎯 Usage Examples
+```bash
+# Configure default timezone
+bibble config timezone
+
+# In chat - get current time
+"What time is it?"
+# Uses configured timezone or UTC
+
+# In chat - get time in specific timezone
+"What time is it in Tokyo?"
+# AI will use datetime tool with Asia/Tokyo parameter
+```
+
+#### 📈 Benefits
+- **Time-Aware Conversations**: AI can now provide accurate date/time information
+- **Timezone Intelligence**: Proper timezone handling for global users
+- **Configuration Consistency**: Integrates with existing Bibble configuration system
+- **Enhanced Utility**: Makes Bibble more useful for scheduling and time-sensitive tasks
+- **Native Performance**: No external MCP server dependencies required
+
+This addition enhances Bibble's utility as a comprehensive AI assistant by providing native time awareness capabilities with sophisticated timezone support! ⏰✨
+
+---
+
 ## [1.7.1] - 2025-09-07
 
 ### 🚀 CRITICAL OPTIMIZATION: MCP Context Diet Implementation

@@ -8,7 +8,7 @@ import { z } from 'zod';
 export interface BuiltInTool {
   name: string;
   description: string;
-  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web';
+  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time';
   parameters: z.ZodSchema;
   execute: (params: any) => Promise<ToolResult>;
 }
