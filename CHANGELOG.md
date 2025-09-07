@@ -2,6 +2,75 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.7.3] - 2025-09-07
+
+### 🌤️📰 WEATHER AND NEWS NATIVE TOOLS - INFORMATION AT YOUR FINGERTIPS
+
+Added comprehensive weather forecasting and Hacker News integration as native built-in tools, expanding Bibble's information capabilities!
+
+#### 🌤️ New Built-In Tool: Weather (`weather`) + Configuration
+- **OpenWeatherMap Integration**: Professional weather API with global coverage
+- **Configuration Wizard**: `bibble config weather` - Beautiful setup wizard for API key, default location, and units
+- **Smart Default Location**: Optional location parameter - uses configured default or prompts for specification
+- **Intelligent Unit Handling**: Uses configured units preference (metric/imperial/kelvin) or parameter override
+- **Current Weather**: Temperature, humidity, wind, visibility, cloudiness, sunrise/sunset
+- **Weather Forecasts**: Optional 1-5 day forecasts with detailed daily predictions
+- **Multiple Unit Systems**: Metric (°C), Imperial (°F), and Kelvin support with user preferences
+- **Smart Location Support**: Cities, zip codes, and geographic coordinates
+- **Beautiful Output**: Emoji-rich formatted weather reports with intuitive icons
+- **Configurable Caching**: User-configurable cache duration (default: 10 minutes)
+- **Configurable Rate Limiting**: User-configurable API quota protection (default: 1000/hour)
+- **Enhanced UX**: "What's the weather?" works with default location, "What's the weather in Tokyo?" overrides
+
+#### 📰 New Built-In Tools: Hacker News (`news`)
+- **get-hackernews-stories**: Latest stories from Hacker News with multiple categories
+  - Story Types: top, new, best, ask HN, show HN, jobs
+  - Optional Comments: Top comments for each story
+  - Flexible Limits: 1-50 stories, 1-20 comments per story
+- **get-hackernews-story**: Detailed view of specific stories by ID
+  - Full Story Details: Title, URL, author, score, comment count
+  - Rich Comments: Top-level comments with author and timestamp
+  - Content Extraction: Clean text from HTML with intelligent formatting
+- **No API Key Required**: Direct integration with Hacker News Firebase API
+- **Smart Caching**: 5-minute result caching for optimal performance
+
+#### 🎨 Enhanced Visual Integration
+- **Weather Icon**: 🌤️ with cyan theme integration and status indicators
+- **News Icon**: 📰 with orange theme integration and contextual styling
+- **Tool Categories**: New "weather" and "news" categories in tool icon system
+- **Rich Formatting**: Beautiful output with emojis, colors, and structured information
+- **Status Badges**: Animated loading and completion states for enhanced UX
+
+#### ⚙️ Technical Excellence
+- **Built-In Architecture**: No external MCP server dependencies required
+- **Type Safety**: Complete TypeScript integration with Zod schema validation
+- **Error Handling**: Comprehensive error recovery with user-friendly messages
+- **Cross-Platform**: Full Windows, macOS, and Linux compatibility
+- **Provider Agnostic**: Works seamlessly with OpenAI, Anthropic, Google Gemini, and compatible endpoints
+- **Security Features**: Input validation, API key protection, rate limiting, safe HTML processing
+
+#### 🚀 Usage Examples
+```bash
+# Weather Examples
+get-weather: {"location": "London", "units": "metric"}
+get-weather: {"location": "New York", "includeforecast": true, "forecastDays": 5}
+
+# News Examples  
+get-hackernews-stories: {"storyType": "top", "maxStories": 10}
+get-hackernews-story: {"storyId": 40123456, "includeComments": true}
+```
+
+#### 🔧 Setup Requirements  
+- **Weather**: Get free OpenWeatherMap API key, then run `bibble config weather` for guided setup
+  - Environment variable `OPENWEATHER_API_KEY` still supported as fallback
+  - Configuration wizard handles API key, default location, and unit preferences
+  - Smart defaults: location optional if configured, units from preferences
+- **News**: Ready to use immediately (no setup required)
+
+These additions transform Bibble into a comprehensive information assistant, perfect for developers who want weather updates and tech news without leaving their terminal! 🚀✨
+
+---
+
 ## [1.7.2] - 2025-09-07
 
 ### ⏰ NATIVE DATETIME TOOL INTEGRATION - ENHANCED TIME AWARENESS

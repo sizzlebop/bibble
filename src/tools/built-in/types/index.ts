@@ -8,7 +8,7 @@ import { z } from 'zod';
 export interface BuiltInTool {
   name: string;
   description: string;
-  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time';
+  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news';
   parameters: z.ZodSchema;
   execute: (params: any) => Promise<ToolResult>;
 }
@@ -134,6 +134,21 @@ export interface BuiltInToolsConfig {
     requestTimeoutMs: number;
     rateLimitPerMinute: number;
     enableContentExtraction: boolean;
+  };
+  weather: {
+    apiKey?: string;
+    units: 'metric' | 'imperial' | 'kelvin';
+    defaultCity: string;
+    requestTimeoutMs: number;
+    rateLimitPerHour: number;
+    cacheResultsMinutes: number;
+  };
+  news: {
+    maxStories: number;
+    storyTypes: ('top' | 'new' | 'best' | 'ask' | 'show' | 'job')[];
+    requestTimeoutMs: number;
+    rateLimitPerMinute: number;
+    cacheResultsMinutes: number;
   };
 }
 

@@ -41,6 +41,12 @@ import { webSearchTool, quickWebSearchTool, researchStatusTool } from './web/web
 // Import all time/datetime tools
 import { getCurrentDateTimeTool } from './time/get-current-datetime.js';
 
+// Import all weather tools
+import { getWeatherTool } from './weather/get-weather.js';
+
+// Import all news tools
+import { getHackerNewsStoriesTool, getHackerNewsStoryTool } from './news/hackernews.js';
+
 export class BuiltInToolRegistry {
   private tools: Map<string, BuiltInTool> = new Map();
   private initialized = false;
@@ -88,6 +94,13 @@ export class BuiltInToolRegistry {
 
     // Time/DateTime tools
     this.registerTool(getCurrentDateTimeTool);
+
+    // Weather tools
+    this.registerTool(getWeatherTool);
+
+    // News tools
+    this.registerTool(getHackerNewsStoriesTool);
+    this.registerTool(getHackerNewsStoryTool);
   }
 
   /**
@@ -239,7 +252,7 @@ export class BuiltInToolRegistry {
       throw new Error('Tool must have a valid description');
     }
 
-    if (!['filesystem', 'process', 'search', 'edit', 'web', 'time'].includes(tool.category)) {
+    if (!['filesystem', 'process', 'search', 'edit', 'web', 'time', 'weather', 'news'].includes(tool.category)) {
       throw new Error('Tool must have a valid category');
     }
 

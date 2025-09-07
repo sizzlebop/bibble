@@ -333,6 +333,14 @@ export function setupConfigCommand(program: Command): Command {
       process.exit(0);
     });
 
+  // Configure weather settings
+  configCommand
+    .command("weather")
+    .description("Weather configuration wizard - set API key, default location, and units")
+    .action(async () => {
+      await weatherConfigurationWizard();
+    });
+
   // Add theme management commands
   addThemeToConfigCommand(configCommand);
 
@@ -1255,4 +1263,161 @@ async function saveModelConfiguration(provider: string, modelId: string, modelCo
   }
   
   config.set('models', models);
+}
+
+/**
+ * Weather configuration wizard
+ */
+async function weatherConfigurationWizard(): Promise<void> {
+  const config = Config.getInstance();
+
+  console.log(`\n${t.h1('🌤️ Weather Configuration')} ${brandSymbols.sparkles}\n`);
+  console.log(t.dim('Set up your OpenWeatherMap API key, default location, and preferred units.\\n'));
+
+  const current = {
+    apiKey: config.get('weather.apiKey', process.env.OPENWEATHER_API_KEY || ''),
+    defaultLocation: config.get('weather.defaultLocation', ''),
+    units: config.get('weather.units', 'metric')
+  } as any;
+
+  // API Key setup
+  const { setupApiKey } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'setupApiKey',
+      message: 'Do you want to configure your OpenWeatherMap API key?',
+      default: !current.apiKey
+    }
+  ]);
+
+  let apiKey = current.apiKey;
+  if (setupApiKey) {
+    console.log(t.dim('\nGet a free API key at: https://openweathermap.org/api\n'));
+    
+    const keyPrompt = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'apiKey',
+        message: 'Enter your OpenWeatherMap API key:',
+        default: current.apiKey || '',
+        validate: (input: string) => {
+          if (input.trim().length === 0) {
+            return 'API key is required for weather functionality';
+          }
+          if (input.trim().length < 10) {
+            return 'API key seems too short. Please check your key.';
+          }
+          return true;
+        }
+      }
+    ]);
+    apiKey = keyPrompt.apiKey;
+  }
+
+  // Default location setup
+  const { setupLocation } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'setupLocation',
+      message: 'Do you want to set a default location for weather queries?',
+      default: !current.defaultLocation
+    }
+  ]);
+
+  let defaultLocation = current.defaultLocation;
+  if (setupLocation) {
+    console.log(t.dim('\nYou can use city names, zip codes, or coordinates (lat,lon).\n'));
+    
+    const locationPrompt = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'defaultLocation',
+        message: 'Enter your default location:',
+        default: current.defaultLocation || '',
+        validate: (input: string) => {
+          if (input.trim().length === 0) {
+            return 'Location is required';
+          }
+          return true;
+        }
+      }
+    ]);
+    defaultLocation = locationPrompt.defaultLocation;
+  }
+
+  // Units setup
+  const { units } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'units',
+      message: 'Preferred temperature units:',
+      choices: [
+        { name: 'Metric (°C, m/s)', value: 'metric' },
+        { name: 'Imperial (°F, mph)', value: 'imperial' },
+        { name: 'Kelvin (K, m/s)', value: 'kelvin' }
+      ],
+      default: current.units || 'metric'
+    }
+  ]);
+
+  // Cache and rate limit settings (optional)
+  const { advancedSettings } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'advancedSettings',
+      message: 'Configure advanced settings (cache duration, rate limits)?',
+      default: false
+    }
+  ]);
+
+  let cacheMinutes = config.get('weather.cacheMinutes', 10);
+  let rateLimitPerHour = config.get('weather.rateLimitPerHour', 1000);
+
+  if (advancedSettings) {
+    const advancedPrompts = await inquirer.prompt<any>([
+      {
+        type: 'number',
+        name: 'cacheMinutes',
+        message: 'Weather result cache duration (minutes):',
+        default: cacheMinutes,
+        validate: (input: number) => input > 0 || 'Must be greater than 0'
+      },
+      {
+        type: 'number',
+        name: 'rateLimitPerHour',
+        message: 'API requests per hour limit:',
+        default: rateLimitPerHour,
+        validate: (input: number) => input > 0 || 'Must be greater than 0'
+      }
+    ] as any);
+    cacheMinutes = advancedPrompts.cacheMinutes;
+    rateLimitPerHour = advancedPrompts.rateLimitPerHour;
+  }
+
+  // Save configuration
+  if (apiKey) config.set('weather.apiKey', apiKey);
+  if (defaultLocation) config.set('weather.defaultLocation', defaultLocation);
+  config.set('weather.units', units);
+  config.set('weather.cacheMinutes', cacheMinutes);
+  config.set('weather.rateLimitPerHour', rateLimitPerHour);
+
+  // Summary
+  const successIcon = iconUtils.coloredIcon('✅', '✓', 'green');
+  console.log(`\n${successIcon} ${terminal.success('Weather configuration saved successfully!')}`);
+  
+  console.log('\n' + t.h2('Configuration Summary:'));
+  console.log(t.dim(`API Key: ${apiKey ? '✓ Configured' : '✗ Not set'}`));
+  console.log(t.dim(`Default Location: ${defaultLocation || 'Not set (will prompt when needed)'}`));
+  console.log(t.dim(`Units: ${units === 'metric' ? 'Metric (°C)' : units === 'imperial' ? 'Imperial (°F)' : 'Kelvin (K)'}`));
+  console.log(t.dim(`Cache Duration: ${cacheMinutes} minutes`));
+  console.log(t.dim(`Rate Limit: ${rateLimitPerHour} requests/hour`));
+  
+  if (!apiKey) {
+    console.log('\n' + t.warning('⚠️  Weather functionality requires an API key. Get one free at:'));
+    console.log(t.info('   https://openweathermap.org/api'));
+  }
+  
+  if (!defaultLocation) {
+    console.log('\n' + t.info('💡 Without a default location, Bibble will ask for your location when you request weather.'));
+  }
 }

@@ -98,6 +98,22 @@ export const toolCategories = {
     fallback: symbols.info,
     color: theme.accent,
     tools: ['play_notification']
+  },
+  
+  // Weather information
+  weather: {
+    icon: '🌤️',
+    fallback: symbols.circleDotted,
+    color: theme.info,
+    tools: ['get-weather']
+  },
+  
+  // News and information
+  news: {
+    icon: '📰',
+    fallback: symbols.bullet,
+    color: theme.warning,
+    tools: ['get-hackernews-stories', 'get-hackernews-story']
   }
 } as const;
 
