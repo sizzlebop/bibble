@@ -2,6 +2,37 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.7.5] - 2025-01-15
+
+### 🔧 VERSION BUMP & SYSTEM MESSAGE FILTERING IMPROVEMENTS
+
+#### 🆕 **Version Update**
+- **Package Version**: Updated from 1.7.4 to 1.7.5 across all version references
+- **MCP Client Version**: Updated MCP client version string to maintain consistency
+- **Build System**: All TypeScript compilation verified successfully
+
+#### 🛡️ **Enhanced System Message Filtering**
+- **Improved System Message Detection**: Enhanced filtering of system messages in conversation context
+- **Auto-Save Reliability**: Improved auto-save functionality for conversation state management
+- **Context Management**: Better handling of system-generated messages vs user messages
+
+#### 🔧 **Technical Enhancements**
+- **Consistent Versioning**: All version references updated across:
+  - `package.json` - Main package version
+  - `src/index.ts` - CLI version display
+  - `src/mcp/client.ts` - MCP client version (3 instances)
+- **Build Verification**: TypeScript compilation successful with no errors
+- **Backward Compatibility**: All existing functionality preserved
+
+#### 📈 **Quality Improvements**
+- **Code Consistency**: Unified version management across the codebase
+- **Reliability**: Enhanced message filtering for better conversation flow
+- **Documentation**: Version update properly documented in changelog
+
+This release provides a stable version increment with improved system message handling and enhanced auto-save capabilities for better user experience!
+
+---
+
 ## [1.7.4] - 2025-09-07
 
 ### 🔧 HYBRID TOOLS ARCHITECTURE - CRITICAL TOOL ROUTING FIX

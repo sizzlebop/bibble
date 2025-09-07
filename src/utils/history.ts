@@ -24,19 +24,23 @@ export class ChatHistory {
       return "";
     }
     
+    // Filter out system messages to prevent bloated history files
+    // System messages contain massive tool documentation that shouldn't be saved
+    const filteredMessages = messages.filter(message => message.role !== MessageRole.System);
+    
     // Generate ID and prepare entry
     const id = uuidv4();
     const now = new Date();
     
-    // Generate title if not provided
+    // Generate title if not provided (use original messages for title generation)
     const entryTitle = title || this.generateTitle(messages);
     
-    // Create entry
+    // Create entry with filtered messages
     const entry: ChatHistoryEntry = {
       id,
       title: entryTitle,
       date: now.toISOString(),
-      messages,
+      messages: filteredMessages,
       model: model || this.config.getDefaultModel(),
     };
     

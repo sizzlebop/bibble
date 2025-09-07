@@ -4,6 +4,7 @@ import { markdown } from "./markdown.js";
 import { ChatMessage, MessageRole } from "../types.js";
 import { Agent } from "../mcp/agent.js";
 import { chatHistory } from "../utils/history.js";
+import { Config } from "../config/config.js";
 import { createWelcomeBanner } from "./splash.js";
 import { gradient } from "./gradient.js";
 import { symbols, brandSymbols } from "./symbols.js";
@@ -32,6 +33,7 @@ export class ChatUI {
   private model?: string;
   private historyId?: string;
   private abortController = new AbortController();
+  private config = Config.getInstance();
 
   constructor(options: ChatUIOptions = {}) {
     // Set model and history ID
@@ -42,6 +44,42 @@ export class ChatUI {
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
+    });
+
+    // Setup signal handlers for graceful shutdown
+    this.setupSignalHandlers();
+  }
+
+  /**
+   * Setup signal handlers for graceful shutdown on Ctrl+C
+   */
+  private setupSignalHandlers(): void {
+    process.on('SIGINT', async () => {
+      console.log('\n'); // New line after ^C
+      console.log(terminal.info('🛑 Received interrupt signal (Ctrl+C)'));
+      
+      // Check if we have an active conversation to save
+      if (this.agent && this.config.get("chat.saveHistory", true)) {
+        const messages = this.agent.getConversation();
+        const hasContent = messages.some(m => m.role === MessageRole.User || m.role === MessageRole.Assistant);
+        
+        if (hasContent) {
+          console.log(terminal.info('💾 Auto-saving conversation before exit...'));
+          try {
+            const id = chatHistory.saveChat(messages, undefined, this.model);
+            if (id) {
+              console.log(terminal.ok(`💾 Saved chat as ${id}`));
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.log(terminal.warn(`Warning: Failed to save chat: ${msg}`));
+          }
+        }
+      }
+      
+      console.log(terminal.info('👋 Goodbye!'));
+      this.rl.close();
+      process.exit(0);
     });
   }
 
@@ -124,7 +162,12 @@ export class ChatUI {
         const command = input.slice(1).trim();
 
         if (command === "exit" || command === "quit") {
-          console.log(terminal.info("Goodbye!"));
+          await this.handleExit(false); // false = no force save
+          break;
+        }
+
+        if (command === "exit-save" || command === "quit-save") {
+          await this.handleExit(true); // true = force save
           break;
         }
 
@@ -501,13 +544,14 @@ export class ChatUI {
     const lines = [
       `${terminal.h1('Chat Commands')}`,
       `${terminal.dim('Use slash commands to control the chat:')}`,
-      `  ${terminal.ok('/help')}    ${terminal.dim('Show this help')}`,
-      `  ${terminal.ok('/clear')}   ${terminal.dim('Clear the screen')}`,
-      `  ${terminal.ok('/save')}    ${terminal.dim('Save this conversation to history')}`,
-      `  ${terminal.ok('/reset')}   ${terminal.dim('Reset the current conversation')}`,
-      `  ${terminal.ok('/exit')}    ${terminal.dim('Exit the chat (aliases: /quit)')}`,
-      `  ${terminal.ok('/multiline')} ${terminal.dim('Enter multi-line input mode (end with ;;;)')}`,
-      `  ${terminal.ok('```')}      ${terminal.dim('Start code block mode (end with ``` on its own line)')}`,
+      `  ${terminal.ok('/help')}       ${terminal.dim('Show this help')}`,
+      `  ${terminal.ok('/clear')}      ${terminal.dim('Clear the screen')}`,
+      `  ${terminal.ok('/save')}       ${terminal.dim('Save this conversation to history')}`,
+      `  ${terminal.ok('/reset')}      ${terminal.dim('Reset the current conversation')}`,
+      `  ${terminal.ok('/exit')}       ${terminal.dim('Exit with auto-save (if enabled) (aliases: /quit)')}`,
+      `  ${terminal.ok('/exit-save')}  ${terminal.dim('Save and exit (aliases: /quit-save)')}`,
+      `  ${terminal.ok('/multiline')}  ${terminal.dim('Enter multi-line input mode (end with ;;;)')}`,
+      `  ${terminal.ok('```')}         ${terminal.dim('Start code block mode (end with ``` on its own line)')}`,
     ];
     console.log('\n' + lines.join('\n'));
     this.displayMessageSeparator();
@@ -548,5 +592,38 @@ export class ChatUI {
     } else {
       console.log(terminal.warn('Agent not initialized.'));
     }
+  }
+
+  /**
+   * Handle exit with optional auto-save functionality
+   * @param forceSave Whether to force save regardless of config
+   */
+  private async handleExit(forceSave: boolean = false): Promise<void> {
+    try {
+      // Check if we should auto-save
+      const shouldAutoSave = forceSave || this.config.get("chat.saveHistory", true);
+      
+      if (shouldAutoSave && this.agent) {
+        const messages = this.agent.getConversation();
+        // Only save if there are actual user/assistant messages (not just system)
+        const hasContent = messages.some(m => m.role === MessageRole.User || m.role === MessageRole.Assistant);
+        
+        if (hasContent) {
+          const id = chatHistory.saveChat(messages, undefined, this.model);
+          if (id) {
+            console.log(terminal.ok(`💾 Auto-saved chat as ${id}`));
+          }
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.log(terminal.warn(`Warning: Failed to auto-save chat: ${msg}`));
+    }
+    
+    console.log(terminal.info("Goodbye!"));
+    
+    // Ensure we properly exit the process
+    this.rl.close();
+    process.exit(0);
   }
 }
