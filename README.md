@@ -28,7 +28,7 @@ Bibble is a command-line interface (CLI) chatbot application built in TypeScript
 - Contextual multi-turn conversations with chat memory
 - MCP client functionality for connecting to MCP-compatible servers
 - **🌐 BUILT-IN WEB SEARCH & RESEARCH TOOLS** - Multi-engine search with intelligent fallbacks
-- **🔍 Comprehensive Web Search** - DuckDuckGo, Bing, and Google integration with AI-powered query enhancement
+- **🔍 Comprehensive Web Search** - DuckDuckGo, Bing, Google, and Brave integration with AI-powered query enhancement
 - **🧠 Advanced Research Assistant** - Event-driven research sessions with content extraction and analysis
 - **⚡ Quick Search Tools** - Fast information retrieval without external MCP server setup
 - Settings and configuration options accessible from the CLI
@@ -123,6 +123,7 @@ bibble history
 - `bibble config reset` - Reset configuration to defaults
 - `bibble config api-key` - Set up API key for a provider
 - `bibble config mcp-servers` - Manage MCP server configurations
+- `bibble config web-search` - Configure preferred search engine and API keys
 - `bibble config user-guidelines` - Configure user guidelines
 
 ### History commands
@@ -172,7 +173,7 @@ These enhancements make working with MCP tools more intuitive and visually appea
 
 ### 🔍 Web Search Features
 
-- **Multi-Engine Support**: Integrated DuckDuckGo (primary), Bing, and Google search with intelligent fallbacks
+- **Multi-Engine Support**: Integrated DuckDuckGo (primary), Bing, Google, and Brave search with intelligent fallbacks
 - **AI-Powered Query Enhancement**: Smart query optimization for better search results
 - **Advanced Content Extraction**: Intelligent web scraping with rate limiting and content parsing
 - **Research Session Management**: Event-driven research workflows with progress tracking
@@ -181,7 +182,7 @@ These enhancements make working with MCP tools more intuitive and visually appea
 ### Available Built-In Web Tools
 
 1. **🔍 Web Search Tool** (`web-search`)
-   - Multi-engine search with DuckDuckGo, Bing, and Google fallbacks
+   - Multi-engine search with DuckDuckGo, Bing, Google, and Brave fallbacks
    - Configurable result counts and search depth
    - Real-time progress monitoring
    - Clean, formatted search results with metadata
@@ -195,6 +196,19 @@ These enhancements make working with MCP tools more intuitive and visually appea
    - Monitor ongoing research operations
    - Progress visualization and session management
    - Result aggregation and consolidated findings
+
+### Configure Web Search Engines
+
+Configure your preferred search engine and API keys:
+
+```bash
+bibble config web-search
+```
+
+This wizard allows you to:
+- **Choose preferred engine**: DuckDuckGo (no API key), Bing, Google Custom Search, or Brave
+- **Set API keys**: Configure keys for Bing, Google, or Brave search APIs
+- **Automatic fallbacks**: If your preferred engine fails, Bibble automatically tries other available engines
 
 ### How to Use Web Search
 

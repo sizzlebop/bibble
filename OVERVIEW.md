@@ -18,7 +18,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
   - **Google Gemini models**: Gemini 2.5 Flash Preview, Gemini 2.5 Pro Preview, Gemini 2.0 Flash, Gemini 2.0 Flash Lite, Gemini 1.5 Flash, Gemini 1.5 Pro
   - **OpenAI-compatible endpoints** for third-party services
 - **Tool use** through the Model Context Protocol (MCP) with user-configurable external tool integration
-- **🌐 Built-in web search & research tools** with multi-engine support (DuckDuckGo, Bing, Google) and AI-powered content analysis
+- **🌐 Built-in web search & research tools** with multi-engine support (DuckDuckGo, Bing, Google, Brave) and AI-powered content analysis with CLI-configurable preferred engine
 - **Advanced research assistant** with event-driven research sessions and intelligent content extraction
 - **⚡ MCP Context Diet optimization** with on-demand tool discovery that dramatically reduces prompt size and improves performance
 - **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
@@ -87,7 +87,7 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 │   │       ├── web/              # Web search and research tools
 │   │       │   ├── research/     # Research agent and content extraction
 │   │       │   ├── types/        # Web tool type definitions
-│   │       │   └── web-search.ts # Multi-engine search implementation
+│   │       │   └── web-search.ts # Multi-engine search implementation (DuckDuckGo, Bing, Google, Brave)
 │   │       ├── types/            # TypeScript type definitions
 │   │       ├── utilities/        # Cross-platform utilities
 │   │       ├── registry.ts       # Built-in tool registry
