@@ -1,6 +1,6 @@
 # Weather Configuration Enhancement
 
-**Added:** Weather configuration wizard and smart default location handling in Bibble v1.7.3
+**Added:** Weather configuration wizard and smart default location handling in Bibble v1.7.4
 
 ## New Configuration Command
 

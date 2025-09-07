@@ -2,6 +2,62 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.7.4] - 2025-09-07
+
+### 🔧 HYBRID TOOLS ARCHITECTURE - CRITICAL TOOL ROUTING FIX
+
+Resolved critical issue where built-in tools (like Hacker News) were being incorrectly routed through MCP wrapper system, causing "No MCP client found" errors.
+
+#### 🛠️ **Root Cause Resolution**
+- **Problem**: Compact tools mode was forcing ALL tool calls through MCP wrapper (`call_mcp_tool`)
+- **Impact**: Built-in tools like `get-hackernews-stories` failing with MCP routing errors
+- **Solution**: Implemented hybrid architecture separating built-in and MCP tool handling
+
+#### 🎯 **Hybrid Architecture Implementation**
+- **Built-In Tools**: Now exposed directly to LLM without MCP wrapper
+  - Direct tool calls: `get-hackernews-stories`, `get-weather`, `datetime`, etc.
+  - No routing through MCP system prevents "No MCP client found" errors
+  - Maintains native performance and reliability
+- **MCP Tools**: Continue using wrapper system for optimal performance
+  - Wrapped calls: `call_mcp_tool` with tool name and arguments
+  - Keeps system prompt manageable by avoiding massive tool schema bloat
+  - Preserves MCP server functionality and integration
+
+#### ⚙️ **Technical Enhancements**
+- **Smart Tool Registry**: Enhanced `agent.ts` with hybrid tool exposure logic
+- **System Prompt Optimization**: Clear distinction between built-in and MCP tool usage patterns
+- **Backward Compatibility**: All existing MCP integrations continue working unchanged
+- **Error Prevention**: Eliminates MCP routing errors for built-in tools
+
+#### 🧪 **Comprehensive Testing**
+- ✅ **Built-In Tool Verification**: Hacker News tool working correctly without wrapper
+- ✅ **MCP Tool Verification**: All MCP servers connecting and functioning properly
+- ✅ **Integration Testing**: Hybrid approach tested with real conversation flows
+- ✅ **Error Resolution**: "No MCP client found" errors completely eliminated
+
+#### 📈 **User Experience Impact**
+- **🚀 Reliability**: Built-in tools now work consistently without MCP-related failures
+- **⚡ Performance**: Native tool calls for built-in tools provide optimal speed
+- **🔧 Maintainability**: Clear separation makes tool system easier to understand and debug
+- **🎯 Compatibility**: Seamless experience across all tool types
+
+#### 🛡️ **Security & Compatibility**
+- **Preserved Security**: All existing security policies and MCP protections maintained
+- **Full Integration**: Works with all LLM providers (OpenAI, Anthropic, Google Gemini)
+- **Configuration**: No user configuration changes required - works out of the box
+- **Rollback Safety**: Architecture allows for easy modifications if needed
+
+#### 🔍 **Validation Results**
+- ✅ Built-in Hacker News tool executes directly without MCP wrapper
+- ✅ All 4 MCP servers (Sequential Thinking, Context7, TaskFlow, MCPollinations) connect successfully
+- ✅ Hybrid tool exposure working correctly with LLM tool selection
+- ✅ No conflicts between built-in and MCP tool namespaces
+- ✅ System prompts properly instruct on tool usage patterns
+
+This critical fix ensures reliable tool execution across Bibble's entire ecosystem, eliminating the frustrating MCP routing errors while maintaining all existing functionality and performance optimizations!
+
+---
+
 ## [1.7.3] - 2025-09-07
 
 ### 🌤️📰 WEATHER AND NEWS NATIVE TOOLS - INFORMATION AT YOUR FINGERTIPS

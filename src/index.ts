@@ -34,7 +34,7 @@ const program = new Command();
 program
   .name("bibble")
   .description("CLI chatbot with MCP support")
-  .version("1.7.2");
+  .version("1.7.4");
 
 // Initialize configuration
 ensureConfigDirExists();

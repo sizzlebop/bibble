@@ -141,7 +141,7 @@ export class BuiltInToolRegistry {
   /**
    * Get tools by category
    */
-  getToolsByCategory(category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time'): BuiltInTool[] {
+  getToolsByCategory(category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news'): BuiltInTool[] {
     return Array.from(this.tools.values()).filter(tool => tool.category === category);
   }
 
@@ -226,7 +226,9 @@ export class BuiltInToolRegistry {
       search: [],
       edit: [],
       web: [],
-      time: []
+      time: [],
+      weather: [],
+      news: []
     };
 
     for (const tool of this.tools.values()) {
@@ -331,7 +333,9 @@ export class BuiltInToolRegistry {
       search: 0,
       edit: 0,
       web: 0,
-      time: 0
+      time: 0,
+      weather: 0,
+      news: 0
     };
 
     for (const tool of this.tools.values()) {

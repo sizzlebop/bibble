@@ -75,12 +75,21 @@ Remember: You have access to many tools. Choose the most appropriate and direct 
 
 When you have successfully completed the user's request, call the 'task_complete' tool to end the conversation. This signals that the task is finished and no further action is needed.
 
-# TOOL DISCOVERY FLOW (IMPORTANT):
-1) Call list_tools (optionally with server/match filters).
-2) Call describe_tool(name) to read the JSON schema and required params.
-3) Call call_mcp_tool with { name, args } using exact parameter names.
+# TOOL USAGE GUIDE (CRITICAL):
 
-Always provide ALL required parameters as a single JSON object to avoid parsing errors.
+## Built-in Tools (Direct Access)
+- **CALL DIRECTLY**: Built-in tools like \`get-weather\`, \`get-hackernews-stories\`, \`read_file\`, \`write_file\`, etc. can be called directly
+- **Example**: Call \`get-hackernews-stories\` with {\"storyType\": \"top\", \"maxStories\": 5}
+- **NO WRAPPER NEEDED**: Don't use \`call_mcp_tool\` for built-in tools!
+
+## MCP Server Tools (Wrapper Required)
+- **USE WRAPPER**: External MCP tools must be called via \`call_mcp_tool\`
+- **Discovery Flow**: 
+  1) Call \`list_tools\` to see available MCP tools
+  2) Call \`describe_tool(name)\` to get schema
+  3) Call \`call_mcp_tool\` with {\"name\": \"toolname\", \"args\": {...}}
+
+**IMPORTANT**: Always provide ALL required parameters as a single JSON object to avoid parsing errors.
 
 `;
 
@@ -409,7 +418,13 @@ export class Agent extends McpClient {
     if (found.description) md += `${found.description}\n\n`;
     md += req.length ? `**Required parameters:** ${req.map(r => `\`${r}\``).join(", ")}\n\n` : "**Required parameters:** None\n\n";
     md += "## JSON Schema\n```json\n" + JSON.stringify(found.parameters, null, 2) + "\n```\n";
-    md += `\nUse \`call_mcp_tool\` with { "name": "${found.name}", "args": { ... } }.\n`;
+    
+    // Different usage instructions based on tool source
+    if (found.source === "Built-in Tools") {
+      md += `\nCall directly: \`${found.name}\` with parameters { ... }.\n`;
+    } else {
+      md += `\nUse \`call_mcp_tool\` with { "name": "${found.name}", "args": { ... } }.\n`;
+    }
     return md;
   }
 
@@ -469,7 +484,8 @@ export class Agent extends McpClient {
     // Set model
     this.model = options.model || this.configInstance.getDefaultModel();
     
-    // Set compact tools mode (default: true)
+    // Set compact tools mode (default: true to keep system prompt manageable)
+    // We'll use a hybrid approach: built-in tools direct + MCP tools via wrapper
     this.compactToolsMode = options.compactToolsMode ?? true;
 
     // Initialize messages with basic system prompt (tools will be added during initialize)
@@ -625,9 +641,9 @@ export class Agent extends McpClient {
       }
     }));
     
-    // Choose tools based on compact mode (MCP Context Diet)
+    // HYBRID APPROACH: Always include built-in tools directly + compact mode for MCP tools
     const toolsForLLM: ChatCompletionInputTool[] = this.compactToolsMode
-      ? [listToolsTool, describeToolTool, callMcpToolTool, taskCompletionTool, askQuestionTool]
+      ? [...builtInToolsForLLM, listToolsTool, describeToolTool, callMcpToolTool, taskCompletionTool, askQuestionTool]
       : [...builtInToolsForLLM, ...this.availableTools, taskCompletionTool, askQuestionTool];
     
 
