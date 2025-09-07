@@ -113,7 +113,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.4.5"
+        version: "1.7.1"
       });
 
       // Connect to server
@@ -229,8 +229,8 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.4.5"
-      });
+        version: "1.7.1"
+      }, transport);
 
       // Connect to server
       await mcp.connect(transport);
@@ -287,8 +287,8 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.4.5"
-      });
+        version: "1.7.1"
+      }, transport);
 
       // Connect to server
       await mcp.connect(transport);
@@ -356,8 +356,8 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.7.0"
-      });
+        version: "1.7.1"
+      }, transport);
 
       // Connect to server
       await mcp.connect(transport);

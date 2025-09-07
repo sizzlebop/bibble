@@ -75,6 +75,13 @@ Remember: You have access to many tools. Choose the most appropriate and direct 
 
 When you have successfully completed the user's request, call the 'task_complete' tool to end the conversation. This signals that the task is finished and no further action is needed.
 
+# TOOL DISCOVERY FLOW (IMPORTANT):
+1) Call list_tools (optionally with server/match filters).
+2) Call describe_tool(name) to read the JSON schema and required params.
+3) Call call_mcp_tool with { name, args } using exact parameter names.
+
+Always provide ALL required parameters as a single JSON object to avoid parsing errors.
+
 `;
 
 // Agent configuration options
@@ -82,6 +89,7 @@ export interface AgentOptions {
   model?: string;
   userGuidelines?: string;
   servers?: BibbleConfig["mcpServers"];
+  compactToolsMode?: boolean; // default true
 }
 
 // Agent chat options
@@ -115,6 +123,51 @@ const askQuestionTool: ChatCompletionInputTool = {
   },
 };
 
+// MCP Context Diet wrapper tools
+const listToolsTool: ChatCompletionInputTool = {
+  type: "function",
+  function: {
+    name: "list_tools",
+    description: "List available tools; optional filters by server and name substring.",
+    parameters: {
+      type: "object",
+      properties: {
+        server: { type: "string", description: "Filter by server name." },
+        match: { type: "string", description: "Case-insensitive name substring." }
+      }
+    }
+  }
+};
+
+const describeToolTool: ChatCompletionInputTool = {
+  type: "function",
+  function: {
+    name: "describe_tool",
+    description: "Describe one tool: human summary, required params, JSON schema.",
+    parameters: {
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"]
+    }
+  }
+};
+
+const callMcpToolTool: ChatCompletionInputTool = {
+  type: "function",
+  function: {
+    name: "call_mcp_tool",
+    description: "Execute any tool by exact name with a single JSON args object.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        args: { type: "object" }
+      },
+      required: ["name", "args"]
+    }
+  }
+};
+
 // Maximum number of turns before ending conversation
 // Increased from 10 to 25 to allow for more complex tasks with multiple tool calls
 const MAX_NUM_TURNS = 25;
@@ -128,6 +181,7 @@ export class Agent extends McpClient {
   protected configInstance = Config.getInstance();
   private messages: ChatMessage[] = [];
   private model: string;
+  private compactToolsMode: boolean;
     private exitLoopTools = [taskCompletionTool, askQuestionTool];
 
    async listTools(client: Client): Promise<void> {
@@ -287,6 +341,79 @@ export class Agent extends McpClient {
   }
 
   /**
+   * Generate a compact markdown directory of tools grouped by server (MCP Context Diet)
+   * @param opts Filter options
+   * @returns Formatted tool directory as markdown
+   */
+  private _listToolsSummary(opts: { server?: string; match?: string }): string {
+    const builtIn = getBuiltInToolRegistry().getAllTools().map(t => ({
+      source: "Built-in Tools",
+      name: t.name,
+      description: t.description,
+      parameters: zodToJsonSchema(t.parameters)
+    }));
+    const mcp = (this.availableTools || []).map(t => ({
+      source: this.toolToServerMap?.get(t.function.name) || "MCP Server",
+      name: t.function.name,
+      description: t.function.description || "",
+      parameters: t.function.parameters
+    }));
+
+    const all = [...builtIn, ...mcp];
+    const s = opts.server?.toLowerCase();
+    const m = opts.match?.toLowerCase();
+    const filtered = all.filter(x => (!s || x.source.toLowerCase().includes(s)) && (!m || x.name.toLowerCase().includes(m)));
+
+    const groups = new Map<string, typeof filtered>();
+    for (const item of filtered) { 
+      if (!groups.has(item.source)) groups.set(item.source, []); 
+      groups.get(item.source)!.push(item); 
+    }
+
+    let out = "# Tool Directory\n\n";
+    if (opts.server || opts.match) out += `Filters: ${opts.server ?? ""} ${opts.match ?? ""}\n\n`;
+    else out += "Use `describe_tool` for details and `call_mcp_tool` to execute.\n\n";
+
+    for (const [src, items] of groups) {
+      out += `## ${src}\n`;
+      for (const it of items) out += `- ${it.name}${it.description ? ` — ${it.description.split(/\r|\n/)[0]}` : ""}\n`;
+      out += "\n";
+    }
+    if (filtered.length === 0) out += "No tools found for the given filters.\n";
+    return out;
+  }
+
+  /**
+   * Get detailed information about a specific tool (MCP Context Diet)
+   * @param name Tool name
+   * @returns Formatted tool details as markdown or null if not found
+   */
+  private _describeTool(name: string): string | null {
+    const builtIn = getBuiltInToolRegistry().getAllTools().map(t => ({
+      source: "Built-in Tools",
+      name: t.name,
+      description: t.description,
+      parameters: zodToJsonSchema(t.parameters)
+    }));
+    const mcp = (this.availableTools || []).map(t => ({
+      source: this.toolToServerMap?.get(t.function.name) || "MCP Server",
+      name: t.function.name,
+      description: t.function.description || "",
+      parameters: t.function.parameters
+    }));
+    const found = [...builtIn, ...mcp].find(t => t.name === name);
+    if (!found) return null;
+
+    const req = Array.isArray((found.parameters as any)?.required) ? (found.parameters as any).required as string[] : [];
+    let md = `# ${found.name}\n\nSource: ${found.source}\n\n`;
+    if (found.description) md += `${found.description}\n\n`;
+    md += req.length ? `**Required parameters:** ${req.map(r => `\`${r}\``).join(", ")}\n\n` : "**Required parameters:** None\n\n";
+    md += "## JSON Schema\n```json\n" + JSON.stringify(found.parameters, null, 2) + "\n```\n";
+    md += `\nUse \`call_mcp_tool\` with { "name": "${found.name}", "args": { ... } }.\n`;
+    return md;
+  }
+
+  /**
    * Generate an example value for a parameter based on its type
    * @param paramName Parameter name
    * @param paramDetails Parameter details
@@ -341,6 +468,9 @@ export class Agent extends McpClient {
 
     // Set model
     this.model = options.model || this.configInstance.getDefaultModel();
+    
+    // Set compact tools mode (default: true)
+    this.compactToolsMode = options.compactToolsMode ?? true;
 
     // Initialize messages with basic system prompt (tools will be added during initialize)
     this.messages = [
@@ -495,8 +625,10 @@ export class Agent extends McpClient {
       }
     }));
     
-    // Combine built-in tools, MCP server tools, and exit loop tools
-    const tools = [...builtInToolsForLLM, ...this.availableTools, ...this.exitLoopTools];
+    // Choose tools based on compact mode (MCP Context Diet)
+    const toolsForLLM: ChatCompletionInputTool[] = this.compactToolsMode
+      ? [listToolsTool, describeToolTool, callMcpToolTool, taskCompletionTool, askQuestionTool]
+      : [...builtInToolsForLLM, ...this.availableTools, taskCompletionTool, askQuestionTool];
     
 
     // Get model configuration
@@ -525,7 +657,7 @@ export class Agent extends McpClient {
 
     // Include tools for all models
     // For Anthropic models, the AnthropicClient will handle the conversion
-    chatParams.tools = tools;
+    chatParams.tools = toolsForLLM;
 
     // Add model-specific parameters
     if (modelConfig) {
@@ -593,7 +725,31 @@ export class Agent extends McpClient {
       // Execute each tool call and display results
       for (const toolCall of toolCallsInTurn) {
         try {
-          const toolResult = await this.callTool(toolCall.name, toolCall.args);
+          // Handle MCP Context Diet wrapper tools
+          let toolResult: { content: string };
+          
+          if (toolCall.name === "list_tools") {
+            toolResult = { content: this._listToolsSummary({ server: toolCall.args?.server, match: toolCall.args?.match }) };
+          } else if (toolCall.name === "describe_tool") {
+            if (!toolCall.args?.name) {
+              toolResult = { content: "Error: 'name' is required for describe_tool." };
+            } else {
+              const md = this._describeTool(String(toolCall.args.name));
+              toolResult = { content: md ?? `Tool '${toolCall.args.name}' not found.` };
+            }
+          } else if (toolCall.name === "call_mcp_tool") {
+            const innerName = String(toolCall.args?.name ?? "");
+            if (!innerName) {
+              toolResult = { content: "Error: 'name' is required for call_mcp_tool." };
+            } else if (["list_tools", "describe_tool", "call_mcp_tool"].includes(innerName)) {
+              toolResult = { content: "Error: cannot invoke agent utility tools through call_mcp_tool." };
+            } else {
+              toolResult = await this.callTool(innerName, toolCall.args?.args ?? {});
+            }
+          } else {
+            // Regular tool or legacy path
+            toolResult = await this.callTool(toolCall.name, toolCall.args);
+          }
 
           // Handle tool result based on model type
           if (isAnthropicModel) {

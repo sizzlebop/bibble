@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.6.1  
+**Version**: 1.7.1  
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble  
-*Last updated: September 6, 2025 - 20:56 UTC*
+*Last updated: September 7, 2025 - 01:01 UTC*
 
 ## Project Overview
 
@@ -18,6 +18,9 @@ Bibble provides a terminal-based interface for interacting with AI language mode
   - **Google Gemini models**: Gemini 2.5 Flash Preview, Gemini 2.5 Pro Preview, Gemini 2.0 Flash, Gemini 2.0 Flash Lite, Gemini 1.5 Flash, Gemini 1.5 Pro
   - **OpenAI-compatible endpoints** for third-party services
 - **Tool use** through the Model Context Protocol (MCP) with user-configurable external tool integration
+- **🌐 Built-in web search & research tools** with multi-engine support (DuckDuckGo, Bing, Google) and AI-powered content analysis
+- **Advanced research assistant** with event-driven research sessions and intelligent content extraction
+- **⚡ MCP Context Diet optimization** with on-demand tool discovery that dramatically reduces prompt size and improves performance
 - **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
 - **Chat history** tracking, export, and import with persistent storage
 - **Rich terminal UI** with markdown rendering and colored text output
@@ -81,6 +84,10 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 │   │       ├── filesystem/       # File system operations
 │   │       ├── process/          # Process management
 │   │       ├── search/           # Code and file search
+│   │       ├── web/              # Web search and research tools
+│   │       │   ├── research/     # Research agent and content extraction
+│   │       │   ├── types/        # Web tool type definitions
+│   │       │   └── web-search.ts # Multi-engine search implementation
 │   │       ├── types/            # TypeScript type definitions
 │   │       ├── utilities/        # Cross-platform utilities
 │   │       ├── registry.ts       # Built-in tool registry
@@ -533,6 +540,7 @@ Version 1.4.4 introduces **COMPREHENSIVE BUILT-IN TOOLS INTEGRATION** that elimi
 - **Filesystem Tools**: `read_file`, `write_file`, `create_directory`, `list_directory`, `move_file`, `copy_file`, `delete_file`, `get_file_info`, `find_files`
 - **Process Management**: `execute_command`, `get_processes`, `kill_process`, `monitor_process`
 - **Search Capabilities**: `search_files`, `search_in_file`, `grep_search` with powerful ripgrep integration
+- **Web Search & Research**: `web-search`, `quick-search`, `research-status` with multi-engine support (DuckDuckGo, Bing, Google)
 - **Text Editing**: `find_replace_in_file`, `insert_text`, `delete_lines` with fuzzy matching fallback
 - **Configuration Management**: Integrated configuration system with security and validation
 
@@ -729,12 +737,14 @@ The recent versions of Bibble feature a comprehensive reimplementation of Anthro
 ## Dependencies & Technology Stack
 
 ### Core Dependencies
-- **@anthropic-ai/sdk** (^0.51.0): Official Anthropic SDK for Claude models
-- **openai** (^4.102.0): OpenAI SDK for GPT models and compatible endpoints
-- **@modelcontextprotocol/sdk** (^1.11.5): Official MCP SDK for tool integration
+- **@anthropic-ai/sdk** (^0.60.0): Official Anthropic SDK for Claude models
+- **openai** (^5.16.0): OpenAI SDK for GPT models and compatible endpoints
+- **@google/generative-ai** (^0.24.1): Google Gemini SDK for Google AI models
+- **@modelcontextprotocol/sdk** (^1.17.4): Official MCP SDK for tool integration
+- **axios** (^1.6.0): HTTP client for web requests and API interactions
 - **commander** (^14.0.0): CLI framework for command handling
-- **inquirer** (^12.6.1): Interactive command-line prompts
-- **typescript** (^5.8.3): TypeScript compiler and type definitions
+- **inquirer** (^12.9.4): Interactive command-line prompts
+- **typescript** (^5.9.2): TypeScript compiler and type definitions
 
 ### UI & Formatting
 - **chalk** (^5.4.1): Terminal string styling and colors
@@ -920,27 +930,27 @@ Bibble has an **ambitious and well-planned development roadmap** for 2025, focus
 
 ### **📋 Priority Development Phases**
 
-#### **🏆 Phase 1: Code Quality & Consistency** *(1-2 weeks)*
+#### **🏆 Phase 1: Code Quality & Consistency** ✅ **COMPLETED**
 - **Spinner Code Deduplication**: Consolidate all spinner implementations into centralized `spinners.ts` system
 - **Code Cleanup**: Eliminate duplicate implementations and improve maintainability
 - **Consistency**: Ensure uniform Pink Pixel theming across all spinners
 
-#### **🎨 Phase 2: Theme System Enhancement** *(1-2 weeks)*  
+#### **🎨 Phase 2: Theme System Enhancement** ✅ **COMPLETED**
 - **CLI Theme Commands**: `bibble config theme list/set/preview/reset`
 - **Multiple Theme Support**: Pink Pixel (default), Dark Mode, Light Mode, Neon, Ocean, Fire
 - **User Customization**: Custom color configuration and theme personalization
 - **Real-time Preview**: Live theme preview capabilities
 
-#### **🎭 Phase 3: Enhanced Visual Experience** *(1 week)*
+#### **🎭 Phase 3: Enhanced Visual Experience** ✅ **COMPLETED**
 - **Expanded Icon Usage**: Enhanced icons throughout all chat sessions ✅ **COMPLETED v1.6.0**
 - **Message Type Icons**: Different contextual icons for various content types ✅ **COMPLETED v1.6.0**
 - **Status Indicators**: Visual progress and comprehensive state feedback ✅ **COMPLETED v1.6.0**
 
-#### **🔧 Phase 4: Native Tool Integration** *(3-4 weeks)*
-- **Web Search Tool**: DuckDuckGo/Bing API integration for instant search capabilities
-- **Web Scraping Tool**: Puppeteer-based content extraction with intelligent parsing  
-- **Documentation Access**: GitHub, npm, PyPI, MDN integration for developer resources
-- **API Integrations**: OpenWeather and HackerNews native tools for real-time data
+#### **🔧 Phase 4: Native Tool Integration** ✅ **COMPLETED**
+- **Web Search Tool**: DuckDuckGo/Bing/Google API integration for instant search capabilities ✅ **COMPLETED v1.7.0**
+- **Advanced Research Assistant**: Event-driven research sessions with content extraction ✅ **COMPLETED v1.7.0**
+- **Multi-Engine Search**: Intelligent fallback system across search providers ✅ **COMPLETED v1.7.0**
+- **Quick Search Tools**: Fast information retrieval without external MCP setup ✅ **COMPLETED v1.7.0**
 
 #### **🤖 Phase 5: LLM Provider Expansion** *(2-3 weeks)*
 - **Local LLM Support**: Ollama integration for privacy-focused and offline AI assistance
