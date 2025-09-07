@@ -9,9 +9,9 @@ export const SearchFilesSchema = z.object({
   query: z.string().min(1, 'Search query is required')
     .describe('Text pattern to search for across files. Can be literal text or regex pattern if regex option is enabled.'),
   directory: z.string().min(1, 'Directory path is required')
-    .describe('Root directory to search in. All files in this directory (and subdirectories if recursive) will be searched.'),
+    .describe('Root directory to search in. All files in this _directory (and subdirectories if recursive) will be searched.'),
   recursive: z.boolean().default(true)
-    .describe('Whether to search subdirectories recursively. Set to false to search only the specified directory.'),
+    .describe('Whether to search subdirectories recursively. Set to false to search only the specified _directory.'),
   caseSensitive: z.boolean().default(false)
     .describe('Whether the search should be case-sensitive. Default is case-insensitive for broader matching.'),
   wholeWord: z.boolean().default(false)
@@ -59,7 +59,7 @@ export const FindAndReplaceSchema = z.object({
   replaceWith: z.string()
     .describe('Text to replace matches with. Can include regex capture groups (e.g., $1, $2) if using regex mode.'),
   directory: z.string().min(1, 'Directory path is required')
-    .describe('Root directory to perform find and replace in. Will affect all matching files in this directory tree.'),
+    .describe('Root directory to perform find and replace in. Will affect all matching files in this _directory tree.'),
   recursive: z.boolean().default(true)
     .describe('Whether to search subdirectories recursively. ⚠️ This can affect many files - use dryRun first.'),
   caseSensitive: z.boolean().default(false)
@@ -96,7 +96,7 @@ export const SearchInFileSchema = z.object({
 });
 
 export const IndexDirectorySchema = z.object({
-  directory: z.string().min(1, 'Directory path is required'),
+  _directory: z.string().min(1, 'Directory path is required'),
   recursive: z.boolean().default(true),
   includeHidden: z.boolean().default(false),
   filePattern: z.string().optional(),

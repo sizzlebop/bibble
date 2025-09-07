@@ -1,7 +1,5 @@
 import { Command } from 'commander';
-import { Config } from '../config/config.js';
 import { ThemeManager, THEME_DEFINITIONS } from '../ui/theme.js';
-import { BibbleTable } from '../ui/tables.js';
 import { theme } from '../ui/theme.js';
 import { chatSymbols } from '../ui/symbols.js';
 

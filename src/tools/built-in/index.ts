@@ -22,6 +22,7 @@ export * from './search/index.js';
 export * from './edit/index.js';
 export * from './web/index.js';
 export * from './time/index.js';
+export * from './workspace/index.js';
 
 // Main tool registry
 export { BuiltInToolRegistry, getBuiltInToolRegistry, initializeBuiltInTools } from './registry.js';

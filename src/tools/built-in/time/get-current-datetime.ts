@@ -32,7 +32,7 @@ function isValidTimezone(timezone: string): boolean {
 function getDefaultTimezone(): string {
   try {
     const config = Config.getInstance();
-    const configuredTimezone = config.get('timezone.default');
+    const configuredTimezone = config.get('timezone.default') as string;
     
     // If user has explicitly set a timezone (not 'auto'), use it
     if (configuredTimezone && configuredTimezone !== 'auto' && isValidTimezone(configuredTimezone)) {

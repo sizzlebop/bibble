@@ -1,12 +1,13 @@
 import readline from "readline";
-import { t, terminal } from "./colors.js";
+import { terminal } from "./colors.js";
 import { markdown } from "./markdown.js";
 import { ChatMessage, MessageRole } from "../types.js";
 import { Agent } from "../mcp/agent.js";
 import { chatHistory } from "../utils/history.js";
 import { Config } from "../config/config.js";
-import { createWelcomeBanner } from "./splash.js";
+import { createWelcomeBanner, createWorkspaceWelcomeBanner } from "./splash.js";
 import { gradient } from "./gradient.js";
+import { WorkspaceManager } from "../workspace/index.js";
 import { symbols, brandSymbols } from "./symbols.js";
 import { EnhancedToolDisplay, ToolDisplayOptions } from "./tool-display.js";
 import { iconUtils, getContentIcon, roleIcons, statusIcons } from "./tool-icons.js";
@@ -34,6 +35,7 @@ export class ChatUI {
   private historyId?: string;
   private abortController = new AbortController();
   private config = Config.getInstance();
+  private workspaceContext: any = null;
 
   constructor(options: ChatUIOptions = {}) {
     // Set model and history ID
@@ -88,8 +90,18 @@ export class ChatUI {
    */
   async start(): Promise<void> {
     try {
+      // Get workspace context for later use
+      const workspaceManager = WorkspaceManager.getInstance();
+      if (this.config.isWorkspaceEnabled()) {
+        try {
+          this.workspaceContext = await workspaceManager.detectWorkspace();
+        } catch (error) {
+          // Ignore workspace detection errors
+        }
+      }
+
       // Display welcome message
-      this.displayWelcome();
+      await this.displayWelcome();
 
       // Initialize agent
       this.agent = new Agent({
@@ -113,11 +125,28 @@ export class ChatUI {
   }
 
   /**
-   * Display welcome message with gorgeous BIBBLE banner!
+   * Display welcome message with gorgeous BIBBLE banner and workspace context!
    */
-  private displayWelcome(): void {
-    // Show the stunning BIBBLE banner instead of boring box
-    console.log(createWelcomeBanner());
+  private async displayWelcome(): Promise<void> {
+    try {
+      // Get workspace context if enabled
+      const workspaceManager = WorkspaceManager.getInstance();
+      let workspaceContext = null;
+      
+      if (this.config.isWorkspaceEnabled()) {
+        workspaceContext = await workspaceManager.detectWorkspace();
+      }
+      
+      // Show the stunning BIBBLE banner with workspace context
+      if (workspaceContext && this.config.shouldShowWelcomeMessage()) {
+        console.log(createWorkspaceWelcomeBanner(workspaceContext));
+      } else {
+        console.log(createWelcomeBanner());
+      }
+    } catch (error) {
+      // Fallback to standard welcome if workspace detection fails
+      console.log(createWelcomeBanner());
+    }
   }
 
   /**
@@ -130,7 +159,7 @@ export class ChatUI {
     if (history) {
       // Filter out system messages to display
       const messages = history.messages.filter(
-        m => m.role !== MessageRole.System
+        (m: ChatMessage) => m.role !== MessageRole.System
       );
 
       // Display messages
@@ -178,7 +207,7 @@ export class ChatUI {
 
         if (command === "clear") {
           console.clear();
-          this.displayWelcome();
+          await this.displayWelcome();
           continue;
         }
 
@@ -192,6 +221,21 @@ export class ChatUI {
           continue;
         }
 
+        if (command === "workspace" || command === "ws") {
+          await this.displayWorkspaceInfo();
+          continue;
+        }
+
+        if (command === "workspace-refresh" || command === "ws-refresh") {
+          await this.refreshWorkspaceContext();
+          continue;
+        }
+
+        if (command === "workspace-toggle" || command === "ws-toggle") {
+          this.toggleWorkspaceContext();
+          continue;
+        }
+
         console.log(terminal.warn(`Unknown command: ${command}`));
         continue;
       }
@@ -201,7 +245,7 @@ export class ChatUI {
     }
   }
   /**
-   * Prompt for user input with beautiful styling
+   * Prompt for user input with beautiful styling and workspace context
    * @returns User input
    */
   private promptUser(): Promise<string> {
@@ -212,7 +256,21 @@ export class ChatUI {
         roleIcons.user.fallback,
         roleIcons.user.color
       );
-      const prompt = `\n${userIcon} ${gradient.pinkCyan('You')}: `;
+      
+      // Add workspace context indicator if available and enabled
+      let contextIndicator = '';
+      if (this.config.shouldShowContextInChat() && this.workspaceContext && this.workspaceContext.projectType !== 'unknown') {
+        const projectIcon = this.workspaceContext.projectType === 'nodejs' ? '⚡' :
+                           this.workspaceContext.projectType === 'python' ? '🐍' :
+                           this.workspaceContext.projectType === 'rust' ? '🦀' :
+                           this.workspaceContext.projectType === 'web' ? '🌐' :
+                           this.workspaceContext.projectType === 'documentation' ? '📚' : '📁';
+        
+        const projectName = this.workspaceContext.projectName || 'Project';
+        contextIndicator = ` ${theme.dim('[' + projectIcon + ' ' + projectName + ']')}`;
+      }
+      
+      const prompt = `\n${userIcon} ${gradient.pinkCyan('You')}${contextIndicator}: `;
       
       this.rl.question(prompt, (answer) => {
         const trimmed = answer.trim();
@@ -552,6 +610,11 @@ export class ChatUI {
       `  ${terminal.ok('/exit-save')}  ${terminal.dim('Save and exit (aliases: /quit-save)')}`,
       `  ${terminal.ok('/multiline')}  ${terminal.dim('Enter multi-line input mode (end with ;;;)')}`,
       `  ${terminal.ok('```')}         ${terminal.dim('Start code block mode (end with ``` on its own line)')}`,
+      ``,
+      `  ${terminal.cyan('Workspace Commands:')}`,
+      `  ${terminal.ok('/workspace')}  ${terminal.dim('Show current workspace context (alias: /ws)')}`,
+      `  ${terminal.ok('/ws-refresh')} ${terminal.dim('Refresh workspace context')}`,
+      `  ${terminal.ok('/ws-toggle')}  ${terminal.dim('Toggle workspace context indicators')}`,
     ];
     console.log('\n' + lines.join('\n'));
     this.displayMessageSeparator();
@@ -625,5 +688,91 @@ export class ChatUI {
     // Ensure we properly exit the process
     this.rl.close();
     process.exit(0);
+  }
+
+  /**
+   * Display current workspace information
+   */
+  private async displayWorkspaceInfo(): Promise<void> {
+    try {
+      if (!this.config.isWorkspaceEnabled()) {
+        console.log(terminal.warn('Workspace intelligence is disabled. Enable it in config.'));
+        return;
+      }
+
+      if (!this.workspaceContext || this.workspaceContext.projectType === 'unknown') {
+        console.log(terminal.info('📂 No project detected in current directory'));
+        console.log(terminal.dim('Try running from a project directory (Node.js, Python, Rust, etc.)'));
+        return;
+      }
+
+      const projectIcon = this.workspaceContext.projectType === 'nodejs' ? '⚡' :
+                         this.workspaceContext.projectType === 'python' ? '🐍' :
+                         this.workspaceContext.projectType === 'rust' ? '🦀' :
+                         this.workspaceContext.projectType === 'web' ? '🌐' :
+                         this.workspaceContext.projectType === 'documentation' ? '📚' : '📁';
+
+      console.log('\n' + terminal.h1('📂 Workspace Context'));
+      
+      const projectName = this.workspaceContext.projectName || 'Current Project';
+      console.log(`${projectIcon} **${projectName}** (${this.workspaceContext.projectType.toUpperCase()})`);
+      
+      if (this.workspaceContext.features && this.workspaceContext.features.length > 0) {
+        const features = this.workspaceContext.features.slice(0, 5).map((f: any) => f.name).join(', ');
+        console.log(`🔧 ${theme.label('Stack:', features)}`);
+      }
+      
+      if (this.workspaceContext.sourceDirectories.length > 0) {
+        console.log(`📁 ${theme.label('Source:', this.workspaceContext.sourceDirectories[0])}`);
+      }
+      
+      if (this.workspaceContext.gitRepository) {
+        console.log(`🌟 ${theme.label('Git:', theme.ok('initialized'))}`);
+      }
+      
+      console.log('\n' + theme.dim('💡 Available commands: /ws-refresh, /ws-toggle'));
+      this.displayMessageSeparator();
+    } catch (error) {
+      console.log(terminal.warn('Error displaying workspace info: ' + (error instanceof Error ? error.message : String(error))));
+    }
+  }
+
+  /**
+   * Refresh workspace context
+   */
+  private async refreshWorkspaceContext(): Promise<void> {
+    try {
+      if (!this.config.isWorkspaceEnabled()) {
+        console.log(terminal.warn('Workspace intelligence is disabled.'));
+        return;
+      }
+
+      console.log(terminal.info('🔄 Refreshing workspace context...'));
+      const workspaceManager = WorkspaceManager.getInstance();
+      workspaceManager.clearCache(); // Clear cache to force re-detection
+      this.workspaceContext = await workspaceManager.detectWorkspace();
+      
+      if (this.workspaceContext && this.workspaceContext.projectType !== 'unknown') {
+        console.log(terminal.ok(`✅ Detected ${this.workspaceContext.projectType} project: ${this.workspaceContext.projectName || 'Unnamed'}`));
+      } else {
+        console.log(terminal.info('📂 No project detected'));
+      }
+      
+      this.displayMessageSeparator();
+    } catch (error) {
+      console.log(terminal.warn('Error refreshing workspace: ' + (error instanceof Error ? error.message : String(error))));
+    }
+  }
+
+  /**
+   * Toggle workspace context display in chat
+   */
+  private toggleWorkspaceContext(): void {
+    const currentSetting = this.config.shouldShowContextInChat();
+    const newSetting = !currentSetting;
+    this.config.setShowContextInChat(newSetting);
+    
+    console.log(terminal.info(`🔄 Workspace context indicators ${newSetting ? 'enabled' : 'disabled'}`));
+    this.displayMessageSeparator();
   }
 }

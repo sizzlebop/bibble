@@ -3,7 +3,7 @@
  */
 
 import { promises as fs } from 'fs';
-import { join, relative } from 'path';
+import { relative } from 'path';
 import { BuiltInTool } from '../types/index.js';
 import { SearchFilesSchema, SearchFilesParams, FileSearchResult, SearchMatch } from '../types/search.js';
 import { listDirectory } from '../utilities/filesystem.js';

@@ -4,7 +4,6 @@
 
 import { extname } from 'path';
 import { getConfigManager } from '../config/manager.js';
-import { SECURITY_DEFAULTS } from '../config/defaults.js';
 
 /**
  * Check if a file path is safe to access

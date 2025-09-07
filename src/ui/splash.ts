@@ -4,9 +4,11 @@ import figlet from 'figlet';
 import boxen from 'boxen';
 import { gradient } from './gradient.js';
 import { theme } from './theme.js';
-import { s, brandSymbols } from './symbols.js';
+import { brandSymbols } from './symbols.js';
 import { spinners } from './spinners.js';
 import { statusManager, statusUtils } from './status-badges.js';
+import type { WorkspaceContext } from '../workspace/types.js';
+import { Config } from '../config/config.js';
 
 /**
  * ASCII art banners for different occasions
@@ -82,7 +84,7 @@ export class Splash {
     
     // Add version info with status badge
     if (showVersion) {
-      const versionBadge = statusUtils.info('Version 1.7.4');
+      const versionBadge = statusUtils.info('Version 1.8.0');
       content += '\n' + versionBadge;
     }
     
@@ -159,6 +161,83 @@ export class Splash {
     
     return items.join('   ');
   }
+
+  /**
+   * Create workspace context display
+   */
+  static createWorkspaceContext(workspaceContext: WorkspaceContext | null): string {
+    if (!workspaceContext || workspaceContext.projectType === 'unknown') {
+      return theme.dim('📂 No project detected');
+    }
+
+    const items = [];
+    
+    // Project header with icon
+    const projectIcon = workspaceContext.projectType === 'nodejs' ? '⚡' :
+                       workspaceContext.projectType === 'python' ? '🐍' :
+                       workspaceContext.projectType === 'rust' ? '🦀' :
+                       workspaceContext.projectType === 'web' ? '🌐' :
+                       workspaceContext.projectType === 'docs' ? '📚' : '📁';
+    
+    const projectName = workspaceContext.projectName || 'Current Project';
+    const projectTitle = theme.accent(`${projectIcon} ${projectName}`);
+    const projectType = theme.dim(`(${workspaceContext.projectType.toUpperCase()})`);
+    
+    items.push(`📂 ${projectTitle} ${projectType}`);
+    
+    // Show key features
+    if (workspaceContext.features && workspaceContext.features.length > 0) {
+      const topFeatures = workspaceContext.features.slice(0, 3);
+      const featureStr = topFeatures.map(f => f.name).join(', ');
+      items.push(theme.label('🔧 Stack:', featureStr));
+    }
+    
+    // Show source directory info
+    if (workspaceContext.sourceDirectories.length > 0) {
+      const srcDir = workspaceContext.sourceDirectories[0];
+      items.push(theme.label('📁 Source:', theme.path(srcDir)));
+    }
+    
+    // Show git status if available
+    if (workspaceContext.gitRepository) {
+      items.push(theme.label('🌟 Git:', theme.ok('initialized')));
+    }
+    
+    return items.join('   ');
+  }
+
+  /**
+   * Create enhanced welcome message with workspace context
+   */
+  static createWorkspaceWelcome(
+    workspaceContext: WorkspaceContext | null, 
+    options: BannerOptions & { showWorkspaceInfo?: boolean } = {}
+  ): string {
+    const config = Config.getInstance();
+    const showWorkspaceInfo = options.showWorkspaceInfo !== false && config.shouldShowWelcomeMessage();
+    
+    // Create base welcome
+    const baseWelcome = Splash.createWelcome(options);
+    
+    if (!showWorkspaceInfo || !workspaceContext || workspaceContext.projectType === 'unknown') {
+      return baseWelcome;
+    }
+    
+    // Add workspace context section
+    const workspaceInfo = Splash.createWorkspaceContext(workspaceContext);
+    const separator = theme.dim('─'.repeat(60));
+    
+    // Combine with base welcome
+    return [
+      baseWelcome,
+      '',
+      separator,
+      workspaceInfo,
+      separator,
+      '',
+      theme.dim('💡 Try: ') + theme.accent('list_current_directory') + theme.dim(' or ') + theme.accent('analyze_project_structure')
+    ].join('\n');
+  }
   
   /**
    * Create loading spinner with message using centralized spinner system
@@ -182,38 +261,53 @@ export class Splash {
   }
   
   /**
-   * Create animated startup sequence
+   * Create animated startup sequence with workspace context
    */
   static async startupSequence(options: {
     showBanner?: boolean;
     showStatus?: boolean;
+    showWorkspace?: boolean;
     mcpServers?: number;
     model?: string;
+    workspaceContext?: WorkspaceContext | null;
   } = {}): Promise<void> {
     const {
       showBanner = true,
       showStatus = true,
+      showWorkspace = true,
       mcpServers = 0,
-      model = 'Unknown'
+      model = 'Unknown',
+      workspaceContext = null
     } = options;
+    
+    const config = Config.getInstance();
     
     // Clear screen for dramatic effect
     console.clear();
     
     if (showBanner) {
-      // Show gorgeous banner
-      console.log(Splash.createWelcome({
-        gradient: 'pinkCyan',
-        subtitle: 'Your personal AI assistant/MCP tool calling agent that lives in your terminal',
-        showVersion: true,
-      }));
+      if (showWorkspace && config.shouldShowWelcomeMessage() && workspaceContext) {
+        // Show enhanced banner with workspace info
+        console.log(Splash.createWorkspaceWelcome(workspaceContext, {
+          gradient: 'pinkCyan',
+          subtitle: 'Your personal AI assistant/MCP tool calling agent that lives in your terminal',
+          showVersion: true,
+        }));
+      } else {
+        // Show standard banner
+        console.log(Splash.createWelcome({
+          gradient: 'pinkCyan',
+          subtitle: 'Your personal AI assistant/MCP tool calling agent that lives in your terminal',
+          showVersion: true,
+        }));
+      }
     }
     
     if (showStatus) {
       console.log('\n' + Splash.createSystemStatus({
         model,
         mcpServers,
-        version: '1.7.4',
+        version: '1.7.5',
         theme: 'Neon Dreams',
       }));
     }
@@ -260,14 +354,27 @@ export function createWelcomeBanner(): string {
 }
 
 /**
+ * Default welcome banner with workspace context support
+ */
+export function createWorkspaceWelcomeBanner(workspaceContext: WorkspaceContext | null): string {
+  return Splash.createWorkspaceWelcome(workspaceContext, {
+    gradient: 'pinkCyan',
+    subtitle: 'Your personal AI assistant/MCP tool calling agent that lives in your terminal',
+    showVersion: true,
+  });
+}
+
+/**
  * Quick access to common banners
  */
 export const splash = {
   welcome: createWelcomeBanner,
+  workspaceWelcome: createWorkspaceWelcomeBanner,
   rainbow: () => Splash.createWelcome({ gradient: 'rainbow' }),
   fire: () => Splash.createWelcome({ gradient: 'fire' }),
   neon: () => Splash.createWelcome({ gradient: 'bright' }),
   pinkPixel: () => Splash.createPinkPixelSplash(),
   startup: Splash.startupSequence,
   spinner: Splash.createSpinner,
+  workspaceContext: Splash.createWorkspaceContext,
 };

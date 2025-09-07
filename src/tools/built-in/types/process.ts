@@ -11,7 +11,7 @@ export const ExecuteCommandSchema = z.object({
   args: z.array(z.string()).default([])
     .describe('Array of command-line arguments to pass to the command. Each argument should be a separate array element.'),
   cwd: z.string().optional()
-    .describe('Working directory to run the command in. If not specified, uses the current working directory.'),
+    .describe('Working directory to run the command in. If not specified, uses the current working _directory.'),
   env: z.record(z.string()).optional()
     .describe('Environment variables to set for the command. These will be merged with the current environment.'),
   timeout: z.number().positive().default(30000)

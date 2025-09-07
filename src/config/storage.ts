@@ -100,6 +100,20 @@ export interface BibbleConfig {
     googleSearchEngineId?: string;
     braveApiKey?: string;
   };
+  // Workspace intelligence configuration
+  workspace?: {
+    enabled: boolean;
+    showWelcomeMessage: boolean;
+    showContextInChat: boolean;
+    autoDetectOnStartup: boolean;
+    cacheDuration: number; // milliseconds
+    contextIndicators: boolean;
+    customProjectTypes: Record<string, {
+      patterns: string[];
+      description: string;
+      icon: string;
+    }>;
+  };
 }
 
 // Default configuration
@@ -347,7 +361,17 @@ export const defaultConfig: BibbleConfig = {
       topP: 0.9,
       topK: 40
     }
-  ]
+  ],
+  // Default workspace intelligence configuration
+  workspace: {
+    enabled: true,
+    showWelcomeMessage: true,
+    showContextInChat: true,
+    autoDetectOnStartup: true,
+    cacheDuration: 300000, // 5 minutes
+    contextIndicators: true,
+    customProjectTypes: {}
+  }
 };
 
 /**

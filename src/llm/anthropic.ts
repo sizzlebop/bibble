@@ -33,10 +33,11 @@ export class AnthropicClient {
 
     public async runAgentLoop(McpClient: any, userRequest: string, model?: string) {
         const availableTools = await getAllTools();
-        let messages: ChatMessage[] = [{
+        const messages: ChatMessage[] = [{
             role: MessageRole.User,
             content: userRequest
         }];
+
 
         // Get the default model from config if not provided
         if (!model) {
@@ -52,7 +53,7 @@ export class AnthropicClient {
             }
         }
 
-        let maxIterations = 25; // Safety limit to prevent infinite loops - increased to match main agent
+        const maxIterations = 25;  // Safety limit to prevent infinite loops - increased to match main agent
         let currentIteration = 0;
 
         while (currentIteration < maxIterations) {

@@ -113,7 +113,7 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.7.5"
+        version: "1.8.0"
       });
 
       // Connect to server
@@ -229,8 +229,8 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.7.5"
-      }, transport);
+        version: "1.8.0"
+      });
 
       // Connect to server
       await mcp.connect(transport);
@@ -287,8 +287,8 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.7.5"
-      }, transport);
+        version: "1.8.0"
+      });
 
       // Connect to server
       await mcp.connect(transport);
@@ -356,8 +356,8 @@ export class McpClient {
       // Create client
       const mcp = new Client({
         name: "bibble-mcp-client",
-        version: "1.7.5"
-      }, transport);
+        version: "1.8.0"
+      });
 
       // Connect to server
       await mcp.connect(transport);
@@ -461,11 +461,14 @@ export class McpClient {
                 // Convert built-in tool result to expected format
                 let content = '';
                 if (result.success) {
-                    if (result.message) {
-                        content = result.message;
-                    } else if (result.data) {
-                        // Format the data for better readability
+                    // Prefer structured data so UI can render tables consistently
+                    if (result.data) {
                         content = this.formatBuiltInToolResult(result.data, toolName);
+                        if (result.message) {
+                            content = content + "\n\n" + result.message;
+                        }
+                    } else if (result.message) {
+                        content = result.message;
                     } else {
                         content = 'Tool executed successfully';
                     }
@@ -653,11 +656,16 @@ export class McpClient {
       result += `✅ Written: ${this.formatFileSize(data.bytesWritten)}\n`;
     }
     
+    // Show full content for reasonably small files, otherwise a preview
     if (data.content && typeof data.content === 'string') {
-      const preview = data.content.length > 200 ? 
-        data.content.substring(0, 200) + '...' : 
-        data.content;
-      result += `📝 Content preview:\n${preview}\n`;
+      const MAX_FULL_DISPLAY = 10240; // 10 KB
+      const isSmall = (data.size ?? data.content.length) <= MAX_FULL_DISPLAY;
+      if (isSmall) {
+        result += `📝 Content:\n${data.content}\n`;
+      } else {
+        const preview = data.content.substring(0, 200) + '...';
+        result += `📝 Content preview (truncated):\n${preview}\n`;
+      }
     }
     
     if (data.encoding) {

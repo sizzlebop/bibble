@@ -2,8 +2,8 @@
  * Filesystem Utility Functions
  */
 
-import { promises as fs, constants, Stats } from 'fs';
-import { resolve, dirname, basename, extname, join } from 'path';
+import { promises as fs } from 'fs';
+import { resolve, dirname, basename, join } from 'path';
 import { glob } from 'glob';
 import { isBinaryFile } from 'isbinaryfile';
 import { FileInfo, DirectoryListing } from '../types/index.js';

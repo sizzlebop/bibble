@@ -345,4 +345,119 @@ current = (current as any)[k];
     }
     this.set("security", currentConfig);
   }
+
+  /**
+   * Get workspace configuration
+   */
+  public getWorkspaceConfig(): Required<NonNullable<BibbleConfig["workspace"]>> {
+    const defaultWorkspaceConfig: Required<NonNullable<BibbleConfig["workspace"]>> = {
+      enabled: true,
+      showWelcomeMessage: true,
+      showContextInChat: true,
+      autoDetectOnStartup: true,
+      cacheDuration: 300000, // 5 minutes
+      contextIndicators: true,
+      customProjectTypes: {}
+    };
+    
+    const savedConfig = this.get("workspace", {});
+    
+    // Merge saved config with defaults to ensure all properties exist
+    return {
+      ...defaultWorkspaceConfig,
+      ...savedConfig
+    };
+  }
+
+  /**
+   * Set workspace configuration
+   * @param config Workspace configuration
+   */
+  public setWorkspaceConfig(config: Partial<NonNullable<BibbleConfig["workspace"]>>): void {
+    const currentConfig = this.getWorkspaceConfig();
+    const updatedConfig = { ...currentConfig, ...config };
+    this.set("workspace", updatedConfig);
+  }
+
+  /**
+   * Check if workspace intelligence is enabled
+   */
+  public isWorkspaceEnabled(): boolean {
+    return this.getWorkspaceConfig().enabled;
+  }
+
+  /**
+   * Enable/disable workspace intelligence
+   * @param enabled Whether workspace intelligence should be enabled
+   */
+  public setWorkspaceEnabled(enabled: boolean): void {
+    this.setWorkspaceConfig({ enabled });
+  }
+
+  /**
+   * Check if welcome message should be shown
+   */
+  public shouldShowWelcomeMessage(): boolean {
+    return this.getWorkspaceConfig()?.showWelcomeMessage ?? true;
+  }
+
+  /**
+   * Set whether to show welcome message
+   * @param show Whether to show welcome message
+   */
+  public setShowWelcomeMessage(show: boolean): void {
+    this.setWorkspaceConfig({ showWelcomeMessage: show });
+  }
+
+  /**
+   * Check if context should be shown in chat
+   */
+  public shouldShowContextInChat(): boolean {
+    return this.getWorkspaceConfig()?.showContextInChat ?? true;
+  }
+
+  /**
+   * Set whether to show context in chat
+   * @param show Whether to show context in chat
+   */
+  public setShowContextInChat(show: boolean): void {
+    this.setWorkspaceConfig({ showContextInChat: show });
+  }
+
+  /**
+   * Get workspace cache duration
+   */
+  public getWorkspaceCacheDuration(): number {
+    return this.getWorkspaceConfig().cacheDuration;
+  }
+
+  /**
+   * Set workspace cache duration
+   * @param duration Cache duration in milliseconds
+   */
+  public setWorkspaceCacheDuration(duration: number): void {
+    this.setWorkspaceConfig({ cacheDuration: duration });
+  }
+
+  /**
+   * Add a custom project type
+   * @param name Project type name
+   * @param config Project type configuration
+   */
+  public addCustomProjectType(name: string, config: { patterns: string[]; description: string; icon: string }): void {
+    const currentConfig = this.getWorkspaceConfig();
+    const updatedCustomTypes = { ...currentConfig.customProjectTypes, [name]: config };
+    this.setWorkspaceConfig({ customProjectTypes: updatedCustomTypes });
+  }
+
+  /**
+   * Remove a custom project type
+   * @param name Project type name
+   */
+  public removeCustomProjectType(name: string): void {
+    const currentConfig = this.getWorkspaceConfig();
+    const updatedCustomTypes = { ...currentConfig.customProjectTypes };
+    delete updatedCustomTypes[name];
+    this.setWorkspaceConfig({ customProjectTypes: updatedCustomTypes });
+  }
 }

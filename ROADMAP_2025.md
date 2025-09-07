@@ -1,7 +1,7 @@
 # 🚀 Bibble Development Roadmap 2025
 
 *Last Updated: September 7, 2025*  
-*Version: 1.7.1*
+*Version: 1.7.5*
 *Made with ❤️ by Pink Pixel*
 
 ## 📋 Overview

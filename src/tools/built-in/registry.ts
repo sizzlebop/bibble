@@ -47,6 +47,9 @@ import { getWeatherTool } from './weather/get-weather.js';
 // Import all news tools
 import { getHackerNewsStoriesTool, getHackerNewsStoryTool } from './news/hackernews.js';
 
+// Import all workspace tools
+import { workspaceTools } from './workspace/index.js';
+
 export class BuiltInToolRegistry {
   private tools: Map<string, BuiltInTool> = new Map();
   private initialized = false;
@@ -101,6 +104,9 @@ export class BuiltInToolRegistry {
     // News tools
     this.registerTool(getHackerNewsStoriesTool);
     this.registerTool(getHackerNewsStoryTool);
+
+    // Workspace tools
+    workspaceTools.forEach(tool => this.registerTool(tool));
   }
 
   /**
@@ -141,7 +147,7 @@ export class BuiltInToolRegistry {
   /**
    * Get tools by category
    */
-  getToolsByCategory(category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news'): BuiltInTool[] {
+  getToolsByCategory(category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news' | 'workspace'): BuiltInTool[] {
     return Array.from(this.tools.values()).filter(tool => tool.category === category);
   }
 
@@ -228,7 +234,8 @@ export class BuiltInToolRegistry {
       web: [],
       time: [],
       weather: [],
-      news: []
+      news: [],
+      workspace: []
     };
 
     for (const tool of this.tools.values()) {
@@ -254,7 +261,7 @@ export class BuiltInToolRegistry {
       throw new Error('Tool must have a valid description');
     }
 
-    if (!['filesystem', 'process', 'search', 'edit', 'web', 'time', 'weather', 'news'].includes(tool.category)) {
+    if (!['filesystem', 'process', 'search', 'edit', 'web', 'time', 'weather', 'news', 'workspace'].includes(tool.category)) {
       throw new Error('Tool must have a valid category');
     }
 
@@ -335,7 +342,8 @@ export class BuiltInToolRegistry {
       web: 0,
       time: 0,
       weather: 0,
-      news: 0
+      news: 0,
+      workspace: 0
     };
 
     for (const tool of this.tools.values()) {

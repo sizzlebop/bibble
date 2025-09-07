@@ -1,7 +1,7 @@
 // Enhanced status badges and indicators for Bibble UI ✨
 
 import { theme } from './theme.js';
-import { iconUtils, statusIcons } from './tool-icons.js';
+import { iconUtils } from './tool-icons.js';
 import { brandSymbols, symbols } from './symbols.js';
 import { gradient } from './gradient.js';
 

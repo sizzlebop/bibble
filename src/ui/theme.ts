@@ -364,6 +364,11 @@ const info = (s: string) => {
   return chalk.hex(colors.info)(s);
 };
 
+const path = (s: string) => {
+  const colors = getCurrentColors();
+  return chalk.hex(colors.accent).italic(s);
+};
+
 // Additional styled text functions
 const em = (s: string) => chalk.italic(s);
 const listitem = (s: string) => s;
@@ -406,6 +411,7 @@ const theme = {
   warning,
   error,
   info,
+  path,
   
   // Text styling
   em,
@@ -447,11 +453,11 @@ const theme = {
   resetTheme: () => ThemeManager.getInstance().resetToDefault(),
   
   // Box helper with theme-aware colors
-  box: (s: string) => {
+  box: async (s: string) => {
     try {
       const colors = getCurrentColors();
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const boxen = require('boxen');
+       
+      const { default: boxen } = await import('boxen');
       return boxen(s, { 
         padding: 1, 
         margin: 1, 

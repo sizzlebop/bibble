@@ -58,7 +58,7 @@ export const findReplaceInFileTool: BuiltInTool = {
       if (params.maxReplacements && params.maxReplacements < replacementCount) {
         replacementCount = params.maxReplacements;
         // Create a new pattern that will only replace up to the limit
-        let currentReplacements = 0;
+        const currentReplacements = 0;
         pattern = new RegExp(pattern.source, pattern.flags.replace('g', ''));
       }
 

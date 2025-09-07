@@ -14,7 +14,7 @@ export enum MessageRole {
 export interface ToolCall {
   id: string;
   name: string;
-  args: any;
+  args: Record<string, unknown>;
 }
 
 // Chat message
@@ -34,7 +34,7 @@ export type StreamChunk =
       toolCall: {
         id: string;
         name: string;
-        args: any;
+        args: Record<string, unknown>;
       }
     };
 
@@ -42,7 +42,7 @@ export type StreamChunk =
 export interface ChatCompletionParams {
   model: string;
   messages: ChatMessage[];
-  tools?: any[];
+  tools?: Array<Record<string, unknown>>;
   // Common parameters
   temperature?: number;
   maxTokens?: number;

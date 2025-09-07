@@ -2,8 +2,7 @@ import { Command } from 'commander';
 import { Config } from '../config/config.js';
 import { Terminal, Color } from '../ui/colors.js';
 import { gradient } from '../ui/gradient.js';
-import { BibbleTable } from '../ui/tables.js';
-import { classifyToolRisk, getRiskEmoji } from '../security/ToolClassifier.js';
+
 
 const terminal = new Terminal();
 const config = Config.getInstance();

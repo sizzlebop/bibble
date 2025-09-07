@@ -732,7 +732,7 @@ export class EnhancedResearchAgent extends EventEmitter implements ResearchAgent
     }
 
     let relevantContent = '';
-    let sources: string[] = [];
+    const sources: string[] = [];
 
     // First, add extracted content (highest quality)
     const extractedContent = session.extractedContent

@@ -2,7 +2,7 @@
  * Process Management Utilities
  */
 
-import { spawn, exec, ChildProcess } from 'child_process';
+import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
 import { getConfigManager } from '../config/manager.js';
 import { isCommandSafe, validateCommandArgs, checkRateLimit } from './security.js';

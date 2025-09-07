@@ -4,9 +4,7 @@
 import Table from 'cli-table3';
 import { theme } from './theme.js';
 import { s, brandSymbols } from './symbols.js';
-import { BRAND_COLORS } from './colors.js';
-import { Style } from 'cli-highlight';
-import Chalk from 'chalk';
+
 
 /**,
  * Table styling presets for different data types

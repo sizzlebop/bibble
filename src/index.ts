@@ -15,7 +15,7 @@ import { isSetupNeeded, runSetupWizard } from "./config/setup.js";
 import { Agent } from "./mcp/agent.js";
 
 // Import our gorgeous theme system
-import { Terminal, Color, terminal } from "./ui/colors.js";
+import { Color, terminal } from "./ui/colors.js";
 import { splash } from "./ui/splash.js";
 
 // Export built-in tools for external access
@@ -34,7 +34,7 @@ const program = new Command();
 program
   .name("bibble")
   .description("CLI chatbot with MCP support")
-  .version("1.7.5");
+  .version("1.8.0");
 
 // Initialize configuration
 ensureConfigDirExists();

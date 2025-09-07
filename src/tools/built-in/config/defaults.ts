@@ -88,6 +88,20 @@ export const DEFAULT_CONFIG: BuiltInToolsConfig = {
     requestTimeoutMs: 120000,
     rateLimitPerMinute: 15,
     enableContentExtraction: true
+  },
+  weather: {
+    requestTimeoutMs: 30000,
+    rateLimitPerHour: 60,
+    cacheResultsMinutes: 60,
+    units: 'metric' as const,
+    defaultCity: 'New York'
+  },
+  news: {
+    requestTimeoutMs: 30000,
+    rateLimitPerMinute: 30,
+    maxStories: 10,
+    storyTypes: ['top', 'new', 'best', 'ask', 'show', 'job'] as const,
+    cacheResultsMinutes: 60
   }
 };
 

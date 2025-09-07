@@ -1,11 +1,9 @@
 import { Command } from 'commander';
 import inquirer from "inquirer";
 import { Config } from "../config/config.js";
-import { terminal, Color } from "../ui/colors.js";
-import { BibbleConfig } from "../config/storage.js";
+import { terminal } from "../ui/colors.js";
 import { tables, BibbleTable } from "../ui/tables.js";
 import { t } from "../ui/theme.js";
-import { spinners } from "../ui/spinners.js";
 import { brandSymbols } from "../ui/symbols.js";
 import { iconUtils, statusIcons } from "../ui/tool-icons.js";
 import { addThemeToConfigCommand } from "./theme.js";

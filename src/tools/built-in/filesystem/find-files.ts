@@ -13,7 +13,7 @@ export const findFilesTool: BuiltInTool = {
   category: 'filesystem',
   parameters: FindFilesSchema,
   execute: withErrorHandling(async (params: FindFilesParams): Promise<any> => {
-    const results = await findFiles(params.directory, params.pattern, {
+    const results = await findFiles(params._directory, params.pattern, {
       recursive: params.recursive,
       caseSensitive: params.caseSensitive,
       includeHidden: params.includeHidden,
@@ -21,7 +21,7 @@ export const findFilesTool: BuiltInTool = {
     });
     
     return {
-      searchDirectory: params.directory,
+      searchDirectory: params._directory,
       pattern: params.pattern,
       matches: results.map(file => ({
         name: file.name,

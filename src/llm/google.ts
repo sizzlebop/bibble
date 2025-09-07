@@ -202,7 +202,7 @@ export class GoogleClient {
             // Generate streaming content
             const result = await model.generateContentStream(requestConfig);
 
-            let currentToolCall: {
+            const currentToolCall: {
                 id: string;
                 name: string;
                 args: any;
@@ -225,7 +225,7 @@ export class GoogleClient {
                         const toolCall = {
                             id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
                             name: part.functionCall.name,
-                            args: part.functionCall.args || {}
+                            args: (part.functionCall.args || {}) as Record<string, unknown>
                         };
 
                         yield {

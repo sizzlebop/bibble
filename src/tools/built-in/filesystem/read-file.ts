@@ -2,10 +2,10 @@
  * Read File Tool
  */
 
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool } from '../types/index.js';
 import { ReadFileSchema, ReadFileParams } from '../types/filesystem.js';
 import { safeReadFile } from '../utilities/filesystem.js';
-import { createSuccessResult, createErrorResult, withErrorHandling } from '../utilities/common.js';
+import { withErrorHandling } from '../utilities/common.js';
 
 export const readFileTool: BuiltInTool = {
   name: 'read_file',

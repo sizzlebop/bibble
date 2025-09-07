@@ -9,6 +9,7 @@ import { isSecurityError } from "../security/SecurityError.js";
 import { toolDisplay } from "../ui/tool-display.js";
 import { getBuiltInToolRegistry } from "../tools/built-in/index.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { WorkspaceManager, WorkspaceContext } from "../workspace/index.js";
 
 // Default system prompt - non-configurable
 export const DEFAULT_SYSTEM_PROMPT = `
@@ -191,7 +192,9 @@ export class Agent extends McpClient {
   private messages: ChatMessage[] = [];
   private model: string;
   private compactToolsMode: boolean;
-    private exitLoopTools = [taskCompletionTool, askQuestionTool];
+  private exitLoopTools = [taskCompletionTool, askQuestionTool];
+  private workspaceManager: WorkspaceManager;
+  private workspaceContext: WorkspaceContext | null = null;
 
    async listTools(client: Client): Promise<void> {
      try {
@@ -206,6 +209,110 @@ export class Agent extends McpClient {
          // Removed error logging to reduce terminal clutter
      }
  }
+
+  /**
+   * Generate workspace context information for the system prompt
+   * @returns Formatted workspace context as a string
+   */
+  private generateWorkspaceContextPrompt(): string {
+    if (!this.workspaceContext) {
+      return "# Workspace Context\n\nNo workspace context detected. You are working in a general directory without specific project structure recognition.\n";
+    }
+
+    const context = this.workspaceContext;
+    let prompt = "# 🗂️ Workspace Context\n\n";
+    prompt += `You are currently working in a **${context.projectType.toUpperCase()}** project.\n\n`;
+    
+    // Basic project information
+    prompt += "## Project Information\n";
+    if (context.projectName) {
+      prompt += `- **Name**: ${context.projectName}\n`;
+    }
+    if (context.version) {
+      prompt += `- **Version**: ${context.version}\n`;
+    }
+    prompt += `- **Directory**: \`${context.currentDirectory}\`\n`;
+    if (context.packageManager && context.packageManager !== 'none') {
+      prompt += `- **Package Manager**: ${context.packageManager}\n`;
+    }
+    if (context.gitRepository) {
+      prompt += `- **Git Repository**: Yes ✅\n`;
+    }
+    prompt += `- **Detection Confidence**: ${context.confidence}%\n\n`;
+
+    // Project features
+    if (context.features.length > 0) {
+      prompt += "## Detected Features\n";
+      const featuresByType = new Map<string, string[]>();
+      
+      for (const feature of context.features) {
+        if (!featuresByType.has(feature.type)) {
+          featuresByType.set(feature.type, []);
+        }
+        featuresByType.get(feature.type)?.push(`${feature.name} (${feature.confidence}%)`);
+      }
+      
+      for (const [type, features] of featuresByType.entries()) {
+        const icon = type === 'framework' ? '🏗️' : type === 'library' ? '📚' : type === 'tooling' ? '🔧' : 
+                    type === 'testing' ? '🧪' : type === 'deployment' ? '🚀' : '📦';
+        prompt += `- **${icon} ${type.charAt(0).toUpperCase() + type.slice(1)}**: ${features.join(', ')}\n`;
+      }
+      prompt += "\n";
+    }
+
+    // Important files
+    const allImportantFiles = [...context.mainFiles, ...context.configFiles];
+    if (allImportantFiles.length > 0) {
+      prompt += "## Key Files\n";
+      if (context.mainFiles.length > 0) {
+        prompt += `- **Main Files**: ${context.mainFiles.map(f => `\`${f}\``).join(', ')}\n`;
+      }
+      if (context.configFiles.length > 0) {
+        prompt += `- **Config Files**: ${context.configFiles.map(f => `\`${f}\``).join(', ')}\n`;
+      }
+      prompt += "\n";
+    }
+
+    // Available scripts (for Node.js projects)
+    if (context.scripts && Object.keys(context.scripts).length > 0) {
+      prompt += "## Available Scripts\n";
+      const scriptEntries = Object.entries(context.scripts).slice(0, 8); // Limit to 8 most relevant
+      for (const [name, command] of scriptEntries) {
+        prompt += `- \`npm run ${name}\`: ${command}\n`;
+      }
+      if (Object.keys(context.scripts).length > 8) {
+        prompt += `- ... and ${Object.keys(context.scripts).length - 8} more scripts\n`;
+      }
+      prompt += "\n";
+    }
+
+    // Context-aware suggestions
+    const suggestions = this.workspaceManager.getContextSuggestions(context);
+    if (suggestions.length > 0) {
+      prompt += "## 💡 Context-Aware Assistance\n";
+      prompt += "Based on the detected project structure, you can provide intelligent assistance with:\n";
+      for (const suggestion of suggestions.slice(0, 6)) { // Limit to 6 suggestions
+        prompt += `- ${suggestion}\n`;
+      }
+      prompt += "\n";
+    }
+
+    // Relative path guidance
+    prompt += "## 🎯 Path Operations\n";
+    prompt += `When working with files in this project, you can use relative paths from the current directory: \`${context.currentDirectory}\`\n`;
+    prompt += "For example:\n";
+    if (context.mainFiles.length > 0) {
+      prompt += `- To read the main file: \`read_file\` with path \`${context.mainFiles[0]}\`\n`;
+    }
+    if (context.configFiles.length > 0) {
+      prompt += `- To read config: \`read_file\` with path \`${context.configFiles[0]}\`\n`;
+    }
+    prompt += "- To list project files: \`list_directory\` with path \`.\` (current directory)\n\n";
+
+    prompt += "**Remember**: Use this project context to provide more relevant and helpful assistance!\n";
+    
+    return prompt;
+  }
 
   /**
    * Generate a formatted list of available tools for the system prompt
@@ -481,6 +588,9 @@ export class Agent extends McpClient {
     // Initialize LLM client
     this.llmClient = new LlmClient();
 
+    // Initialize workspace manager
+    this.workspaceManager = WorkspaceManager.getInstance();
+
     // Set model
     this.model = options.model || this.configInstance.getDefaultModel();
     
@@ -512,9 +622,18 @@ export class Agent extends McpClient {
   async initialize(): Promise<void> {
     await this.loadTools();
 
-    // Now that tools are loaded, update the system prompt with tools list
+    // Detect workspace context
+    try {
+      this.workspaceContext = await this.workspaceManager.detectWorkspace();
+    } catch (error) {
+      console.warn('⚠️ Failed to detect workspace context:', error);
+      this.workspaceContext = null;
+    }
+
+    // Now that tools are loaded, update the system prompt with tools list and workspace context
     const toolsList = this.generateToolsList();
-    const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${toolsList}`;
+    const workspacePrompt = this.generateWorkspaceContextPrompt();
+    const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${workspacePrompt}\n\n${toolsList}`;
     
     // Update the first system message with the complete prompt including tools
     this.messages[0] = {
@@ -863,5 +982,42 @@ export class Agent extends McpClient {
    */
   setModel(model: string): void {
     this.model = model;
+  }
+
+  /**
+   * Get current workspace context
+   */
+  getWorkspaceContext(): WorkspaceContext | null {
+    return this.workspaceContext;
+  }
+
+  /**
+   * Refresh workspace context (useful when directory changes)
+   */
+  async refreshWorkspaceContext(): Promise<void> {
+    try {
+      this.workspaceContext = await this.workspaceManager.detectWorkspace();
+      
+      // Update system prompt with new context
+      const toolsList = this.generateToolsList();
+      const workspacePrompt = this.generateWorkspaceContextPrompt();
+      const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${workspacePrompt}\n\n${toolsList}`;
+      
+      // Update the first system message
+      this.messages[0] = {
+        role: MessageRole.System,
+        content: systemPrompt,
+      };
+    } catch (error) {
+      console.warn('⚠️ Failed to refresh workspace context:', error);
+      this.workspaceContext = null;
+    }
+  }
+
+  /**
+   * Check if current context supports relative paths
+   */
+  canUseRelativePaths(): boolean {
+    return this.workspaceContext !== null && this.workspaceContext.confidence > 50;
   }
 }

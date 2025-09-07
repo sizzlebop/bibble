@@ -57,7 +57,7 @@ export function setupHistoryCommand(program: Command): Command {
       console.log();
       
       // Display messages
-      history.messages.forEach((message) => {
+      history.messages.forEach((message: any) => {
         switch (message.role) {
           case "system":
             console.log(terminal.system(`System: ${message.content}`));

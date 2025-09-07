@@ -8,7 +8,7 @@
 import { Command } from 'commander';
 import { helpSystem } from '../ui/help.js';
 import { promptUI } from '../ui/prompts.js';
-import { theme } from '../ui/theme.js';
+
 
 export function createHelpCommand(): Command {
   const helpCmd = new Command('help');

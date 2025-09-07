@@ -1,7 +1,7 @@
 import inquirer from 'inquirer';
 import { Terminal, Color } from '../ui/colors.js';
 import { gradient } from '../ui/gradient.js';
-import { BibbleTable } from '../ui/tables.js';
+
 import { classifyToolRisk, getRiskEmoji, getRiskDescription } from './ToolClassifier.js';
 import { highlight } from 'cli-highlight';
 

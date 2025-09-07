@@ -6,7 +6,7 @@
  */
 
 import inquirer from 'inquirer';
-import chalk from 'chalk';
+
 import { theme } from './theme.js';
 import { gradient } from './gradient.js';
 import { symbols } from './symbols.js';

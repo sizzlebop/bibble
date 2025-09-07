@@ -103,7 +103,7 @@ export const toolCategories = {
   // Weather information
   weather: {
     icon: '🌤️',
-    fallback: symbols.circleDotted,
+    fallback: symbols.circle,
     color: theme.info,
     tools: ['get-weather']
   },
