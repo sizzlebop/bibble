@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.8.0
+**Version**: 1.8.1
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble  
-*Last updated: September 7, 2025 - 16:04 UTC*
+*Last updated: September 8, 2025 - 04:35 UTC*
 
 **🏆 GitHub Hackathon Contender** - Strong candidate for GitHub hackathon submission (deadline: September 22, 2025)
 
@@ -859,6 +859,39 @@ Version 1.3.8 represented a **MAJOR VISUAL TRANSFORMATION** that converted Bibbl
 - **Visual Impact**: Complete transformation from plain terminal output to stunning Pink Pixel branded experience
 
 ## Recent Development & Research
+
+### Workspace Tools Formatting Fixes (v1.8.1) - September 8, 2025
+
+Version 1.8.1 delivers **CRITICAL BUG FIXES** for the workspace intelligence tools, resolving formatting issues that were causing poor display quality compared to other built-in tools.
+
+**🐛 Critical Issues Resolved:**
+- **Workspace Tool Display**: Fixed messy, unreadable output from all four workspace tools
+- **Category Mismatch**: Corrected tools using wrong `'filesystem'` category instead of `'workspace'`
+- **Missing UI Integration**: Added proper imports for Pink Pixel theming components
+- **Raw Data Output**: Replaced unformatted structured data with beautiful themed text
+
+**🎨 Technical Improvements:**
+- **Type System**: Added `'workspace'` as valid tool category in core type definitions
+- **UI Component Integration**: 
+  - Added `BibbleTable` for structured data display
+  - Imported `theme` for consistent Pink Pixel coloring
+  - Integrated `brandSymbols` for professional iconography
+- **Output Formatting**: Complete rewrite of return logic for all workspace tools
+  - `list_current_directory`: Beautiful categorized directory listings with icons
+  - `analyze_project_structure`: Clean project analysis with themed headers and sections
+  - `find_project_files`: Elegant search results with priority indicators and grouping
+  - `suggest_project_improvements`: Well-organized suggestions with priority-based color coding
+
+**✨ Enhanced User Experience:**
+- **Visual Consistency**: Workspace tools now match the enhanced tool display system perfectly
+- **Professional Quality**: Clean, readable formatting consistent with all other built-in tools
+- **Pink Pixel Branding**: Full integration with signature theming and visual hierarchy
+- **Cross-Platform Compatibility**: Beautiful formatting maintained across all terminal environments
+
+**🚀 Impact:**
+- **Before**: Messy tables, broken formatting, inconsistent display quality
+- **After**: Professional, beautifully themed output matching Bibble's high visual standards
+- **Result**: Seamless workspace intelligence experience with signature Pink Pixel polish
 
 ### Google Gemini Integration (v1.3.6) - May 24, 2025
 

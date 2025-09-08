@@ -2,6 +2,45 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.8.1] - 2025-09-08
+
+### 🔧 WORKSPACE TOOLS FORMATTING FIXES
+
+Fixed critical formatting issues with the new workspace tools that were causing messy, poorly formatted output compared to other built-in tools.
+
+#### **🐛 Bug Fixes**
+
+- **Fixed Workspace Tool Display**: Resolved messy output formatting in workspace tools
+  - `list_current_directory`: Now displays beautifully formatted directory listings with proper categorization
+  - `analyze_project_structure`: Clean, structured project analysis with themed colors and icons
+  - `find_project_files`: Elegant file search results with proper grouping and formatting
+  - `suggest_project_improvements`: Well-organized improvement suggestions with priority grouping
+
+#### **🎨 Technical Improvements**
+
+- **Category System**: Added `'workspace'` as valid tool category in type definitions
+- **UI Integration**: Added proper imports for UI components (BibbleTable, theme, symbols)
+- **Consistent Formatting**: Rewrote output logic to use Pink Pixel theming system
+  - Beautiful headers with `theme.title()` and `theme.subtitle()`
+  - Consistent color coding with `theme.accent()`, `theme.cyan()`, `theme.dim()`
+  - Proper icon usage with `brandSymbols.folder`, `brandSymbols.bullet`, etc.
+  - Structured text output replacing raw data dumps
+
+#### **✨ Enhanced User Experience**
+
+- **Visual Consistency**: Workspace tools now match the enhanced tool display system
+- **Professional Output**: Clean, readable formatting consistent with all other built-in tools
+- **Pink Pixel Branding**: Full integration with the signature Pink Pixel theming
+- **Cross-Platform**: Maintains beautiful formatting across all terminal environments
+
+#### **🔧 Version Updates**
+
+- Updated version references across codebase: `package.json`, `src/index.ts`, `src/mcp/client.ts`, `src/ui/splash.ts`
+- Successful build verification with no compilation errors
+- Maintained backward compatibility with existing functionality
+
+---
+
 ## [1.8.0] - 2025-09-07
 
 ### 🧠 PHASE 6: CONTEXT-AWARE DIRECTORY INTELLIGENCE - REVOLUTIONARY WORKSPACE FEATURES
