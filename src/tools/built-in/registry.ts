@@ -4,9 +4,8 @@
  * Central registry for all built-in tools with discovery, validation, and execution capabilities
  */
 
-import { BuiltInTool, ToolResult } from './types/index.js';
+import { BuiltInTool } from '../../ui/tool-display.js';
 import { checkRateLimit } from './utilities/security.js';
-import { createErrorResult } from './utilities/common.js';
 
 // Import all filesystem tools
 import { readFileTool } from './filesystem/read-file.js';
@@ -168,16 +167,16 @@ export class BuiltInToolRegistry {
   /**
    * Execute a tool with parameters
    */
-  async executeTool(name: string, parameters: any): Promise<ToolResult> {
+  async executeTool(name: string, parameters: any): Promise<any> {
     const tool = this.tools.get(name);
     
     if (!tool) {
-      return createErrorResult(`Tool '${name}' not found`);
+      return { success: false, error: `Tool '${name}' not found` };
     }
 
     // Rate limiting check
     if (!checkRateLimit(`tool:${name}`, 50, 60000)) {
-      return createErrorResult(`Rate limit exceeded for tool '${name}'`);
+      return { success: false, error: `Rate limit exceeded for tool '${name}'` };
     }
 
     try {
@@ -189,7 +188,7 @@ export class BuiltInToolRegistry {
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      return createErrorResult(`Tool '${name}' execution failed: ${errorMessage}`);
+      return { success: false, error: `Tool '${name}' execution failed: ${errorMessage}` };
     }
   }
 
@@ -347,7 +346,9 @@ export class BuiltInToolRegistry {
     };
 
     for (const tool of this.tools.values()) {
-      byCategory[tool.category]++;
+      if (tool.category in byCategory) {
+        (byCategory as any)[tool.category]++;
+      }
     }
 
     return {

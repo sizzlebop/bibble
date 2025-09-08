@@ -2,7 +2,7 @@
  * Write File Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { WriteFileSchema, WriteFileParams } from '../types/filesystem.js';
 import { safeWriteFile } from '../utilities/filesystem.js';
 import { withErrorHandling } from '../utilities/common.js';

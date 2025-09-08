@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { 
   WebSearchConfigSchema, 
   WebSearchConfig,
@@ -29,15 +29,9 @@ function getResearchAgent(): EnhancedResearchAgent {
 /**
  * Execute web search function implementation
  */
-async function executeWebSearch(params: WebSearchConfig): Promise<ToolResult> {
+async function executeWebSearch(params: WebSearchConfig): Promise<any> {
   try {
-    console.log(`[WEB_SEARCH] Starting search for: "${params.query}"`);
-    console.log(`[WEB_SEARCH] Configuration:`, {
-      maxSearches: params.maxSearches,
-      maxResultsPerSearch: params.maxResultsPerSearch,
-      extractContent: params.extractContent,
-      searchType: params.searchType
-    });
+    // Starting web search
 
     const researchAgent = getResearchAgent();
     const searchEngineConfig = getSearchEngineConfig();
@@ -126,10 +120,7 @@ ${context.sources.slice(0, 12).map((source, i) => `${i + 1}. ${source}`).join('\
 
 Search completed at ${new Date().toISOString()}`;
 
-    console.log(`[WEB_SEARCH] Search completed successfully`);
-    console.log(`[WEB_SEARCH] Session: ${session.id}, Status: ${session.status}`);
-    console.log(`[WEB_SEARCH] Results: ${session.totalResults}, Extracted: ${session.extractedContent?.length || 0}`);
-    console.log(`[WEB_SEARCH] Context length: ${searchSummary.length} characters`);
+    // Search completed successfully
 
     return {
       success: true,
@@ -149,7 +140,7 @@ Search completed at ${new Date().toISOString()}`;
     };
 
   } catch (error) {
-    console.error(`[WEB_SEARCH] Search failed:`, error);
+    // Search failed
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     
     return {
@@ -171,7 +162,7 @@ export const webSearchTool: BuiltInTool = {
   description: 'Search the web for comprehensive information on any topic. Supports general research, technical troubleshooting (Windows/Linux), people/biography searches, and more. Automatically extracts content from relevant pages and provides detailed context.',
   category: 'web',
   parameters: WebSearchConfigSchema,
-  async execute(params: WebSearchConfig): Promise<ToolResult> {
+  async execute(params: WebSearchConfig): Promise<any> {
     return await executeWebSearch(params);
   }
 };
@@ -188,7 +179,7 @@ export const quickWebSearchTool: BuiltInTool = {
     numResults: z.number().min(1).max(20).default(5),
     preferredEngine: z.enum(['duckduckgo', 'bing', 'google', 'brave']).optional()
   }).strict(),
-  async execute(params: { query: string; numResults?: number; preferredEngine?: 'duckduckgo' | 'bing' | 'google' | 'brave' }): Promise<ToolResult> {
+  async execute(params: { query: string; numResults?: number; preferredEngine?: 'duckduckgo' | 'bing' | 'google' | 'brave' }): Promise<any> {
     try {
       const searchEngineConfig = getSearchEngineConfig();
       const results = await searchMultipleEngines(
@@ -251,7 +242,7 @@ export const researchStatusTool: BuiltInTool = {
     sessionId: z.string().optional(),
     getMostRecent: z.boolean().default(false)
   }).strict(),
-  async execute(params: { sessionId?: string; getMostRecent?: boolean }): Promise<ToolResult> {
+  async execute(params: { sessionId?: string; getMostRecent?: boolean }): Promise<any> {
     try {
       const researchAgent = getResearchAgent();
       

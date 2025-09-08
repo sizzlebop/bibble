@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { Config } from '../../../config/config.js';
 
 /**
@@ -116,7 +116,7 @@ function formatDateTimeWithTimezone(date: Date, timezone: string): { dateTime: s
 /**
  * Execute get current datetime function
  */
-async function executeGetCurrentDateTime(params: { timezone?: string }): Promise<ToolResult> {
+async function executeGetCurrentDateTime(params: { timezone?: string }): Promise<any> {
   try {
     const requestedTimezone = params.timezone;
     let timezone: string;
@@ -201,7 +201,7 @@ export const getCurrentDateTimeTool: BuiltInTool = {
   parameters: z.object({
     timezone: z.string().optional().describe('Optional timezone identifier (e.g., \'America/New_York\', \'Europe/London\', \'Asia/Tokyo\'). If not provided, uses the server\'s default timezone or UTC.')
   }).strict(),
-  async execute(params: { timezone?: string }): Promise<ToolResult> {
+  async execute(params: { timezone?: string }): Promise<any> {
     return await executeGetCurrentDateTime(params);
   }
 };

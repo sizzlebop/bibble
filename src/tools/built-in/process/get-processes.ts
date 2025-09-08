@@ -2,7 +2,7 @@
  * Get Processes Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { GetRunningProcessesSchema, GetRunningProcessesParams } from '../types/process.js';
 import { getRunningProcesses } from '../utilities/process.js';
 import { withErrorHandling } from '../utilities/common.js';

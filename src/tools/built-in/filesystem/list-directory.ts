@@ -2,7 +2,7 @@
  * List Directory Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { ListDirectorySchema, ListDirectoryParams } from '../types/filesystem.js';
 import { listDirectory } from '../utilities/filesystem.js';
 import { withErrorHandling } from '../utilities/common.js';

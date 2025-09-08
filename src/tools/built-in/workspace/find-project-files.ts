@@ -3,12 +3,17 @@
  */
 
 import { z } from 'zod';
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool, EnhancedToolDisplay } from '../../../ui/tool-display.js';
 import { WorkspaceManager } from '../../../workspace/index.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { glob } from 'glob';
 
+// Import UI components for proper formatting
+import { theme } from '../../../ui/theme.js';
+import { sanitizeForTerminal, hardWrap } from '../utilities/text.js';
+
+// Schema for tool parameters
 const FindProjectFilesSchema = z.object({
   query: z.string().describe('Search query - file name, extension, or pattern'),
   type: z.enum(['source', 'config', 'documentation', 'test', 'build', 'all'])
@@ -135,14 +140,12 @@ function createSearchPatterns(query: string, type: string, includeHidden: boolea
 const findProjectFilesTool: BuiltInTool = {
   name: 'find_project_files',
   description: 'Intelligently discover files in the project with context-aware categorization and search',
-  category: 'filesystem',
+  category: 'workspace',
   parameters: FindProjectFilesSchema,
   
-  async execute(params: FindProjectFilesParams): Promise<ToolResult> {
+  async execute(params: FindProjectFilesParams): Promise<any> {
     try {
-      const workspaceManager = WorkspaceManager.getInstance();
-      const workspaceContext = await workspaceManager.detectWorkspace();
-      
+      const workspaceContext = { projectType: 'nodejs' }; // Default context
       const cwd = process.cwd();
       const searchPatterns = createSearchPatterns(params.query, params.type, params.includeHidden);
       
@@ -168,9 +171,10 @@ const findProjectFilesTool: BuiltInTool = {
       allMatches = [...new Set(allMatches)].sort();
       
       if (allMatches.length === 0) {
+        const message = theme.warn(`🔍 No files found matching "${params.query}" ${params.type !== 'all' ? `in ${params.type} files` : ''}.`);
         return {
-          success: true,
-          message: `🔍 No files found matching "${params.query}" ${params.type !== 'all' ? `in ${params.type} files` : ''}.`
+          success: false,
+          message
         };
       }
       
@@ -206,7 +210,15 @@ const findProjectFilesTool: BuiltInTool = {
         return a.relativePath.localeCompare(b.relativePath);
       });
       
-      // Group by category (for potential grouping in UI; we still return structured data)
+      // Format output with proper UI components and terminal handling
+      let output = '';
+      
+      // Header
+      output += theme.heading(`🔍 File Search Results`) + '\n';
+      output += theme.subheading(`Query: "${params.query}"${params.type !== 'all' ? ` • Type: ${params.type}` : ''}`) + '\n';
+      output += theme.dim(`Found ${fileMatches.length} files${allMatches.length > params.maxResults ? ` (showing first ${params.maxResults})` : ''}`) + '\n\n';
+      
+      // Group by category and display
       const groupedFiles = new Map<string, FileMatch[]>();
       for (const file of fileMatches) {
         if (!groupedFiles.has(file.category)) {
@@ -214,20 +226,30 @@ const findProjectFilesTool: BuiltInTool = {
         }
         groupedFiles.get(file.category)?.push(file);
       }
-      // Build concise message only; UI will render data in tables
-      const header = `🔍 Query: "${params.query}" • Found: ${fileMatches.length}` +
-        (allMatches.length > params.maxResults ? ` (showing first ${params.maxResults})` : '') +
-        (params.type !== 'all' ? ` • Type: ${params.type}` : '');
-
+      
+      // Display each category
+      for (const [category, files] of groupedFiles) {
+        output += theme.accent(`${category.charAt(0).toUpperCase() + category.slice(1)} Files:`) + '\n';
+        
+        files.forEach(file => {
+          const size = file.size > 1024 ? `${(file.size / 1024).toFixed(1)}KB` : `${file.size}B`;
+          const importance = file.importance === 'high' ? theme.ok('★') : 
+                           file.importance === 'medium' ? theme.warn('☆') : theme.dim('·');
+          
+          output += `  ${file.icon} ${importance} ${theme.path(file.relativePath)} ${theme.dim(`(${size})`)}\n`;
+        });
+        
+        output += '\n';
+      }
+      
+      // Sanitize and wrap output for better terminal display
+      const sanitizedOutput = sanitizeForTerminal(output);
+      const wrappedOutput = hardWrap(sanitizedOutput, process.stdout.columns || 100);
+      
       return {
         success: true,
-        data: {
-          files: fileMatches,
-          query: params.query,
-          type: params.type,
-          totalFound: allMatches.length
-        },
-        message: header
+        data: wrappedOutput,
+        message: `Found ${fileMatches.length} files matching "${params.query}"`
       };
       
     } catch (error) {
@@ -239,4 +261,5 @@ const findProjectFilesTool: BuiltInTool = {
   }
 };
 
+// Export the tool for use in the application
 export { findProjectFilesTool };

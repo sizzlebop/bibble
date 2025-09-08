@@ -1,5 +1,6 @@
 // gradient.ts — gradient helpers built on gradient-string
 import gradientString from 'gradient-string';
+import { ensureAnsiCompatibility } from '../tools/built-in/utilities/text.js';
 
 // Define colors directly to avoid circular dependencies
 const BRAND_COLORS = {
@@ -12,11 +13,12 @@ const BRAND_COLORS = {
 } as const;
 
 /**
- * Utility function to wrap gradient functions for multiline support
+ * Utility function to wrap gradient functions for multiline support with ANSI compatibility
  */
 export function wrapMultiline(gradientFn: (text: string) => string) {
   return (text: string): string => {
-    return text.split('\n').map(line => gradientFn(line)).join('\n');
+    const result = text.split('\n').map(line => gradientFn(line)).join('\n');
+    return ensureAnsiCompatibility(result);
   };
 }
 // Define our gradient presets

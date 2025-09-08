@@ -2,7 +2,7 @@
  * Kill Process Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { KillProcessSchema, KillProcessParams } from '../types/process.js';
 import { killProcess } from '../utilities/process.js';
 import { withErrorHandling } from '../utilities/common.js';

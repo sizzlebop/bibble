@@ -2,7 +2,7 @@
  * Copy File Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { CopyFileSchema, CopyFileParams } from '../types/filesystem.js';
 import { copyPath } from '../utilities/filesystem.js';
 import { withErrorHandling } from '../utilities/common.js';

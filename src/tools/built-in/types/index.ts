@@ -4,23 +4,6 @@
 
 import { z } from 'zod';
 
-// Base tool interface
-export interface BuiltInTool {
-  name: string;
-  description: string;
-  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news';
-  parameters: z.ZodSchema;
-  execute: (params: any) => Promise<ToolResult>;
-}
-
-// Tool result interface
-export interface ToolResult {
-  success: boolean;
-  data?: any;
-  error?: string;
-  message?: string;
-}
-
 // File system types
 export interface FileInfo {
   path: string;
@@ -149,6 +132,14 @@ export interface BuiltInToolsConfig {
     requestTimeoutMs: number;
     rateLimitPerMinute: number;
     cacheResultsMinutes: number;
+  };
+  workspace: {
+    defaultDirectory: string;
+    maxFiles: number;
+    maxFileSize: number;
+    allowedExtensions: string[];
+    blockedPaths: string[];
+    defaultEncoding: string;
   };
 }
 

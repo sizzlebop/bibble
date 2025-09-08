@@ -2,12 +2,12 @@
  * Common Utility Functions
  */
 
-import { ToolResult } from '../types/index.js';
+import { EnhancedToolDisplay } from '../../../ui/tool-display.js';
 
 /**
  * Create a successful tool result
  */
-export function createSuccessResult(data?: any, message?: string): ToolResult {
+export function createSuccessResult(data?: any, message?: string): any {
   return {
     success: true,
     data,
@@ -18,7 +18,7 @@ export function createSuccessResult(data?: any, message?: string): ToolResult {
 /**
  * Create a failed tool result
  */
-export function createErrorResult(error: string, data?: any): ToolResult {
+export function createErrorResult(error: string, data?: any): any {
   return {
     success: false,
     error,
@@ -31,8 +31,8 @@ export function createErrorResult(error: string, data?: any): ToolResult {
  */
 export function withErrorHandling<T extends any[], R>(
   fn: (...args: T) => Promise<R>
-): (...args: T) => Promise<ToolResult> {
-  return async (...args: T): Promise<ToolResult> => {
+): (...args: T) => Promise<any> {
+  return async (...args: T): Promise<any> => {
     try {
       const result = await fn(...args);
       return createSuccessResult(result);

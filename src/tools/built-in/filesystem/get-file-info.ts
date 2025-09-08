@@ -2,7 +2,7 @@
  * Get File Info Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { GetFileInfoSchema, GetFileInfoParams } from '../types/filesystem.js';
 import { getFileInfo } from '../utilities/filesystem.js';
 import { withErrorHandling } from '../utilities/common.js';

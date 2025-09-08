@@ -10,6 +10,22 @@ import cliTruncate from 'cli-truncate';
 import { theme } from './theme.js';
 import { chatSymbols, s } from './symbols.js';
 import { BibbleTable } from './tables.js';
+import { z } from 'zod';
+
+// Base tool interface
+export interface BuiltInTool {
+  name: string;
+  description: string;
+  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news' | 'workspace';
+  parameters: z.ZodSchema; // Schema for parameters
+  execute: (params: any) => Promise<EnhancedToolDisplay>;
+}
+
+export class ZodSchema {
+  static parse: any;
+}
+
+// Tool execution status and tracking
 
 export type ToolStatus = 'running' | 'success' | 'error' | 'cancelled';
 
@@ -43,6 +59,13 @@ export class EnhancedToolDisplay {
     enableInteractive: true,
   };
 
+  EnhancedToolDisplay = z.object({
+  success: z.boolean().describe('Indicates if the tool executed successfully'),
+  data: z.string().optional().describe('The main output data from the tool'),
+  message: z.string().optional().describe('A human-readable message or summary'),
+  error: z.string().optional().describe('Error message if execution failed')
+  }).describe('Enhanced tool execution result with rich output support');
+  
   /**
    * Display a completed tool call (for backward compatibility)
    * @param toolMessage The tool message to display
@@ -110,9 +133,10 @@ export class EnhancedToolDisplay {
     const line = '─'.repeat(width);
     console.log('\n' + boxen(theme.pinkPixel(line), { padding: 0, borderStyle: 'single', borderColor: 'cyan' }) + '\n');
 
-    if (opts.enableInteractive && process.stdin.isTTY) {
-      console.log(this.createInteractiveHints());
-    }
+    // Tips disabled - they were annoying
+    // if (opts.enableInteractive && process.stdin.isTTY) {
+    //   console.log(this.createInteractiveHints());
+    // }
 
     this.activeExecutions.delete(executionId);
   }
@@ -215,7 +239,56 @@ export class EnhancedToolDisplay {
     });
   }
 
-  private formatResultContent(data: unknown, _toolName: string, options: ToolDisplayOptions): string {
+  private formatResultContent(data: unknown, toolName: string, options: ToolDisplayOptions): string {
+    // Handle ToolResult objects from built-in tools
+    if (data && typeof data === 'object' && 'success' in data) {
+      const toolResult = data as any;
+      
+      if (toolResult.success === false) {
+        return theme.err(`❌ ${toolResult.error || 'Tool execution failed'}`);
+      }
+      
+      let output = '';
+      
+      // Show message if present (this is the summary)
+      if (toolResult.message) {
+        output += theme.info(`${toolResult.message}\n\n`);
+      }
+      
+      // Format the actual data
+      if (toolResult.data) {
+        output += this.formatToolData(toolResult.data, toolName, options);
+      }
+      
+      return output.trim();
+    }
+    
+    // Handle raw objects/arrays (filesystem tools)
+    if (Array.isArray(data)) return this.formatArrayContent(data, options);
+    if (data && typeof data === 'object') return this.formatObjectContent(data as Record<string, unknown>, options);
+    if (typeof data === 'string') return this.formatStringContent(data);
+    return this.formatJsonContent(stringifyPretty(data as any));
+  }
+  
+  private formatToolData(data: unknown, toolName: string, options: ToolDisplayOptions): string {
+    // Special handling for certain tools
+    if (toolName === 'list_directory' && Array.isArray(data)) {
+      return this.createArrayTable(data as any[], options);
+    }
+    if (toolName === 'read_file' && data && typeof data === 'object' && 'content' in data) {
+      return this.formatStringContent((data as any).content);
+    }
+    if (toolName === 'search_files' && Array.isArray(data)) {
+      return this.createArrayTable(data as any[], options);
+    }
+    if (toolName === 'list_processes' && Array.isArray(data)) {
+      return this.createArrayTable(data as any[], options);
+    }
+    if (toolName === 'run_command' && data && typeof data === 'object' && 'stdout' in data) {
+      return this.formatStringContent((data as any).stdout || '(no output)');
+    }
+    
+    // Default formatting for other tool data
     if (Array.isArray(data)) return this.formatArrayContent(data, options);
     if (data && typeof data === 'object') return this.formatObjectContent(data as Record<string, unknown>, options);
     if (typeof data === 'string') return this.formatStringContent(data);
@@ -255,9 +328,9 @@ export class EnhancedToolDisplay {
   private formatStringContent(content: string): string {
     if (/^https?:\/\//.test(content)) return terminalLink(content, content);
     if (/^(?:[\/~]|[A-Z]:\\)/.test(content)) return theme.ok(content);
-    if (content.includes('\n')) {
-      return content.split('\n').map(line => line.trim() ? `  ${line}` : '').join('\n');
-    }
+    
+    // For multi-line content, just return as-is without extra indentation
+    // The boxen container will handle the formatting
     return content;
   }
 
@@ -311,3 +384,25 @@ export class EnhancedToolDisplay {
 
 // Create a singleton instance for use throughout the codebase
 export const toolDisplay = new EnhancedToolDisplay();
+export type toolDisplay = typeof EnhancedToolDisplay;
+
+// Example usage:
+// const execId = toolDisplay.startToolExecution('list_directory', { path: './' });
+// ... run the tool ...
+// toolDisplay.completeToolExecution(execId, toolResult, 'success');
+//
+// Or for simple one-off calls:
+// toolDisplay.displayCall({ role: 'tool', content: 'File list here', toolName: 'list_directory' });
+//
+// The result object can be a ToolResult or any JSON-serializable data
+//
+// ToolResult example:
+// {
+//   success: true,
+//   data: [...], // array of file info objects
+//   message: 'Listed 10 files in ./',
+//   error: null
+// }
+
+// Note: This file depends on 'boxen', 'cli-highlight', 'terminal-link', 'cli-truncate', and a custom BibbleTable class for table rendering.
+// Make sure to install these packages in your project.

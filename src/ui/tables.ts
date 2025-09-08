@@ -1,64 +1,29 @@
 // Gorgeous table system for Bibble with Pink Pixel styling ✨
 // Phase 4: Data Display & Tables implementation
 
-import Table from 'cli-table3';
+import boxen from 'boxen';
 import { theme } from './theme.js';
 import { s, brandSymbols } from './symbols.js';
 
 
-/**,
+/**
  * Table styling presets for different data types
  */
 export const TABLE_STYLES = {
-  // Pink Pixel default theme
   default: {
-    chars: {
-      'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
-      'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
-      'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼',
-      'right': '║', 'right-mid': '╢', 'middle': '│'
-    },
-    style: {
-      "padding-left": 1,
-      "padding-right": 1,
-      head: ["cyan"],
-      border: ["grey"],
-      compact: false,
-    }
+    borderStyle: 'double' as const,
+    borderColor: 'cyan' as const,
+    padding: 1
   },
-
-  // Minimalist style for clean data
   clean: {
-    chars: {
-      'top': '', 'top-mid': '', 'top-left': '', 'top-right': '',
-      'bottom': '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
-      'left': '', 'left-mid': '', 'mid': '', 'mid-mid': '',
-      'right': '', 'right-mid': '', 'middle': '  '
-    },
-    style: {
-      "padding-left": 1,
-      "padding-right": 1,
-      head: ["cyan"],
-      border: ["grey"],
-      compact: true,
-    }
+    borderStyle: 'single' as const,
+    borderColor: 'blue' as const,
+    padding: 1
   },
-
-  // Fancy style with rounded corners
   fancy: {
-    chars: {
-      'top': '─', 'top-mid': '┬', 'top-left': '╭', 'top-right': '╮',
-      'bottom': '─', 'bottom-mid': '┴', 'bottom-left': '╰', 'bottom-right': '╯',
-      'left': '│', 'left-mid': '├', 'mid': '─', 'mid-mid': '┼',
-      'right': '│', 'right-mid': '┤', 'middle': '│'
-    },
-    style: {
-      "padding-left": 1,
-      "padding-right": 1,
-      head: ["cyan"],
-      border: ["grey"],
-      compact: false,
-    }
+    borderStyle: 'round' as const,
+    borderColor: 'magenta' as const,
+    padding: 1
   }
 } as const;
 
@@ -67,10 +32,12 @@ export type TableStyle = keyof typeof TABLE_STYLES;
 
 
 /**
- * Enhanced table class with Pink Pixel theming
+ * Enhanced table class with Pink Pixel theming using boxen
  */
 export class BibbleTable {
-  private table: Table.Table;
+  private headers: string[] = [];
+  private rows: string[][] = [];
+  private style: TableStyle;
 
   constructor(options: {
     head?: string[];
@@ -78,41 +45,16 @@ export class BibbleTable {
     colWidths?: number[];
     wordWrap?: boolean;
   } = {}) {
-    const {
-      head = [],
-      style = "default",
-      colWidths,
-      wordWrap = true
-    } = options;
-
-    const tableConfig = TABLE_STYLES[style];
-
-    // Create styled headers with Pink Pixel theme
-    const styledHead = head.map(h => theme.cyan(h));
-
-    // Create a proper style config for cli-table3
-    const mutableStyle = {
-      'padding-left': tableConfig.style['padding-left'],
-      'padding-right': tableConfig.style['padding-right'],
-      head: tableConfig.style.head ? [...tableConfig.style.head] : ['cyan'],
-      border: tableConfig.style.border ? [...tableConfig.style.border] : ['grey'],
-      compact: tableConfig.style.compact || false,
-    };
-
-    this.table = new Table({
-      head: styledHead,
-      chars: tableConfig.chars,
-      style: mutableStyle,
-      colWidths: colWidths || undefined,
-      wordWrap: wordWrap || true,
-    });
+    const { head = [], style = 'default' } = options;
+    this.headers = head.map(h => theme.cyan(h));
+    this.style = style;
   }
 
   /**
    * Add a row with automatic styling based on content
    */
   addRow(row: (string | number)[]): this {
-    const styledRow = row.map((cell, index) => {
+    const styledRow = row.map(cell => {
       const cellStr = String(cell);
       
       // Auto-style based on content patterns
@@ -132,7 +74,7 @@ export class BibbleTable {
       return cellStr;
     });
 
-    this.table.push(styledRow);
+    this.rows.push(styledRow);
     return this;
   }
 
@@ -145,10 +87,48 @@ export class BibbleTable {
   }
 
   /**
-   * Render the table as string
+   * Render the table as string using boxen
    */
   toString(): string {
-    return this.table.toString();
+    if (this.rows.length === 0 && this.headers.length === 0) {
+      return theme.dim('(empty table)');
+    }
+
+    const tableConfig = TABLE_STYLES[this.style];
+    
+    // Calculate column widths for proper alignment
+    const allRows = this.headers.length > 0 ? [this.headers, ...this.rows] : this.rows;
+    const colCount = Math.max(...allRows.map(row => row.length));
+    const colWidths: number[] = [];
+    
+    for (let i = 0; i < colCount; i++) {
+      colWidths[i] = Math.max(...allRows.map(row => (row[i] || '').toString().length));
+    }
+    
+    let content = '';
+
+    // Add headers if present
+    if (this.headers.length > 0) {
+      const headerRow = this.headers.map((header, i) => 
+        header.padEnd(colWidths[i] || 0)
+      ).join(' │ ');
+      content += headerRow + '\n';
+      content += '─'.repeat(headerRow.length) + '\n';
+    }
+
+    // Add rows with proper alignment
+    this.rows.forEach(row => {
+      const alignedRow = row.map((cell, i) => 
+        cell.toString().padEnd(colWidths[i] || 0)
+      ).join(' │ ');
+      content += alignedRow + '\n';
+    });
+
+    return boxen(content.trim(), {
+      padding: tableConfig.padding,
+      borderStyle: tableConfig.borderStyle,
+      borderColor: tableConfig.borderColor,
+    });
   }
 
   /**

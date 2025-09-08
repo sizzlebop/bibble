@@ -9,6 +9,7 @@ import { spinners } from './spinners.js';
 import { statusManager, statusUtils } from './status-badges.js';
 import type { WorkspaceContext } from '../workspace/types.js';
 import { Config } from '../config/config.js';
+import { safeGradient, ensureAnsiCompatibility } from '../tools/built-in/utilities/text.js';
 
 /**
  * ASCII art banners for different occasions
@@ -71,8 +72,8 @@ export class Splash {
     // Set status to initializing for welcome screen
     statusManager.setState('initializing');
 
-    // Apply gorgeous gradient to the BIBBLE banner
-  const coloredBanner = (gradient as any)[gradientName](ASCII_BANNERS.BIBBLE);
+    // Apply gorgeous gradient to the BIBBLE banner with safe fallback
+    const coloredBanner = safeGradient((gradient as any)[gradientName], ASCII_BANNERS.BIBBLE);
     
     // Create the content
     let content = coloredBanner;
@@ -119,10 +120,10 @@ export class Splash {
   ): string {
     try {
       const asciiText = figlet.textSync(text, { font });
-      return (gradient as any)[gradientName](asciiText);
+      return safeGradient((gradient as any)[gradientName], asciiText);
     } catch (error) {
       // Fallback if figlet fails
-      return (gradient as any)[gradientName](text);
+      return safeGradient((gradient as any)[gradientName], text);
     }
   }
   
@@ -320,11 +321,11 @@ export class Splash {
    * Create Pink Pixel signature splash
    */
   static createPinkPixelSplash(): string {
-    const banner = gradient.pinkCyan(ASCII_BANNERS.PINK_PIXEL);
+    const banner = safeGradient(gradient.pinkCyan, ASCII_BANNERS.PINK_PIXEL);
     const tagline = theme.accent('"Dream it, Pixel it"') + ' ' + brandSymbols.sparkles;
     const signature = theme.dim('Made with ❤️  by Pink Pixel');
     
-    return banner + '\n\n' + tagline + '\n' + signature;
+    return ensureAnsiCompatibility(banner + '\n\n' + tagline + '\n' + signature);
   }
   
   /**
@@ -337,7 +338,7 @@ export class Splash {
       fire: () => Splash.createWelcome({ gradient: 'fire' }),
   neon: () => Splash.createWelcome({ gradient: 'bright' }),
       pinkPixel: () => Splash.createPinkPixelSplash(),
-      simple: (text: string) => gradient.pinkCyan(text),
+      simple: (text: string) => safeGradient(gradient.pinkCyan, text),
     };
   }
 }

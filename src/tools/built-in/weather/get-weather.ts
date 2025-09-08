@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import axios from 'axios';
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { createErrorResult, createSuccessResult } from '../utilities/common.js';
 import { checkRateLimit } from '../utilities/security.js';
 import { Config } from '../../../config/config.js';
@@ -147,7 +147,7 @@ function cacheWeatherData(location: string, units: string, includeforecast: bool
 /**
  * Execute weather search
  */
-async function executeGetWeather(params: GetWeatherParams): Promise<ToolResult> {
+async function executeGetWeather(params: GetWeatherParams): Promise<any> {
   const config = getWeatherConfig();
   
   // Resolve location and units from parameters or config defaults

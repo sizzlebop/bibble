@@ -2,7 +2,7 @@
  * Execute Command Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { ExecuteCommandSchema, ExecuteCommandParams } from '../types/process.js';
 import { safeExecuteCommand } from '../utilities/process.js';
 import { withErrorHandling } from '../utilities/common.js';

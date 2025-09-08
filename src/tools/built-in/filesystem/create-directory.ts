@@ -2,7 +2,7 @@
  * Create Directory Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { CreateDirectorySchema, CreateDirectoryParams } from '../types/filesystem.js';
 import { createDirectory, pathExists } from '../utilities/filesystem.js';
 import { withErrorHandling } from '../utilities/common.js';

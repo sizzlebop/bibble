@@ -5,8 +5,14 @@
 import { z } from 'zod';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { WorkspaceManager } from '../../../workspace/index.js';
+
+// Import UI components for proper formatting
+import { BibbleTable } from '../../../ui/tables.js';
+import { theme } from '../../../ui/theme.js';
+import { s, symbols, brandSymbols } from '../../../ui/symbols.js';
+import { sanitizeForTerminal, hardWrap } from '../utilities/text.js';
 
 // Schema for the tool parameters
 const ListCurrentDirectorySchema = z.object({
@@ -149,10 +155,10 @@ function formatRelativeDate(date: Date): string {
 const listCurrentDirectoryTool: BuiltInTool = {
   name: 'list_current_directory',
   description: 'List contents of the current directory with intelligent categorization based on project context',
-  category: 'filesystem',
+  category: 'workspace',
   parameters: ListCurrentDirectorySchema,
   
-  async execute(params: ListCurrentDirectoryParams): Promise<ToolResult> {
+  async execute(params: ListCurrentDirectoryParams): Promise<any> {
     try {
       const targetPath = path.resolve(params.path);
       
@@ -224,11 +230,32 @@ const listCurrentDirectoryTool: BuiltInTool = {
         return a.name.localeCompare(b.name);
       });
       
+      // Create clean, formatted output with proper terminal handling
+      let output = theme.heading(`📁 Directory: ${theme.path(targetPath)}`) + '\n\n';
+      
+      if (files.length === 0) {
+        output += theme.dim('Directory is empty');
+      } else {
+        output += theme.subheading('📋 Contents:') + '\n';
+        files.forEach(file => {
+          const icon = file.isDirectory ? '📁' : '📄';
+          const sizeInfo = file.size ? theme.dim(` (${formatFileSize(file.size)})`) : '';
+          output += `${icon} ${file.name}${sizeInfo}\n`;
+        });
+        
+        const fileCount = files.filter(f => !f.isDirectory).length;
+        const dirCount = files.filter(f => f.isDirectory).length;
+        output += '\n' + theme.accent(`📊 Summary: ${fileCount} files, ${dirCount} directories`);
+      }
+      
+      // Sanitize and wrap output for terminal display
+      const sanitizedOutput = sanitizeForTerminal(output);
+      const wrappedOutput = hardWrap(sanitizedOutput, process.stdout.columns || 80);
+      
       return {
         success: true,
-        data: { files, workspaceContext },
-        // Keep message minimal so UI prefers the structured data for tables
-        message: `📁 Directory: ${targetPath} • ${files.length} items`
+        data: wrappedOutput.trim(),
+        message: `Listed ${files.length} items in directory`
       };
       
     } catch (error) {

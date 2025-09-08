@@ -2,7 +2,7 @@
  * Find Files Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { FindFilesSchema, FindFilesParams } from '../types/filesystem.js';
 import { findFiles } from '../utilities/filesystem.js';
 import { withErrorHandling } from '../utilities/common.js';

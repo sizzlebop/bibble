@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import axios from 'axios';
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { createErrorResult, createSuccessResult } from '../utilities/common.js';
 import { checkRateLimit } from '../utilities/security.js';
 
@@ -205,7 +205,7 @@ async function fetchComment(commentId: number): Promise<HackerNewsComment | null
 /**
  * Execute Hacker News stories search
  */
-async function executeGetHackerNews(params: GetHackerNewsParams): Promise<ToolResult> {
+async function executeGetHackerNews(params: GetHackerNewsParams): Promise<any> {
   try {
     // Check rate limit
     const rateLimitResult = checkRateLimit('hackernews-api', DEFAULT_CONFIG.rateLimitPerMinute, 60000);
@@ -308,7 +308,7 @@ async function executeGetHackerNews(params: GetHackerNewsParams): Promise<ToolRe
 /**
  * Execute get specific Hacker News story
  */
-async function executeGetHackerNewsStory(params: GetHackerNewsStoryParams): Promise<ToolResult> {
+async function executeGetHackerNewsStory(params: GetHackerNewsStoryParams): Promise<any> {
   try {
     // Check rate limit
     const rateLimitResult = checkRateLimit('hackernews-api', DEFAULT_CONFIG.rateLimitPerMinute, 60000);

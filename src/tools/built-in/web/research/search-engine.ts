@@ -68,7 +68,7 @@ export async function searchDuckDuckGo(query: string, numResults: number = 10): 
     return results.slice(0, numResults);
 
   } catch (error) {
-    console.error('DuckDuckGo search failed:', error);
+    // DuckDuckGo search failed
     return [];
   }
 }
@@ -78,7 +78,7 @@ export async function searchDuckDuckGo(query: string, numResults: number = 10): 
  */
 export async function searchBing(query: string, numResults: number = 10, apiKey?: string): Promise<SearchResult[]> {
   if (!apiKey) {
-    console.warn('Bing API key not provided, skipping Bing search');
+    // Bing API key not provided
     return [];
   }
 
@@ -118,7 +118,7 @@ export async function searchBing(query: string, numResults: number = 10, apiKey?
     return results;
 
   } catch (error) {
-    console.error('Bing search failed:', error);
+    // Bing search failed
     return [];
   }
 }
@@ -128,7 +128,7 @@ export async function searchBing(query: string, numResults: number = 10, apiKey?
  */
 export async function searchGoogle(query: string, numResults: number = 10, apiKey?: string, searchEngineId?: string): Promise<SearchResult[]> {
   if (!apiKey || !searchEngineId) {
-    console.warn('Google API credentials not provided, skipping Google search');
+    // Google API credentials not provided
     return [];
   }
 
@@ -164,7 +164,7 @@ export async function searchGoogle(query: string, numResults: number = 10, apiKe
     return results;
 
   } catch (error) {
-    console.error('Google search failed:', error);
+    // Google search failed
     return [];
   }
 }
@@ -174,7 +174,7 @@ export async function searchGoogle(query: string, numResults: number = 10, apiKe
  */
 export async function searchBrave(query: string, numResults: number = 10, apiKey?: string): Promise<SearchResult[]> {
   if (!apiKey) {
-    console.warn('Brave API key not provided, skipping Brave search');
+    // Brave API key not provided
     return [];
   }
 
@@ -211,7 +211,7 @@ export async function searchBrave(query: string, numResults: number = 10, apiKey
     return results;
 
   } catch (error) {
-    console.error('Brave search failed:', error);
+    // Brave search failed
     return [];
   }
 }
@@ -280,7 +280,7 @@ export async function searchScraping(query: string, numResults: number = 10): Pr
     return results.slice(0, numResults);
 
   } catch (error) {
-    console.error('Scraping search failed:', error);
+    // Scraping search failed
     return [];
   }
 }
@@ -291,7 +291,7 @@ async function checkConnectivity(): Promise<boolean> {
     await axios.get('https://duckduckgo.com', { timeout: 3000, headers: { 'User-Agent': 'BibbleResearch/1.0' } });
     return true;
   } catch {
-    console.warn('Network check: unable to reach duckduckgo.com (network may be restricted)');
+    // Network check failed
     return false;
   }
 }
@@ -325,7 +325,7 @@ export async function searchMultipleEngines(
   // Pre-flight connectivity check for clearer logs (does not change behavior)
   const hasNetwork = await checkConnectivity();
   if (!hasNetwork) {
-    console.log('Connectivity appears limited. API engines may not return results.');
+    // Connectivity appears limited
   }
 
   // Try preferred engine first
@@ -352,20 +352,20 @@ export async function searchMultipleEngines(
         break;
     }
   } catch (error) {
-    console.error(`Primary search engine (${preferredEngine}) failed:`, error);
+    // Primary search engine failed
   }
 
   // If primary engine failed or returned no results, try fallbacks
   if (results.length === 0 && enableFallback) {
-    console.log('No results from preferred engine, trying fallback engines...');
+    // Trying fallback engines
     
     // Try DuckDuckGo if it wasn't the primary
     if (preferredEngine !== 'duckduckgo' && results.length === 0) {
       try {
         results = await searchDuckDuckGo(query, numResults);
-        console.log(`Fallback to DuckDuckGo returned ${results.length} results`);
+        // DuckDuckGo fallback completed
       } catch (error) {
-        console.error('DuckDuckGo fallback failed:', error);
+        // DuckDuckGo fallback failed
       }
     }
 
@@ -373,9 +373,9 @@ export async function searchMultipleEngines(
     if (preferredEngine !== 'bing' && bingApiKey && results.length === 0) {
       try {
         results = await searchBing(query, numResults, bingApiKey);
-        console.log(`Fallback to Bing returned ${results.length} results`);
+        // Bing fallback completed
       } catch (error) {
-        console.error('Bing fallback failed:', error);
+        // Bing fallback failed
       }
     }
 
@@ -383,9 +383,9 @@ export async function searchMultipleEngines(
     if (preferredEngine !== 'google' && googleApiKey && googleSearchEngineId && results.length === 0) {
       try {
         results = await searchGoogle(query, numResults, googleApiKey, googleSearchEngineId);
-        console.log(`Fallback to Google returned ${results.length} results`);
+        // Google fallback completed
       } catch (error) {
-        console.error('Google fallback failed:', error);
+        // Google fallback failed
       }
     }
 
@@ -393,25 +393,25 @@ export async function searchMultipleEngines(
     if (preferredEngine !== 'brave' && braveApiKey && results.length === 0) {
       try {
         results = await searchBrave(query, numResults, braveApiKey);
-        console.log(`Fallback to Brave returned ${results.length} results`);
+        // Brave fallback completed
       } catch (error) {
-        console.error('Brave fallback failed:', error);
+        // Brave fallback failed
       }
     }
 
     // Final fallback to scraping if all else fails
     if (results.length === 0) {
       try {
-        console.log('All API searches returned no results, attempting HTML scraping fallback...');
+        // Attempting HTML scraping fallback
         results = await searchScraping(query, numResults);
-        console.log(`Scraping fallback returned ${results.length} results`);
+        // Scraping fallback completed
       } catch (error) {
-        console.error('Scraping fallback failed:', error);
+        // Scraping fallback failed
       }
     }
   }
 
-  console.log(`Total search results for "${query}": ${results.length}`);
+  // Search completed
   return results;
 }
 
@@ -458,7 +458,7 @@ export function getSearchEngineConfig(): {
       }
     }
   } catch (e) {
-    console.warn('Failed to read webSearch config from user config:', e);
+    // Failed to read user config
   }
 
   // Also allow project-local config.json overrides
@@ -480,7 +480,7 @@ export function getSearchEngineConfig(): {
       }
     }
   } catch (e) {
-    console.warn('Failed to read webSearch config from config.json:', e);
+    // Failed to read config.json
   }
 
   return config;

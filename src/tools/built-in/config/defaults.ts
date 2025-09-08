@@ -102,6 +102,39 @@ export const DEFAULT_CONFIG: BuiltInToolsConfig = {
     maxStories: 10,
     storyTypes: ['top', 'new', 'best', 'ask', 'show', 'job'] as const,
     cacheResultsMinutes: 60
+  },
+  workspace: {
+    defaultDirectory: process.cwd(),
+    maxFiles: 1000,
+    maxFileSize: 5 * 1024 * 1024, // 5MB
+    allowedExtensions: [
+      '.txt', '.md', '.json', '.js', '.ts', '.jsx', '.tsx',
+      '.py', '.java', '.cpp', '.c', '.h', '.hpp',
+      '.cs', '.php', '.rb', '.go', '.rs', '.swift',
+      '.html', '.css', '.scss', '.sass', '.less',
+      '.xml', '.yaml', '.yml', '.toml', '.ini',
+      '.sh', '.bat', '.ps1', '.dockerfile',
+      '.sql', '.r', '.m', '.scala', '.kt'
+    ],
+    blockedPaths: [
+      '/etc/passwd',
+      '/etc/shadow',
+      '/etc/sudoers',
+      'C:\\Windows\\System32\\config',
+      'C:\\Windows\\System32\\drivers',
+      '/System/Library',
+      '/usr/bin/sudo',
+      '**/.git/objects/**',
+      '**/node_modules/**',
+      '**/.env*',
+      '**/*_rsa',
+      '**/*_dsa',
+      '**/*.pem',
+      '**/*.key',
+      '**/*.p12',
+      '**/*.pfx'
+    ],
+    defaultEncoding: 'utf8'
   }
 };
 

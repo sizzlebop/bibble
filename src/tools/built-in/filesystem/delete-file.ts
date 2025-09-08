@@ -3,7 +3,7 @@
  */
 
 import { promises as fs } from 'fs';
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { DeleteFileSchema, DeleteFileParams } from '../types/filesystem.js';
 import { pathExists } from '../utilities/filesystem.js';
 import { isPathSafe, sanitizePath } from '../utilities/security.js';

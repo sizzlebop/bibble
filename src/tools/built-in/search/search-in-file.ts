@@ -4,7 +4,7 @@
 
 import { promises as fs } from 'fs';
 import { relative } from 'path';
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { SearchInFileSchema, SearchInFileParams, SearchMatch } from '../types/search.js';
 import { isPathSafe, isSearchPatternSafe, checkRateLimit } from '../utilities/security.js';
 import { withErrorHandling } from '../utilities/common.js';

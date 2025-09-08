@@ -3,8 +3,13 @@
  */
 
 import { z } from 'zod';
-import { BuiltInTool, ToolResult } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { WorkspaceManager } from '../../../workspace/index.js';
+
+// Import UI components for proper formatting
+import { BibbleTable } from '../../../ui/tables.js';
+import { theme } from '../../../ui/theme.js';
+import { s, brandSymbols } from '../../../ui/symbols.js';
 
 const SuggestProjectImprovementsSchema = z.object({
   focus: z.enum(['performance', 'security', 'maintainability', 'documentation', 'testing', 'all'])
@@ -190,18 +195,20 @@ function generateProjectImprovements(workspaceContext: any): ImprovementSuggesti
 const suggestProjectImprovementsTool: BuiltInTool = {
   name: 'suggest_project_improvements',
   description: 'Analyze project and suggest specific improvements for code quality, security, and maintainability',
-  category: 'filesystem',
+  category: 'workspace',
   parameters: SuggestProjectImprovementsSchema,
   
-  async execute(params: SuggestProjectImprovementsParams): Promise<ToolResult> {
+  async execute(params: SuggestProjectImprovementsParams): Promise<any> {
     try {
       const workspaceManager = WorkspaceManager.getInstance();
       const workspaceContext = await workspaceManager.detectWorkspace();
       
       if (!workspaceContext || workspaceContext.projectType === 'unknown') {
+        const message = theme.warn('🤷‍♂️ No recognizable project structure detected. Cannot provide specific improvement suggestions.');
         return {
           success: true,
-          message: '🤷‍♂️ No recognizable project structure detected. Cannot provide specific improvement suggestions.'
+          data: message,
+          message
         };
       }
 
@@ -219,27 +226,60 @@ const suggestProjectImprovementsTool: BuiltInTool = {
       }
       
       if (filteredSuggestions.length === 0) {
+        const message = theme.ok(`🎉 Great! No ${params.focus !== 'all' ? params.focus : ''} ${params.priority !== 'all' ? params.priority + ' priority' : ''} improvements needed right now.`);
         return {
           success: true,
-          message: `🎉 Great! No ${params.focus !== 'all' ? params.focus : ''} ${params.priority !== 'all' ? params.priority + ' priority' : ''} improvements needed right now.`
+          data: message,
+          message
         };
       }
 
-      // Build concise message; return structured data so UI can table it
-      const summary = `💡 ${filteredSuggestions.length} suggestions` +
-        (params.focus !== 'all' ? ` • focus: ${params.focus}` : '') +
-        (params.priority !== 'all' ? ` • priority: ${params.priority}` : '');
-
+      // Format output with proper UI components
+      let output = '';
+      
+      // Header
+      const projectName = workspaceContext.projectName || 'Current Project';
+      output += theme.heading(`💡 Project Improvement Suggestions`) + '\n';
+      output += theme.subheading(`Project: ${projectName} (${workspaceContext.projectType.toUpperCase()})`) + '\n';
+      
+      if (params.focus !== 'all' || params.priority !== 'all') {
+        output += theme.dim(`Filters: ${params.focus !== 'all' ? `Focus: ${params.focus}` : ''}${params.priority !== 'all' ? ` Priority: ${params.priority}` : ''}`) + '\n';
+      }
+      
+      output += theme.dim(`Found ${filteredSuggestions.length} suggestions`) + '\n\n';
+      
+      // Group by priority
+      const priorityGroups = {
+        high: filteredSuggestions.filter(s => s.priority === 'high'),
+        medium: filteredSuggestions.filter(s => s.priority === 'medium'),
+        low: filteredSuggestions.filter(s => s.priority === 'low')
+      };
+      
+      // Display each priority group
+      for (const [priority, suggestions] of Object.entries(priorityGroups)) {
+        if (suggestions.length === 0) continue;
+        
+        const priorityColor = priority === 'high' ? theme.err :
+                             priority === 'medium' ? theme.warn : theme.dim;
+        const priorityIcon = priority === 'high' ? '🔴' :
+                            priority === 'medium' ? '🟡' : '🟢';
+        
+        output += priorityColor(`${priorityIcon} ${priority.toUpperCase()} PRIORITY`) + '\n';
+        
+        suggestions.forEach(suggestion => {
+          output += `\n${suggestion.icon} ${theme.cyan(suggestion.title)}\n`;
+          output += `   ${suggestion.description}\n`;
+          output += `   ${theme.dim(suggestion.rationale)}\n`;
+          output += `   ${theme.dim('Effort: ' + suggestion.estimatedEffort)}\n`;
+        });
+        
+        output += '\n';
+      }
+      
       return {
         success: true,
-        data: {
-          project: workspaceContext.projectName || 'Current Project',
-          type: workspaceContext.projectType,
-          focus: params.focus,
-          priority: params.priority,
-          suggestions: filteredSuggestions,
-        },
-        message: summary
+        data: output,
+        message: output
       };
       
     } catch (error) {

@@ -3,7 +3,7 @@
  */
 
 import { promises as fs } from 'fs';
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { FindReplaceInFileSchema, FindReplaceInFileParams } from '../types/edit.js';
 import { isPathSafe, checkRateLimit } from '../utilities/security.js';
 import { withErrorHandling } from '../utilities/common.js';

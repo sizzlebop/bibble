@@ -2,7 +2,7 @@
  * Monitor Process Tool
  */
 
-import { BuiltInTool } from '../types/index.js';
+import { BuiltInTool } from '../../../ui/tool-display.js';
 import { MonitorProcessSchema, MonitorProcessParams } from '../types/process.js';
 import { monitorProcess } from '../utilities/process.js';
 import { withErrorHandling } from '../utilities/common.js';
