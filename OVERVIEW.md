@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.8.1
+**Version**: 1.8.2
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble  
-*Last updated: January 17, 2025 - 01:06 UTC*
+*Last updated: September 17, 2025 - 20:38 UTC*
 
 **🏆 GitHub Hackathon Contender** - Strong candidate for GitHub hackathon submission (deadline: September 22, 2025)
 
@@ -27,6 +27,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
 - **🔧 Intelligent built-in tools** including `list_current_directory`, `analyze_project_structure`, `suggest_project_improvements`, and `find_project_files`
 - **Advanced research assistant** with event-driven research sessions and intelligent content extraction
 - **⚡ MCP Context Diet optimization** with on-demand tool discovery that dramatically reduces prompt size and improves performance
+- **🎭 Fun Tools for Hackathon** with ASCII art generation and random cat images for terminal entertainment
 - **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
 - **Chat history** tracking, export, and import with persistent storage
 - **Rich terminal UI** with markdown rendering and colored text output
@@ -93,6 +94,7 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 │   │   ├── time/             # Time and date tools
 │   │   ├── web/              # Web search and research tools
 │   │   ├── workspace/        # Workspace intelligence tools
+│   │   ├── fun/              # Fun tools for hackathon (ASCII art, cat images)
 │   │       │   ├── research/     # Research agent and content extraction
 │   │       │   ├── types/        # Web tool type definitions
 │   │       │   └── web-search.ts # Multi-engine search implementation (DuckDuckGo, Bing, Google, Brave)
@@ -859,6 +861,30 @@ Version 1.3.8 represented a **MAJOR VISUAL TRANSFORMATION** that converted Bibbl
 - **Visual Impact**: Complete transformation from plain terminal output to stunning Pink Pixel branded experience
 
 ## Recent Development & Research
+
+### Fun Tools for GitHub Hackathon (v1.8.2) - September 8, 2025
+
+Version 1.8.2 introduces **exciting fun tools** specifically designed for the "For the Love of Code" GitHub hackathon, perfect for the "Terminal Talent" and "Agents of Change" categories.
+
+**🎭 New Fun Tools Category:**
+- **🎨 ASCII Art Generator** (`generate-ascii-art`)
+  - Create beautiful ASCII art from text with 20+ fonts (Standard, Slant, Shadow, Big, Block, Bubble, etc.)
+  - Multiple color themes: Pink, Cyan, Rainbow, Fire, Neon, Ocean, None
+  - Customizable width (40-120 characters) with decorative border frames
+  - Perfect for headers, banners, and terminal decorations with Pink Pixel branding
+- **🐱 Random Cat Images** (`random-cat-images`)
+  - Fetch and display REAL cat images directly in the terminal using ANSI rendering (terminal-image)
+  - Multiple APIs with intelligent fallbacks (Random Cat, The Cat API, Cats as a Service)
+  - Configurable sizes (small, medium, large) with actual image display in terminal
+  - Multiple API rotation for variety and reliability, with optional API key support for higher rate limits
+
+**🏆 Hackathon Highlights:**
+- **Terminal Talent**: Stunning visual effects, ASCII art, AND real image display in pure terminal environment
+- **Agents of Change**: Fun, interactive tools that bring joy to command-line workflows
+- **Technical Innovation**: Real terminal image rendering using ANSI codes with `terminal-image` dependency
+- **Technical Excellence**: Full TypeScript integration with Zod schema validation and crypto-based randomization
+- **Pink Pixel Branding**: Signature theming and gradients throughout
+- **Cross-Platform**: Works flawlessly on Linux, macOS, and Windows terminals
 
 ### Workspace Tools Formatting Fixes (v1.8.1) - September 8, 2025
 
