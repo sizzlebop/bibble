@@ -24,14 +24,6 @@ Added exciting new **fun tools** category for the "For the Love of Code" hackath
   - Cute ASCII cat representations when images can't be displayed
   - Network-resilient with graceful error handling
 
-- **🌤️ Animated Weather** (`animated-weather`)
-  - Generate beautiful ASCII weather animations
-  - 9 weather conditions: sunny, cloudy, rainy, snowy, stormy, foggy, windy, partly-cloudy, clear-night
-  - Multiple frame animations for realistic weather effects
-  - Customizable duration and size settings
-  - Colorful themed animations with gradient effects
-  - Preview multiple animation frames
-
 #### 🏆 **Hackathon Highlights**
 
 - **Terminal Talent**: Stunning visual effects and ASCII art in pure terminal environment

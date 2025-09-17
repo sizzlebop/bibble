@@ -5,7 +5,6 @@
 
 import { z } from 'zod';
 import axios from 'axios';
-import chalkAnimation from 'chalk-animation';
 import { BuiltInTool } from '../../../ui/tool-display.js';
 import { createErrorResult, createSuccessResult } from '../utilities/common.js';
 import { checkRateLimit } from '../utilities/security.js';
@@ -215,12 +214,6 @@ async function executeGetWeather(params: GetWeatherParams): Promise<any> {
       return createSuccessResult(cached.data, 'Weather data retrieved from cache');
     }
 
-    // Brief animated header (non-blocking delay ~600ms) for user delight
-    if (process.stdout.isTTY) {
-      const anim = chalkAnimation.pulse(`☁️  Fetching weather for ${locationQuery.displayLocation} ...`, 0.2);
-      await new Promise(r => setTimeout(r, 600));
-      anim.stop();
-    }
     console.log(`[WEATHER] Getting weather for: ${locationQuery.displayLocation} (${units} units)`);
 
     // Prepare API requests
