@@ -12,7 +12,7 @@ export class MarkdownRenderer {
   constructor(options?: any) {
     try {
       this.config = (Config as any).getInstance ? (Config as any).getInstance() : null;
-      if (this.config && typeof this.config.set === 'function') this.config.set('ui.useMarkdown', true);
+      // Don't set config immediately during initialization, just store the reference
     } catch {
       this.config = null;
     }
@@ -42,6 +42,14 @@ export class MarkdownRenderer {
 
   render(text: string): string {
     if (this.config && typeof this.config.get === 'function') {
+      // Set markdown enabled on first use instead of during initialization
+      if (typeof this.config.set === 'function') {
+        try {
+          this.config.set('ui.useMarkdown', true);
+        } catch (error) {
+          // Ignore config save errors during first-time setup
+        }
+      }
       const enabled = this.config.get('ui.useMarkdown', true);
       if (!enabled) return text;
     }

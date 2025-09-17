@@ -398,6 +398,8 @@ export function loadConfig(): BibbleConfig {
  */
 export function saveConfig(config: BibbleConfig): void {
   try {
+    // Ensure config directory exists before saving
+    ensureConfigDirExists();
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf8");
   } catch (error) {
     console.error("Error saving configuration:", error);
