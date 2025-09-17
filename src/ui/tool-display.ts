@@ -16,9 +16,10 @@ import { z } from 'zod';
 export interface BuiltInTool {
   name: string;
   description: string;
-  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news' | 'workspace';
+  category: 'filesystem' | 'process' | 'search' | 'edit' | 'web' | 'time' | 'weather' | 'news' | 'workspace' | 'fun';
   parameters: z.ZodSchema; // Schema for parameters
-  execute: (params: any) => Promise<EnhancedToolDisplay>;
+  // Allow returning either an EnhancedToolDisplay instance result object or a simple tool result object
+  execute: (params: any) => Promise<any>;
 }
 
 export class ZodSchema {
@@ -272,6 +273,9 @@ export class EnhancedToolDisplay {
   
   private formatToolData(data: unknown, toolName: string, options: ToolDisplayOptions): string {
     // Special handling for certain tools
+    if (toolName === 'get-weather' && data && typeof data === 'object') {
+      return this.formatWeatherContent(data as Record<string, unknown>, options);
+    }
     if (toolName === 'list_directory' && Array.isArray(data)) {
       return this.createArrayTable(data as any[], options);
     }
@@ -323,6 +327,136 @@ export class EnhancedToolDisplay {
       else v = this.formatJsonContent(stringifyPretty(value as any));
       return `${s.bullet} ${k} ${v}`;
     }).join('\n');
+  }
+
+  private formatWeatherContent(rawData: Record<string, unknown>, options: ToolDisplayOptions): string {
+    const sections: string[] = [];
+    const current = (rawData.current ?? rawData) as Record<string, unknown> | undefined;
+    const forecast = Array.isArray((rawData as any).forecast) ? (rawData as any).forecast as Array<Record<string, unknown>> : undefined;
+    const units = (current?.units as string) || (rawData.units as string) || 'metric';
+
+    if (current) {
+      const currentTable = new BibbleTable({ head: ['Metric', 'Value'], style: 'clean' });
+      currentTable
+        .addRow(['Location', String(current.location ?? '—')])
+        .addRow(['Condition', String(current.description ?? '—')])
+        .addRow(['Temperature', this.formatWeatherTemperature(current.temperature as number | undefined, units)])
+        .addRow(['Feels Like', this.formatWeatherTemperature(current.feelsLike as number | undefined, units)])
+        .addRow(['Humidity', this.formatWeatherPercent(current.humidity as number | undefined)])
+        .addRow(['Wind', this.formatWeatherWind(current.windSpeed as number | undefined, current.windDirection as number | undefined, units)])
+        .addRow(['Pressure', this.formatWeatherPressure(current.pressure as number | undefined)])
+        .addRow(['Visibility', this.formatWeatherVisibility(current.visibility as number | undefined, units)])
+        .addRow(['Cloudiness', this.formatWeatherPercent(current.cloudiness as number | undefined)]);
+
+      if (current.uvIndex !== undefined) {
+        currentTable.addRow(['UV Index', String(current.uvIndex)]);
+      }
+
+      currentTable
+        .addRow(['Sunrise', String(current.sunrise ?? '—')])
+        .addRow(['Sunset', String(current.sunset ?? '—')])
+        .addRow(['Timezone', String(current.timezone ?? '—')])
+        .addRow(['Units', this.describeWeatherUnits(units)]);
+
+      sections.push(currentTable.toString());
+    }
+
+    if (forecast && forecast.length > 0) {
+      const forecastTable = new BibbleTable({ head: ['Day', 'High', 'Low', 'Conditions', 'Wind', 'Humidity'], style: 'fancy' });
+      const truncatedForecast = options.maxTableRows ? forecast.slice(0, options.maxTableRows) : forecast;
+
+      truncatedForecast.forEach((entry, index) => {
+        const temp = entry.temperature as Record<string, number> | undefined;
+        forecastTable.addRow([
+          this.labelForecastDay(entry.date as string | undefined, index),
+          this.formatWeatherTemperature(temp?.max, units),
+          this.formatWeatherTemperature(temp?.min, units),
+          String(entry.description ?? '—'),
+          this.formatWeatherWind(entry.windSpeed as number | undefined, undefined, units),
+          this.formatWeatherPercent(entry.humidity as number | undefined)
+        ]);
+      });
+
+      if (options.maxTableRows && forecast.length > options.maxTableRows) {
+        sections.push(forecastTable.toString() + `\n${theme.dim(`... and ${forecast.length - options.maxTableRows} more days`)}`);
+      } else {
+        sections.push(forecastTable.toString());
+      }
+    }
+
+    if (sections.length === 0) {
+      return this.formatObjectContent(rawData, options);
+    }
+
+    return sections.join('\n\n');
+  }
+
+  private formatWeatherTemperature(value: number | undefined, units: string): string {
+    if (value === undefined || Number.isNaN(value)) return theme.dim('—');
+    const rounded = Math.round(value);
+    switch (units) {
+      case 'imperial':
+        return `${rounded}°F`;
+      case 'kelvin':
+        return `${rounded}K`;
+      default:
+        return `${rounded}°C`;
+    }
+  }
+
+  private formatWeatherWind(speed: number | undefined, direction: number | undefined, units: string): string {
+    if (speed === undefined || Number.isNaN(speed)) return theme.dim('—');
+    const unit = this.getWindUnit(units);
+    const formattedSpeed = speed < 10 ? speed.toFixed(1) : Math.round(speed).toString();
+    const cardinal = direction !== undefined ? ` ${this.getWindDirection(direction)}` : '';
+    return `${formattedSpeed} ${unit}${cardinal}`;
+  }
+
+  private formatWeatherPercent(value: number | undefined): string {
+    if (value === undefined || Number.isNaN(value)) return theme.dim('—');
+    return `${Math.round(value)}%`;
+  }
+
+  private formatWeatherPressure(value: number | undefined): string {
+    if (value === undefined || Number.isNaN(value)) return theme.dim('—');
+    return `${value} hPa`;
+  }
+
+  private formatWeatherVisibility(value: number | undefined, units: string): string {
+    if (value === undefined || Number.isNaN(value)) return theme.dim('—');
+    if (units === 'imperial') {
+      const miles = value * 0.621371;
+      return `${miles.toFixed(1)} mi`;
+    }
+    return `${value.toFixed(1)} km`;
+  }
+
+  private describeWeatherUnits(units: string): string {
+    switch (units) {
+      case 'imperial':
+        return 'Imperial (°F, mph)';
+      case 'kelvin':
+        return 'Kelvin (K, m/s)';
+      default:
+        return 'Metric (°C, m/s)';
+    }
+  }
+
+  private getWindUnit(units: string): string {
+    return units === 'imperial' ? 'mph' : 'm/s';
+  }
+
+  private getWindDirection(degrees: number): string {
+    const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    if (!Number.isFinite(degrees)) return '';
+    const index = Math.round(degrees / 22.5) % dirs.length;
+    return dirs[index];
+  }
+
+  private labelForecastDay(date: string | undefined, index: number): string {
+    if (index === 0) return 'Today';
+    if (index === 1) return 'Tomorrow';
+    return date || `Day ${index + 1}`;
   }
 
   private formatStringContent(content: string): string {

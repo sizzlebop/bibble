@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import axios from 'axios';
+import chalkAnimation from 'chalk-animation';
 import { BuiltInTool } from '../../../ui/tool-display.js';
 import { createErrorResult, createSuccessResult } from '../utilities/common.js';
 import { checkRateLimit } from '../utilities/security.js';
@@ -145,6 +146,41 @@ function cacheWeatherData(location: string, units: string, includeforecast: bool
 }
 
 /**
+ * Build OpenWeather location query params depending on the user input format
+ */
+function buildLocationParams(location: string): { params: Record<string, string>; displayLocation: string } {
+  const trimmed = location.trim();
+
+  // Coordinate input: lat,lon
+  const coordMatch = trimmed.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (coordMatch) {
+    const [, lat, lon] = coordMatch;
+    return {
+      params: { lat, lon },
+      displayLocation: `${lat},${lon}`
+    };
+  }
+
+  // ZIP code input: 5 digits optionally followed by 4-digit extension and optional country
+  const zipMatch = trimmed.match(/^(\d{5}(?:-\d{4})?)(?:\s*,\s*([A-Za-z]{2}))?$/i);
+  if (zipMatch) {
+    const zipCode = zipMatch[1];
+    const country = (zipMatch[2] || 'US').toUpperCase();
+    const displayLocation = `${zipCode},${country}`;
+    return {
+      params: { zip: `${zipCode},${country}` },
+      displayLocation
+    };
+  }
+
+  // Fallback: treat as city/state/country search string
+  return {
+    params: { q: trimmed },
+    displayLocation: trimmed
+  };
+}
+
+/**
  * Execute weather search
  */
 async function executeGetWeather(params: GetWeatherParams): Promise<any> {
@@ -171,24 +207,41 @@ async function executeGetWeather(params: GetWeatherParams): Promise<any> {
       return createErrorResult('No location specified. Please provide a location in your request or configure a default location with \'bibble config weather\'.');
     }
 
+    const locationQuery = buildLocationParams(location);
+
     // Check cache first
-    const cached = getCachedWeather(location, units, params.includeforecast);
+    const cached = getCachedWeather(locationQuery.displayLocation, units, params.includeforecast);
     if (cached) {
       return createSuccessResult(cached.data, 'Weather data retrieved from cache');
     }
 
-    console.log(`[WEATHER] Getting weather for: ${location} (${units} units)`);
+    // Brief animated header (non-blocking delay ~600ms) for user delight
+    if (process.stdout.isTTY) {
+      const anim = chalkAnimation.pulse(`☁️  Fetching weather for ${locationQuery.displayLocation} ...`, 0.2);
+      await new Promise(r => setTimeout(r, 600));
+      anim.stop();
+    }
+    console.log(`[WEATHER] Getting weather for: ${locationQuery.displayLocation} (${units} units)`);
 
     // Prepare API requests
     const requests = [];
     
     // Current weather request
-    const currentUrl = `${config.baseUrl}/weather?q=${encodeURIComponent(location)}&appid=${config.apiKey}&units=${units}`;
+    const currentParams = new URLSearchParams();
+    currentParams.set('appid', String(config.apiKey));
+    currentParams.set('units', units);
+    Object.entries(locationQuery.params).forEach(([key, value]) => currentParams.append(key, String(value)));
+    const currentUrl = `${config.baseUrl}/weather?${currentParams.toString()}`;
     requests.push(axios.get(currentUrl, { timeout: config.requestTimeoutMs }));
 
     // Forecast request if needed
     if (params.includeforecast) {
-      const forecastUrl = `${config.baseUrl}/forecast?q=${encodeURIComponent(location)}&appid=${config.apiKey}&units=${units}&cnt=${params.forecastDays * 8}`; // 8 forecasts per day (3-hour intervals)
+      const forecastParams = new URLSearchParams();
+      forecastParams.set('appid', String(config.apiKey));
+      forecastParams.set('units', units);
+      forecastParams.set('cnt', String(params.forecastDays * 8)); // 8 forecasts per day (3-hour intervals)
+      Object.entries(locationQuery.params).forEach(([key, value]) => forecastParams.append(key, String(value)));
+      const forecastUrl = `${config.baseUrl}/forecast?${forecastParams.toString()}`;
       requests.push(axios.get(forecastUrl, { timeout: config.requestTimeoutMs }));
     }
 
@@ -198,8 +251,11 @@ async function executeGetWeather(params: GetWeatherParams): Promise<any> {
 
     // Process current weather data
     const current = currentWeatherResponse.data;
+    const resolvedName = current.name && current.name.trim().length > 0
+      ? current.name
+      : locationQuery.displayLocation;
     const weatherData: WeatherData = {
-      location: `${current.name}, ${current.sys.country}`,
+      location: current.sys?.country ? `${resolvedName}, ${current.sys.country}` : resolvedName,
       country: current.sys.country,
       temperature: current.main.temp,
       feelsLike: current.main.feels_like,
@@ -269,7 +325,7 @@ async function executeGetWeather(params: GetWeatherParams): Promise<any> {
     }
 
     // Cache the result
-    cacheWeatherData(location, units, params.includeforecast, result);
+    cacheWeatherData(locationQuery.displayLocation, units, params.includeforecast, result);
 
     // Format response message
     let message = `Current weather for ${weatherData.location}:\n`;

@@ -4,6 +4,7 @@
 import boxen from 'boxen';
 import { theme } from './theme.js';
 import { s, brandSymbols } from './symbols.js';
+import { visibleWidth } from '../tools/built-in/utilities/text.js';
 
 
 /**
@@ -28,6 +29,14 @@ export const TABLE_STYLES = {
 } as const;
 
 export type TableStyle = keyof typeof TABLE_STYLES;
+
+function padCell(value: string, width: number): string {
+  const currentWidth = visibleWidth(value);
+  if (currentWidth >= width) {
+    return value;
+  }
+  return value + ' '.repeat(width - currentWidth);
+}
 
 
 
@@ -96,13 +105,17 @@ export class BibbleTable {
 
     const tableConfig = TABLE_STYLES[this.style];
     
-    // Calculate column widths for proper alignment
+    // Calculate column widths for proper alignment, accounting for ANSI styling
     const allRows = this.headers.length > 0 ? [this.headers, ...this.rows] : this.rows;
-    const colCount = Math.max(...allRows.map(row => row.length));
+    const colCount = allRows.reduce((max, row) => Math.max(max, row.length), 0);
     const colWidths: number[] = [];
     
     for (let i = 0; i < colCount; i++) {
-      colWidths[i] = Math.max(...allRows.map(row => (row[i] || '').toString().length));
+      const widthsForColumn = allRows.map(row => {
+        const cell = row[i];
+        return visibleWidth(cell == null ? '' : cell.toString());
+      });
+      colWidths[i] = widthsForColumn.length ? Math.max(...widthsForColumn) : 0;
     }
     
     let content = '';
@@ -110,16 +123,16 @@ export class BibbleTable {
     // Add headers if present
     if (this.headers.length > 0) {
       const headerRow = this.headers.map((header, i) => 
-        header.padEnd(colWidths[i] || 0)
+        padCell(header, colWidths[i] || 0)
       ).join(' │ ');
       content += headerRow + '\n';
-      content += '─'.repeat(headerRow.length) + '\n';
+      content += '─'.repeat(visibleWidth(headerRow)) + '\n';
     }
 
     // Add rows with proper alignment
     this.rows.forEach(row => {
       const alignedRow = row.map((cell, i) => 
-        cell.toString().padEnd(colWidths[i] || 0)
+        padCell(cell == null ? '' : cell.toString(), colWidths[i] || 0)
       ).join(' │ ');
       content += alignedRow + '\n';
     });
