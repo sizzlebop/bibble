@@ -36,6 +36,11 @@ import { deleteLinesTool } from './edit/delete-lines.js';
 
 // Import all web tools
 import { webSearchTool, quickWebSearchTool, researchStatusTool } from './web/web-search.js';
+import { contentExtractorTool } from './web/content-extractor-tool.js';
+// Complex research tools removed - using simple workflow instead
+// import { comprehensiveResearchTool } from './web/comprehensive-research.js';
+// import { quickInformationLookupTool, factCheckTool } from './web/quick-lookup.js';
+// import { researchDocumentManagerTool } from './web/research-document-manager.js';
 
 // Import all time/datetime tools
 import { getCurrentDateTimeTool } from './time/get-current-datetime.js';
@@ -96,6 +101,13 @@ export class BuiltInToolRegistry {
     this.registerTool(webSearchTool);
     this.registerTool(quickWebSearchTool);
     this.registerTool(researchStatusTool);
+    this.registerTool(contentExtractorTool);
+    
+    // Enhanced research tools - DISABLED: Use simple web search + document creation workflow instead
+    // this.registerTool(comprehensiveResearchTool);
+    // this.registerTool(quickInformationLookupTool);
+    // this.registerTool(factCheckTool);
+    // this.registerTool(researchDocumentManagerTool);
 
     // Time/DateTime tools
     this.registerTool(getCurrentDateTimeTool);

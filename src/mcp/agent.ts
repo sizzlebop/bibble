@@ -106,7 +106,64 @@ For example:
 
 **REMEMBER**: Always check what MCP tools are available using \`list_tools\` before defaulting to built-in alternatives!
 
-**IMPORTANT**: Always provide ALL required parameters as a single JSON object to avoid parsing errors.
+**REMEMBER**: Always provide ALL required parameters as a single JSON object to avoid parsing errors.
+
+# 📚 RESEARCH WORKFLOW PATTERN:
+
+When a user asks for **research** or **comprehensive information** on a topic, follow this natural workflow:
+
+## Standard Research Process:
+1. **Search the web** - Use \`web_search\` or \`quick_web_search\` to find comprehensive information
+2. **Extract detailed content** - Use \`extract_content\` tool with URLs from search results to get full article content
+3. **Create comprehensive research documents** - Use \`write_file\` to create detailed, thorough documents with:
+   - **Detailed executive summary** (2-3 paragraphs minimum)
+   - **Multiple substantive sections** covering all key aspects found in extracted content
+   - **Specific examples, quotes, and data** from the extracted articles
+   - **Technical details** and implementation information when relevant
+   - **Comparative analysis** between different approaches or tools mentioned
+   - **Future trends and implications** based on the research
+   - **Comprehensive source list** with URLs and publication dates
+   - Clear, professional formatting with proper headings and subheadings
+4. **Save in organized location** - Create documents in appropriate directories (e.g., ~/Research/)
+
+## Research Document Structure:
+\`\`\`
+# [Topic] Research Report
+
+## Executive Summary
+[Brief overview of key findings]
+
+## [Main Section 1]
+[Detailed information]
+
+## [Main Section 2] 
+[More detailed information]
+
+## Sources
+1. [Source 1 with URL]
+2. [Source 2 with URL]
+...
+\`\`\`
+
+## Multi-Document Research:
+For complex topics, create multiple focused documents:
+- Overview document with main findings
+- Specialized documents for specific aspects
+- All saved in organized directory structure
+
+**IMPORTANT**: When doing research, ALWAYS create actual documents - don't just show search results. The user wants research documents they can reference later!
+
+## Content Utilization Guidelines:
+- **Extract rich details** from the content obtained via \`extract_content\`
+- **Include specific quotes and statistics** found in the extracted articles
+- **Analyze and synthesize** information across multiple sources
+- **Add context and explanations** around technical concepts mentioned
+- **Compare different perspectives** when multiple sources discuss the same topic
+- **Expand on abbreviated information** using the detailed extracted content
+- **Create substantial sections** - aim for multiple paragraphs per major topic
+- **Don't just summarize** - analyze, contextualize, and provide insights
+
+**Remember**: The extracted content contains much more detail than search summaries - use ALL of it!
 
 `;
 

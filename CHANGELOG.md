@@ -2,7 +2,157 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.8.7] - 2025-09-18
+
+### 🔧 BUG FIX - Built-in Tool Parameter Validation
+
+**Fixed Missing Parameter Validation in Built-in Tools:**
+- **Root Cause Identified**: Built-in `create_directory` tool was missing parameter validation step despite having correct Zod schema definitions
+- **Parameter Validation Added**: Implemented proper parameter validation using `validateParams` utility function before tool execution
+- **Validation Pattern Consistency**: Fixed inconsistent validation patterns across built-in tools (some used direct Zod parsing, others were missing validation entirely)
+- **Error Handling Improved**: Invalid parameters now properly rejected with clear validation error messages instead of causing runtime errors
+
+**Technical Details:**
+- **Schema Definition**: Zod schemas were correctly defined with `z.string().min(1, 'Directory path is required')`
+- **Missing Validation Step**: Tools used `withErrorHandling` wrapper but weren't validating parameters against schemas
+- **Fix Applied**: Added `validateParams(CreateDirectorySchema, params)` before tool execution
+- **Validation Results**: Empty paths and missing parameters now properly rejected with validation errors
+
+**Tool Behavior Improvements:**
+- ✅ **Parameter Validation**: Empty paths properly rejected with validation error messages
+- ✅ **Recursive Directory Creation**: Confirmed working correctly with `recursive=true` (default)
+- ✅ **Non-recursive Mode**: Properly fails when parent directories don't exist (`recursive=false`)
+- ✅ **Existing Directory Detection**: Correctly identifies and handles existing directories
+- ✅ **File Conflict Handling**: Properly errors when attempting to create directory where file exists
+- ✅ **Error Messaging**: Clear, descriptive error messages for all failure scenarios
+
+**Impact:**
+- **Built-in Tools Reliability**: Built-in tools now have consistent parameter validation and error handling
+- **User Experience**: Users get clear validation errors instead of confusing runtime failures
+- **System Robustness**: Prevents invalid tool calls from reaching execution logic
+- **Developer Confidence**: Systematic testing approach revealed and fixed the core validation issue
+
+---
+
 ## [1.8.6] - 2025-09-18
+
+### 🛠️ COMPREHENSIVE RESEARCH TOOL FIX
+
+**Fixed Overly Restrictive Content Requirements:**
+- **Reduced Minimum Content Threshold**: Changed from 50,000 characters to 1,000 characters for document creation
+- **Pragmatic Research Standards**: Tool now creates documents with quality content found rather than rejecting based on arbitrary length requirements
+- **Improved User Experience**: Eliminates confusing rejection messages when good research content is available
+- **Better Tool Behavior**: Research tool now behaves as users expect - gathering information and creating documents
+
+### 🔬 INTELLIGENT COMPREHENSIVE RESEARCH SYSTEM
+
+Implemented a revolutionary smart research system that automatically distinguishes between deep research requiring detailed documentation versus quick information lookups, delivering the appropriate research depth based on user intent.
+
+#### 🎯 **Smart Research Intent Detection**
+
+**Automatic Intent Recognition:**
+- **Deep Research Patterns**: Automatically detects requests for comprehensive analysis, detailed studies, or complete guides
+- **Quick Lookup Patterns**: Recognizes requests for fast facts, brief explanations, or immediate answers
+- **Fact-Checking Requests**: Identifies verification queries that need confidence ratings
+- **Transparent Operation**: Users don't need to specify research type - the system intelligently determines intent
+
+**Enhanced Research Tools:**
+- **`comprehensive_research`**: Conducts thorough research and creates detailed documents from quality sources (pragmatic content thresholds)
+- **`quick_information_lookup`**: Provides fast answers (max 60 seconds) without document generation
+- **`fact_check`**: Specialized tool for verifying claims with confidence ratings
+- **`research_document_manager`**: Manages, organizes, and tracks all research documents
+
+#### 📚 **Comprehensive Research Features**
+
+**Document Generation Standards:**
+- **Minimum Content Requirement**: Enforces 50,000 character minimum for comprehensive research
+- **Multi-Document Splitting**: Automatically splits extensive topics (>100k chars) into multiple organized documents
+- **No Fabrication Policy**: Strict policy against generating content without verified sources
+- **Auto-Save System**: All research automatically saved to `~/Bibble-Research/` directory with structured organization
+
+**Enhanced Research Quality:**
+- **8 Targeted Searches**: Uses up to 8 search queries for comprehensive coverage
+- **15+ Content Extractions**: Deep analysis from multiple high-quality sources
+- **Extended Research Time**: Up to 6 minutes for thorough investigation
+- **Source Documentation**: Complete source tracking and citation
+
+#### ⚡ **Quick Information Lookup**
+
+**Optimized for Speed:**
+- **45-Second Timeout**: Fast response for immediate answers
+- **3 Search Limit**: Focused searches for efficiency
+- **No Document Creation**: Direct answers without file generation
+- **Confidence Ratings**: Clear confidence levels for reliability assessment
+
+**Smart Response Formatting:**
+- **Concise Answers**: Content limited to 3000 characters for quick consumption
+- **Source Summary**: Top 5 sources with relevance indicators
+- **Quick Facts Section**: Key statistics and confidence metrics
+
+#### 🔍 **Specialized Fact-Checking**
+
+**Verification-Focused Tool:**
+- **Claim Verification**: Specialized for checking specific facts or statements
+- **Confidence Scoring**: Numerical confidence ratings (0-100%)
+- **Source Reliability**: Emphasis on authoritative and reliable sources
+- **Contradiction Detection**: Identifies conflicting information across sources
+
+#### 🗂️ **Research Document Management**
+
+**Comprehensive Organization:**
+- **Document Registry**: Tracks all research documents with metadata
+- **Auto-Indexing**: Extracts tags, categories, and summaries automatically
+- **Search & Filter**: Find research documents by topic, date, or content
+- **Statistics Tracking**: Monitor research productivity and document analytics
+
+**Document Features:**
+- **Structured Templates**: Professional research report formatting
+- **Source Documentation**: Complete bibliography with URLs and access dates
+- **Research Methodology**: Detailed methodology section for transparency
+- **Quality Assurance**: Built-in disclaimers and accuracy notes
+
+#### 🤖 **Intelligent Routing System**
+
+**Transparent Operation:**
+- **Intent Analysis**: Analyzes query complexity, keywords, and user patterns
+- **Automatic Tool Selection**: Routes to appropriate research tool without user intervention
+- **Seamless Experience**: Users get the right research depth without manual specification
+- **Context Awareness**: Considers conversation history and user preferences
+
+**Smart Routing Logic:**
+- **Comprehensive Triggers**: "detailed analysis", "research report", "complete guide", "comprehensive study"
+- **Quick Lookup Triggers**: "what is", "how to", "quick question", "briefly explain"
+- **Fact-Check Triggers**: "is it true", "verify that", "fact check", "confirm whether"
+
+#### 🏗️ **Technical Architecture**
+
+**Enhanced Research Agent:**
+- **Multi-Engine Support**: DuckDuckGo, Bing, Google, Brave with intelligent fallbacks
+- **Content Extraction**: Advanced web scraping with relevance scoring
+- **Research Sessions**: Persistent session management with progress tracking
+- **Error Recovery**: Robust error handling with graceful degradation
+
+**Document Management:**
+- **File System Integration**: Automatic directory creation and organization
+- **Metadata Extraction**: Auto-generated tags, summaries, and categories
+- **Search Indexing**: Full-text search across all research documents
+- **Export Capabilities**: Multiple format support for research sharing
+
+#### ✨ **User Experience Improvements**
+
+**Effortless Research:**
+- **🎯 Intent-Aware**: System automatically provides the right research depth
+- **⚡ Fast When Needed**: Quick answers in under a minute for simple questions
+- **📖 Thorough When Required**: Comprehensive research with detailed documentation
+- **🔍 Fact Verification**: Specialized verification with confidence ratings
+
+**Professional Documentation:**
+- **📋 Structured Reports**: Professional formatting with executive summaries
+- **📚 Source Management**: Complete bibliography and citation tracking
+- **🗂️ Organized Storage**: Automatic filing and categorization of research
+- **📊 Research Analytics**: Track research productivity and document metrics
+
+---
 
 ### 🧠 ENHANCED TOOL CONTEXT MANAGEMENT - INTELLIGENT TOOL SELECTION SYSTEM
 

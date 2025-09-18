@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.8.6
+**Version**: 1.8.7
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble  
-*Last updated: January 10, 2025 - 10:15 UTC*
+*Last updated: September 18, 2025 - 06:42 UTC*
 
 **🏆 GitHub Hackathon Contender** - Strong candidate for "For the Love of Code" GitHub hackathon submission (deadline: September 22, 2025) - fits perfectly in **Terminal Talent**, **Agents of Change**, and **Everything but the kitchen sink** categories with exceptional technical innovation and visual excellence
 
@@ -749,7 +749,8 @@ Version 1.4.4 introduces **COMPREHENSIVE BUILT-IN TOOLS INTEGRATION** that elimi
 - **Filesystem Tools**: `read_file`, `write_file`, `create_directory`, `list_directory`, `move_file`, `copy_file`, `delete_file`, `get_file_info`, `find_files`
 - **Process Management**: `execute_command`, `get_processes`, `kill_process`, `monitor_process`
 - **Search Capabilities**: `search_files`, `search_in_file`, `grep_search` with powerful ripgrep integration
-- **Web Search & Research**: `web-search`, `quick-search`, `research-status` with multi-engine support (DuckDuckGo, Bing, Google)
+- **Web Search & Research**: `web_search`, `quick_web_search`, `research_status` with multi-engine support (DuckDuckGo, Bing, Google, Brave)
+- **🔬 Intelligent Comprehensive Research**: `comprehensive_research`, `quick_information_lookup`, `fact_check`, `research_document_manager` with automatic intent detection and professional document generation
 - **Text Editing**: `find_replace_in_file`, `insert_text`, `delete_lines` with fuzzy matching fallback
 - **Configuration Management**: Integrated configuration system with security and validation
 

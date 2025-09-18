@@ -86,7 +86,7 @@ export class Splash {
     
     // Add version info with status badge
     if (showVersion) {
-      const versionBadge = statusUtils.info('Version 1.8.6');
+      const versionBadge = statusUtils.info('Version 1.8.7');
       content += '\n' + versionBadge;
     }
     
@@ -138,7 +138,7 @@ export class Splash {
         }
 
         if (showVersion) {
-          const versionBadge = statusUtils.info('Version 1.8.6');
+          const versionBadge = statusUtils.info('Version 1.8.7');
           console.log(versionBadge);
         }
 
