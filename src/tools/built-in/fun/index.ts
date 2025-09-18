@@ -6,9 +6,7 @@
  */
 
 // Export individual tools
-export * from './ascii-art.js';
 export * from './cat-images.js';
 
 // Export tool definitions for registry
-export { asciiArtTool } from './ascii-art.js';
 export { catImagesTool } from './cat-images.js';

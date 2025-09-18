@@ -50,7 +50,7 @@ import { getHackerNewsStoriesTool, getHackerNewsStoryTool } from './news/hackern
 import { workspaceTools } from './workspace/index.js';
 
 // Import all fun hackathon tools
-import { asciiArtTool, catImagesTool } from './fun/index.js';
+import { catImagesTool } from './fun/index.js';
 
 export class BuiltInToolRegistry {
   private tools: Map<string, BuiltInTool> = new Map();
@@ -111,8 +111,7 @@ export class BuiltInToolRegistry {
     workspaceTools.forEach(tool => this.registerTool(tool));
 
     // Fun hackathon tools
-    this.registerTool(asciiArtTool);
-  this.registerTool(catImagesTool);
+    this.registerTool(catImagesTool);
   }
 
   /**

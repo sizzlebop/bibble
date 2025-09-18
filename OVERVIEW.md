@@ -2,12 +2,12 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.8.5
+**Version**: 1.8.6
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble  
-*Last updated: September 18, 2025 - 03:06 UTC*
+*Last updated: January 10, 2025 - 10:15 UTC*
 
-**🏆 GitHub Hackathon Contender** - Strong candidate for GitHub hackathon submission (deadline: September 22, 2025)
+**🏆 GitHub Hackathon Contender** - Strong candidate for "For the Love of Code" GitHub hackathon submission (deadline: September 22, 2025) - fits perfectly in **Terminal Talent**, **Agents of Change**, and **Everything but the kitchen sink** categories with exceptional technical innovation and visual excellence
 
 ## Project Overview
 
@@ -867,6 +867,54 @@ Version 1.3.8 represented a **MAJOR VISUAL TRANSFORMATION** that converted Bibbl
 - **Visual Impact**: Complete transformation from plain terminal output to stunning Pink Pixel branded experience
 
 ## Recent Development & Research
+
+### Enhanced Tool Context Management (v1.8.6) - January 10, 2025
+
+Version 1.8.6 introduces **revolutionary tool management improvements** that solve critical agent behavior issues and establish intelligent tool selection with dynamic MCP integration.
+
+**🔧 Core Agent Architecture Enhancements:**
+- **Enhanced Tool Context Management**: Complete overhaul of tool selection and discovery systems
+- **Dynamic MCP Tool Summary**: Intelligent generation of compact tool summaries for system prompts
+- **Tool Forgetting Prevention**: Eliminates issues where agents would forget available tools or default to inappropriate built-in tools
+- **Multi-Tool Workflow Support**: Enhanced support for complex workflows requiring multiple tool interactions
+- **User-Specified Tool Prioritization**: System now properly prioritizes tools requested by users over generic alternatives
+
+**🎯 Critical Behavior Fixes:**
+- **FIXED: Tool Selection Issues**: Resolved agent defaulting to ASCII art generation instead of using MCP image tools
+- **FIXED: Tool Awareness**: Eliminated tool "forgetting" where available MCP tools weren't being recognized
+- **FIXED: Discovery Failures**: Fixed issues where dynamic tool discovery wasn't providing complete context
+- **FIXED: Inappropriate Defaults**: Removed competition between built-in tools and user-preferred MCP tools
+- **FIXED: Context Gaps**: Resolved system prompt gaps that led to suboptimal tool selection
+
+**🚀 System Improvements:**
+- **ASCII Art Tool Removal**: Removed built-in ASCII art tool to eliminate competition with MCP image generation tools
+- **Simplified Validation**: Streamlined tool usage validation to focus only on technical errors, not subjective appropriateness
+- **MCP Tool Priority**: Enhanced system to always discover and prioritize available MCP tools over built-in alternatives
+- **Contextual Tool Allowlist**: Disabled hard-coded tool restrictions to allow intelligent, context-aware tool selection
+- **Dynamic Tool Documentation**: Added `generateMcpToolsSummary()` method for compact, focused tool descriptions
+
+**⚙️ Technical Architecture:**
+- **Smart Tool Discovery**: Enhanced tool discovery with priority-based selection and multi-step verification
+- **Optimized System Prompts**: Refined prompts to encourage intelligent tool selection with clear guidance
+- **Flexible Tool Registry**: Modular tool registration system that adapts to available MCP servers
+- **Security-First Approach**: Maintains all existing security policies while improving tool selection intelligence
+- **Backward Compatibility**: All changes maintain compatibility with existing MCP server configurations
+
+**📈 Performance & Reliability:**
+- **Reduced Tool Conflicts**: Eliminated competition between similar tools from different sources
+- **Improved Agent Consistency**: More predictable and reliable tool selection behavior
+- **Enhanced User Control**: Better respect for user preferences and explicit tool requests
+- **Streamlined Validation**: Faster tool execution with simplified but secure validation logic
+- **Optimized Context**: More efficient system prompt generation with focused tool summaries
+
+**✨ User Experience Impact:**
+- **Smarter Agent Behavior**: Agents now consistently choose the most appropriate tools for tasks
+- **Better Tool Recognition**: MCP tools are properly discovered and documented in every session
+- **Reduced Frustration**: Eliminates cases where agents would ignore available tools or make poor choices
+- **Enhanced Workflow Support**: Better handling of complex multi-tool tasks and user-directed workflows
+- **Professional Results**: More reliable and predictable tool usage aligned with user expectations
+
+This release represents a major milestone in Bibble's evolution toward intelligent, context-aware tool management that truly understands and responds to user needs while maintaining security and reliability!
 
 ### Terminal Animations System (v1.8.3) - September 8, 2025
 

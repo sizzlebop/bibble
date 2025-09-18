@@ -2,6 +2,125 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.8.6] - 2025-09-18
+
+### 🧠 ENHANCED TOOL CONTEXT MANAGEMENT - INTELLIGENT TOOL SELECTION SYSTEM
+
+Implemented a comprehensive Enhanced Tool Context Management system to address tool selection issues and eliminate "tool forgetting" problems, particularly the issue of the agent defaulting to ASCII art generation instead of using available MCP image generation tools.
+
+#### 🎯 **Core Problem Resolution**
+
+- **Tool Forgetting Issue**: Fixed agent tendency to default to built-in ASCII art tool instead of discovering and using appropriate MCP image generation tools
+- **Inappropriate Tool Defaults**: Agent now properly evaluates and selects the most appropriate tool for each task rather than defaulting to convenient but incorrect options
+- **Hard-coded Tool Assumptions**: Removed hard-coded references to specific MCP tools, making the system generic and adaptable to any user-configured MCP servers
+
+#### 🚀 **Enhanced Tool Context Management Features**
+
+**1. Smart Tool Usage Validation**
+- **Simplified Validation**: Only blocks calls that cause technical errors (e.g., calling built-in tools via MCP wrapper)
+- **Freedom of Choice**: Allows agent freedom in tool selection, removing overly restrictive validation that could block legitimate tools
+- **Error Prevention**: Prevents validation loops that could frustrate users and interrupt workflows
+
+**2. Removed ASCII Art Tool Competition**
+- **Strategic Tool Removal**: Completely removed ASCII art tool from built-in registry to eliminate competition with MCP image generation tools
+- **Clear Tool Hierarchy**: Ensures MCP image generation tools are the primary option for image-related tasks
+- **Reduced Confusion**: Agent no longer has conflicting options for image generation tasks
+
+**3. Dynamic Tool Discovery System**
+- **MCP Tools Summary**: Generates compact summary of available MCP tools with names and descriptions
+- **System Prompt Integration**: Injects MCP capabilities overview into system prompt without overloading it
+- **Adaptive Context**: System adjusts to whatever MCP servers the user has configured
+- **Generic Approach**: No hard-coded assumptions about specific MCP tools or servers
+
+**4. Intelligent Tool Selection Guidance**
+- **User-Specified Priority**: When user specifies a tool or service, that takes absolute priority
+- **Discovery Before Action**: Agent uses `list_tools` to discover available options when no specific tool mentioned
+- **Best Tool Selection**: Chooses based on capability and task requirements, not convenience
+- **Multi-Tool Workflows**: Uses multiple tools when needed for complete task fulfillment
+
+#### 🔧 **Technical Architecture Improvements**
+
+**Enhanced Agent System (`src/mcp/agent.ts`):**
+- **Simplified Tool Validation**: Streamlined `validateToolUsage()` to focus on technical errors only
+- **Contextual Tool Allowlist Disabled**: Removed restrictive gating that could block legitimate tools
+- **Capabilities Ledger**: Persistent summary system that survives conversation compaction
+- **Compact MCP Summary**: Efficient method to provide MCP tool overview without prompt bloat
+- **Generic Tool Selection Principles**: Removed hard-coded tool preferences and assumptions
+
+**Optimized System Prompt:**
+- **Intelligent Tool Selection Principles**: Clear guidance on tool selection process and priorities
+- **Discovery Workflow**: Step-by-step process for tool discovery and selection
+- **Multiple Tools Support**: Explicit support for using multiple tools to complete complex tasks
+- **User Intent Recognition**: Enhanced ability to understand and execute user's specific tool preferences
+
+#### 📈 **User Experience Enhancements**
+
+**Better Tool Selection:**
+- **🎯 Task-Appropriate Tools**: Agent now consistently chooses the most suitable tool for each task
+- **🔍 Tool Discovery**: Uses `list_tools` to discover available options before making choices
+- **⚡ Multi-Tool Execution**: Can use multiple tools in sequence to complete complex tasks
+- **💡 User Confirmation**: Lists relevant tools for user confirmation when intent is unclear
+
+**Eliminated Tool Conflicts:**
+- **🚫 No More ASCII Art Defaults**: Removed ASCII art tool to prevent conflict with MCP image generation
+- **✅ MCP Tool Priority**: MCP tools now get proper consideration for appropriate tasks
+- **🎨 Image Generation Fixed**: Users requesting image generation will get MCP tools, not ASCII art
+- **🔧 Flexible Integration**: System adapts to whatever MCP servers are configured
+
+#### 🛡️ **Preserved Functionality**
+
+**Security & Performance:**
+- **Full Security Preservation**: All existing security policies and MCP protections maintained
+- **Backward Compatibility**: All existing MCP integrations continue working unchanged
+- **Performance Optimization**: Compact tool summaries keep system prompt size manageable
+- **Error Handling**: Robust error handling with graceful degradation
+
+**Integration Compatibility:**
+- **All LLM Providers**: Works seamlessly with OpenAI, Anthropic, Google Gemini, and compatible endpoints
+- **All MCP Servers**: Compatible with any user-configured MCP servers without hard-coded dependencies
+- **Existing Workflows**: No breaking changes to existing user workflows or configurations
+- **Tool Discovery**: Enhanced tool discovery works with any MCP server combination
+
+#### 🎉 **Expected Behavior Changes**
+
+**Before v1.8.6:**
+- Agent would default to ASCII art generation when asked to create images
+- Tool validation could block legitimate tool usage, causing frustrating loops
+- Hard-coded assumptions about specific MCP tools limited flexibility
+- Tool selection was sometimes based on convenience rather than appropriateness
+
+**After v1.8.6:**
+- Agent properly discovers and uses MCP image generation tools for image tasks
+- Tool validation focuses on technical errors only, allowing more freedom in tool selection
+- Generic system adapts to any MCP server configuration without hard-coded assumptions
+- Tool selection prioritizes user intent and task requirements over convenience
+
+#### 🔧 **Technical Implementation Details**
+
+**Agent Architecture Updates:**
+- Simplified `validateToolUsage()` method to focus on preventing technical errors only
+- Enhanced `generateCompactMCPToolsSummary()` for efficient MCP tool overview
+- Disabled contextual tool allowlist gating to prevent blocking legitimate tools
+- Removed ASCII art tool from built-in tool registry to eliminate competition
+
+**System Prompt Optimization:**
+- Updated "INTELLIGENT TOOL SELECTION" section with clear selection principles
+- Added structured selection process (check user specs → discover → evaluate → choose → execute)
+- Emphasized user-specified tools taking priority over agent preferences
+- Removed hard-coded tool assumptions while maintaining clear guidance
+
+#### 🚀 **Future-Proofing**
+
+**Extensible Design:**
+- Generic tool selection system works with any future MCP servers
+- No hard-coded dependencies on specific tool names or servers
+- Adaptable to new MCP tool types and capabilities as they emerge
+- Scalable architecture supports growing MCP ecosystem
+
+This release transforms Bibble's tool selection from a rigid, assumption-based system into an intelligent, adaptive, and user-focused tool management experience that properly leverages whatever MCP tools users have configured!
+
+---
+
 ## [1.8.5] - 2025-09-18
 
 ### 🤖 OPENAI MODEL UPDATES - LATEST AI POWERHOUSE SUPPORT

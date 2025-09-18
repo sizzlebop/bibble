@@ -33,22 +33,20 @@ When calling tools, you MUST follow these rules:
 8. **CORRECT**: {"path": "file.txt", "content": "Hello"}
 9. **INCORRECT**: {"path": "file.txt"}{"content": "Hello"} - This will cause parsing errors!
 
-# TOOL SELECTION PRINCIPLES:
+# INTELLIGENT TOOL SELECTION:
 
-## Be Direct and Efficient
-- **For file operations**: Use tools that directly create, read, or modify files rather than workflow management tools
-- **For simple tasks**: Don't create elaborate plans when a single action will suffice
-- **For information gathering**: Get the information first, then act on it directly
+## Core Principles
+1. **User-Specified Tools First**: If the user specifies a tool or service to use, use that exact tool
+2. **Discovery Before Action**: When no specific tool is mentioned, use \`list_tools\` to see all available options
+3. **Best Tool for the Job**: Choose the most appropriate tool based on the specific task requirements
+4. **Multiple Tools When Needed**: Use multiple tool calls if required to complete the task properly
 
-## Avoid Over-Engineering
-- **Don't plan when you can act**: If you have all the information needed, execute directly
-- **Don't use multiple tools when one suffices**: Choose the most appropriate single tool
-- **Don't repeat thinking**: If you've analyzed something, move to action
-
-## Tool Priority Guidelines
-- **Direct action tools** (file operations, searches, data retrieval) > Workflow/planning tools
-- **Task-specific tools** > General orchestration tools
-- **Simple operations** > Complex multi-step processes
+## Selection Process
+1. **Check if user specified a tool** - Use exactly what they requested
+2. **If no tool specified** - Use \`list_tools\` to discover available options
+3. **Evaluate options** - Compare built-in tools vs MCP tools for the specific task
+4. **Choose the best fit** - Select based on capability, not convenience
+5. **Execute efficiently** - Use multiple tools if needed for complete task fulfillment
 
 ## Example: Creating a Document
 GOOD: Research topic → Use appropriate file creation tool
@@ -92,7 +90,7 @@ For example:
 
 **REMEMBER**: The user needs the answer in conversational text, not just raw tool output!
 
-# TOOL USAGE GUIDE (CRITICAL):
+# 🔧 TOOL USAGE GUIDE (CRITICAL):
 
 ## Built-in Tools (Direct Access)
 - **CALL DIRECTLY**: Built-in tools like \`get-weather\`, \`get-hackernews-stories\`, \`read_file\`, \`write_file\`, etc. can be called directly
@@ -105,6 +103,8 @@ For example:
   1) Call \`list_tools\` to see available MCP tools
   2) Call \`describe_tool(name)\` to get schema
   3) Call \`call_mcp_tool\` with {\"name\": \"toolname\", \"args\": {...}}
+
+**REMEMBER**: Always check what MCP tools are available using \`list_tools\` before defaulting to built-in alternatives!
 
 **IMPORTANT**: Always provide ALL required parameters as a single JSON object to avoid parsing errors.
 
@@ -211,6 +211,8 @@ export class Agent extends McpClient {
   private exitLoopTools = [taskCompletionTool, askQuestionTool];
   private workspaceManager: WorkspaceManager;
   private workspaceContext: WorkspaceContext | null = null;
+  private capabilitiesLedger: string = ""; // Persistent summary of MCP capabilities
+  private contextualToolFilter: string[] = []; // Context-specific tool allowlist
 
    async listTools(client: Client): Promise<void> {
      try {
@@ -343,10 +345,9 @@ export class Agent extends McpClient {
     // Add explicit tool selection guidance
     toolsList += "## 📋 TOOL SELECTION GUIDE\n\n";
     toolsList += "**For File Operations** (create, read, write, delete files): Use BUILT-IN TOOLS like `write_file`, `read_file`, `list_directory`, etc.\n";
-    toolsList += "**For Image Generation**: Use MCP tools like `generateImage`, `editImage`\n";
-    toolsList += "**For Web Search**: Use MCP tools like `DuckDuckGoWebSearch`\n";
-    toolsList += "**For Task Management**: Use MCP tools like `plan_task`, `get_next_task`\n\n";
-    toolsList += "**NEVER** use image generation tools for file operations or vice versa!\n\n";
+    toolsList += "**For External Services**: Use MCP tools via `call_mcp_tool` wrapper\n";
+    toolsList += "**Discovery**: Use `list_tools` to see what MCP tools are available\n\n";
+    toolsList += "**Key Rule**: Built-in tools are called directly, MCP server tools require `call_mcp_tool` wrapper.\n\n";
 
     // Group tools by server, including built-in tools
     const toolsByServer = new Map<string, any[]>();
@@ -473,6 +474,85 @@ export class Agent extends McpClient {
   }
 
   /**
+   * Generate a dynamic tool palette for the current conversation turn
+   * This provides focused tool context to help the agent choose appropriate tools
+   * @param userInput The current user input to help contextualize tool selection
+   * @returns Formatted tool palette as markdown
+   */
+  private generateToolPalette(userInput?: string): string {
+    // Only generate palette if there are actually MCP tools available
+    if (this.availableTools.length === 0) {
+      return "";
+    }
+
+    let palette = "\n# 🎨 TOOL PALETTE (Current Turn)\n\n";
+    
+    // Get available MCP tools by server
+    const mcpToolsByServer = new Map<string, any[]>();
+    for (const tool of this.availableTools) {
+      const serverName = this.toolToServerMap.get(tool.function.name) || "MCP Server";
+      if (!mcpToolsByServer.has(serverName)) {
+        mcpToolsByServer.set(serverName, []);
+      }
+      mcpToolsByServer.get(serverName)?.push(tool);
+    }
+    
+    // Show available MCP servers and their capabilities
+    palette += "**🔧 Available MCP Servers:**\n";
+    for (const [serverName, tools] of mcpToolsByServer) {
+      palette += `\n## ${serverName} (${tools.length} tools)\n`;
+      
+      // Show a few example tools from this server
+      const exampleTools = tools.slice(0, 3);
+      for (const tool of exampleTools) {
+        const desc = tool.function.description ? ` - ${tool.function.description.substring(0, 50)}...` : "";
+        palette += `- \`${tool.function.name}\`${desc}\n`;
+      }
+      if (tools.length > 3) {
+        palette += `- ...and ${tools.length - 3} more tools\n`;
+      }
+    }
+    
+    palette += "\n**💡 Usage:** Use \`call_mcp_tool\` with {\"name\": \"tool_name\", \"args\": {...}}\n";
+    palette += "Use \`list_tools\` to see all available tools with details.\n";
+    
+    return palette;
+  }
+
+  /**
+   * Generate compact MCP tools summary for system prompt (names and descriptions only)
+   * @returns Formatted tool summary as markdown
+   */
+  private generateCompactMCPToolsSummary(): string {
+    if (this.availableTools.length === 0) {
+      return "\n**🔧 MCP Tools:** None connected\n";
+    }
+
+    const mcpToolsByServer = new Map<string, any[]>();
+    for (const tool of this.availableTools) {
+      const serverName = this.toolToServerMap.get(tool.function.name) || "MCP Server";
+      if (!mcpToolsByServer.has(serverName)) {
+        mcpToolsByServer.set(serverName, []);
+      }
+      mcpToolsByServer.get(serverName)?.push(tool);
+    }
+
+    let summary = "\n**🔧 MCP Tools Available:**\n";
+    for (const [serverName, tools] of mcpToolsByServer) {
+      summary += `\n*${serverName}:*\n`;
+      for (const tool of tools) {
+        const desc = tool.function.description ? ` - ${tool.function.description.substring(0, 60)}...` : "";
+        summary += `• \`${tool.function.name}\`${desc}\n`;
+      }
+    }
+    
+    summary += "\n**Usage:** Use \`call_mcp_tool\` with {\"name\": \"tool_name\", \"args\": {...}}\n";
+    summary += "**Discovery:** Use \`list_tools\` for detailed schemas and parameters\n";
+    
+    return summary;
+  }
+
+  /**
    * Generate a compact markdown directory of tools grouped by server (MCP Context Diet)
    * @param opts Filter options
    * @returns Formatted tool directory as markdown
@@ -549,6 +629,188 @@ export class Agent extends McpClient {
       md += `\nUse \`call_mcp_tool\` with { "name": "${found.name}", "args": { ... } }.\n`;
     }
     return md;
+  }
+
+  /**
+   * Validate tool usage and provide corrective guidance
+   * @param toolName The tool being called
+   * @param args The arguments passed to the tool
+   * @param userContext Optional user input context
+   * @returns Validation result with any correction needed
+   */
+  private validateToolUsage(toolName: string, args: any, userContext?: string): {
+    isValid: boolean;
+    correction?: string;
+    suggestedTool?: string;
+  } {
+    // Only validate the most critical issues to avoid blocking legitimate tool usage
+    
+    // Built-in tool called via call_mcp_tool wrapper (this causes real errors)
+    if (toolName === 'call_mcp_tool' && args?.name) {
+      const innerToolName = args.name;
+      const builtInTools = getBuiltInToolRegistry().getAllTools();
+      const isBuiltIn = builtInTools.some(t => t.name === innerToolName);
+      
+      if (isBuiltIn) {
+        return {
+          isValid: false,
+          correction: `Tool '${innerToolName}' is a built-in tool and should be called directly, not via call_mcp_tool wrapper.`,
+          suggestedTool: innerToolName
+        };
+      }
+    }
+    
+    // MCP tool called directly instead of via wrapper (this causes real errors)
+    const mcpToolNames = this.availableTools.map(t => t.function.name);
+    if (mcpToolNames.includes(toolName)) {
+      return {
+        isValid: false,
+        correction: `Tool '${toolName}' is an MCP server tool and must be called via 'call_mcp_tool' wrapper.`,
+        suggestedTool: 'call_mcp_tool'
+      };
+    }
+    
+    // Allow everything else - let the agent make its own tool choices
+    return { isValid: true };
+  }
+
+  /**
+   * Generate a persistent capabilities ledger that summarizes connected MCP servers
+   * This survives conversation compaction and provides ongoing context
+   */
+  private generateCapabilitiesLedger(): string {
+    if (this.availableTools.length === 0) {
+      return "";
+    }
+    
+    const serverCapabilities = new Map<string, {tools: string[]; keyCapabilities: string[]}>();
+    
+    for (const tool of this.availableTools) {
+      const serverName = this.toolToServerMap.get(tool.function.name) || "Unknown MCP Server";
+      
+      if (!serverCapabilities.has(serverName)) {
+        serverCapabilities.set(serverName, { tools: [], keyCapabilities: [] });
+      }
+      
+      const serverData = serverCapabilities.get(serverName)!;
+      serverData.tools.push(tool.function.name);
+      
+      // Categorize tools by capability
+      const toolName = tool.function.name.toLowerCase();
+      const toolDesc = (tool.function.description || "").toLowerCase();
+      
+      if (/generate|image|draw|art|visual|edit.*image/i.test(toolName) || /image|visual|generate|art/i.test(toolDesc)) {
+        if (!serverData.keyCapabilities.includes('Image Generation')) {
+          serverData.keyCapabilities.push('Image Generation');
+        }
+      }
+      
+      if (/search|web|duck|google|find/i.test(toolName) || /search|web|internet/i.test(toolDesc)) {
+        if (!serverData.keyCapabilities.includes('Web Search')) {
+          serverData.keyCapabilities.push('Web Search');
+        }
+      }
+      
+      if (/task|plan|workflow|project|manage/i.test(toolName) || /task|plan|workflow|project|manage/i.test(toolDesc)) {
+        if (!serverData.keyCapabilities.includes('Task Management')) {
+          serverData.keyCapabilities.push('Task Management');
+        }
+      }
+      
+      if (/memory|remember|store|recall/i.test(toolName) || /memory|remember|store|recall/i.test(toolDesc)) {
+        if (!serverData.keyCapabilities.includes('Memory & Storage')) {
+          serverData.keyCapabilities.push('Memory & Storage');
+        }
+      }
+    }
+    
+    let ledger = "\n# 📊 CAPABILITIES LEDGER\n\n";
+    ledger += "**Connected MCP Servers and Key Capabilities:**\n\n";
+    
+    for (const [serverName, data] of serverCapabilities) {
+      ledger += `## ${serverName}\n`;
+      ledger += `- **Tools Available**: ${data.tools.length}\n`;
+      
+      if (data.keyCapabilities.length > 0) {
+        ledger += `- **Key Capabilities**: ${data.keyCapabilities.join(', ')}\n`;
+      }
+      
+      // Show top 3 tools
+      const topTools = data.tools.slice(0, 3);
+      ledger += `- **Primary Tools**: ${topTools.join(', ')}${data.tools.length > 3 ? ` (+${data.tools.length - 3} more)` : ""}\n\n`;
+    }
+    
+    ledger += "**Usage Reminder**: Use \`list_tools\` for complete tool directory, \`call_mcp_tool\` for MCP server tools.\n";
+    
+    return ledger;
+  }
+  
+  /**
+   * Update the capabilities ledger (called after tool loading)
+   */
+  private updateCapabilitiesLedger(): void {
+    this.capabilitiesLedger = this.generateCapabilitiesLedger();
+  }
+
+  /**
+   * Generate contextual tool filter based on user input
+   * This creates a focused allowlist of relevant tools for the current request
+   * @param userInput The current user input
+   * @returns Array of tool names that are contextually relevant
+   */
+  private generateContextualToolFilter(userInput: string): string[] {
+    const allowedTools: string[] = [];
+    
+    // Always allow control flow tools
+    allowedTools.push('task_complete', 'ask_question');
+    
+    // Always allow discovery tools
+    allowedTools.push('list_tools', 'describe_tool', 'call_mcp_tool');
+    
+    // Built-in tools are always available
+    const builtInRegistry = getBuiltInToolRegistry();
+    const builtInTools = builtInRegistry.getAllTools();
+    allowedTools.push(...builtInTools.map(t => t.name));
+    
+    // Analyze user input for specific capability needs
+    const isImageTask = /image|picture|photo|draw|create.*visual|generate.*art|illustration/i.test(userInput);
+    const isSearchTask = /search|find|look up|what is|who is/i.test(userInput);
+    const isFileTask = /file|read|write|create.*file|save|directory|folder/i.test(userInput);
+    const isTaskManagement = /plan|task|workflow|organize|manage/i.test(userInput);
+    const isMemoryTask = /remember|memory|store|recall|save.*info/i.test(userInput);
+    
+    // Add relevant MCP tools based on context
+    for (const tool of this.availableTools) {
+      const toolName = tool.function.name.toLowerCase();
+      const toolDesc = (tool.function.description || "").toLowerCase();
+      
+      // Image generation tools
+      if (isImageTask && (/generate|image|draw|art|visual|edit.*image/i.test(toolName) || /image|visual|generate|art/i.test(toolDesc))) {
+        allowedTools.push(tool.function.name);
+      }
+      
+      // Search tools
+      if (isSearchTask && (/search|web|duck|google|find/i.test(toolName) || /search|web|internet/i.test(toolDesc))) {
+        allowedTools.push(tool.function.name);
+      }
+      
+      // Task management tools
+      if (isTaskManagement && (/task|plan|workflow|project|manage/i.test(toolName) || /task|plan|workflow|project|manage/i.test(toolDesc))) {
+        allowedTools.push(tool.function.name);
+      }
+      
+      // Memory tools
+      if (isMemoryTask && (/memory|remember|store|recall/i.test(toolName) || /memory|remember|store|recall/i.test(toolDesc))) {
+        allowedTools.push(tool.function.name);
+      }
+    }
+    
+    // If no specific context detected, allow all tools (fallback)
+    if (!isImageTask && !isSearchTask && !isFileTask && !isTaskManagement && !isMemoryTask) {
+      allowedTools.push(...this.availableTools.map(t => t.function.name));
+    }
+    
+    return [...new Set(allowedTools)]; // Remove duplicates
   }
 
   /**
@@ -646,10 +908,12 @@ export class Agent extends McpClient {
       this.workspaceContext = null;
     }
 
-    // Now that tools are loaded, update the system prompt with tools list and workspace context
+    // Now that tools are loaded, update capabilities ledger and system prompt
+    this.updateCapabilitiesLedger();
+    
     const toolsList = this.generateToolsList();
     const workspacePrompt = this.generateWorkspaceContextPrompt();
-    const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${workspacePrompt}\n\n${toolsList}`;
+    const systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${workspacePrompt}\n\n${this.capabilitiesLedger}\n\n${toolsList}`;
     
     // Update the first system message with the complete prompt including tools
     this.messages[0] = {
@@ -667,6 +931,20 @@ export class Agent extends McpClient {
    * @param options Chat options
    */
   async chat(input: string, options: ChatOptions = {}): Promise<AsyncGenerator<string>> {
+    // Disable contextual tool filter for now to avoid blocking legitimate usage
+    this.contextualToolFilter = [];
+    
+    // Generate tool palette based on user input (if any MCP tools are available)
+    const toolPalette = this.generateToolPalette(input);
+    
+    // Only inject tool palette if it has content
+    if (toolPalette.trim()) {
+      this.messages.push({
+        role: MessageRole.System,
+        content: toolPalette,
+      });
+    }
+    
     // Add user message
     this.messages.push({
       role: MessageRole.User,
@@ -879,6 +1157,51 @@ export class Agent extends McpClient {
       // Execute each tool call and display results
       for (const toolCall of toolCallsInTurn) {
         try {
+          // Validate tool usage before execution
+          const lastUserMessage = this.messages
+            .slice()
+            .reverse()
+            .find(m => m.role === MessageRole.User);
+          const userContext = lastUserMessage?.content || undefined;
+          
+          const validation = this.validateToolUsage(toolCall.name, toolCall.args, userContext);
+          if (!validation.isValid && validation.correction) {
+            // Return validation error as tool result
+            let correctionMessage = `❌ **Tool Usage Error**: ${validation.correction}`;
+            if (validation.suggestedTool) {
+              correctionMessage += `\n\n💡 **Suggested Action**: Use \`${validation.suggestedTool}\` instead.`;
+            }
+            const toolResult = { content: correctionMessage };
+            
+            // Handle tool result based on model type  
+            if (isAnthropicModel) {
+              this.messages.push({
+                role: MessageRole.User,
+                content: JSON.stringify([
+                  {
+                    type: "tool_result",
+                    tool_use_id: toolCall.id,
+                    content: toolResult.content
+                  }
+                ])
+              });
+            } else {
+              this.messages.push({
+                role: MessageRole.Tool,
+                content: toolResult.content,
+                toolName: toolCall.name,
+                toolCallId: toolCall.id,
+              });
+            }
+            
+            // Display validation error
+            yield `\n🚨 ${validation.correction}\n`;
+            if (validation.suggestedTool) {
+              yield `💡 Try using \`${validation.suggestedTool}\` instead.\n`;
+            }
+            continue;
+          }
+          
           // Handle MCP Context Diet wrapper tools
           let toolResult: { content: string };
           
