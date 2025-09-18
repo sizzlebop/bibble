@@ -256,6 +256,11 @@ const accent = (s: string) => {
 
 const dim = (s: string) => {
   const colors = getCurrentColors();
+  return chalk.hex(colors.secondary)(s);
+};
+
+const muted = (s: string) => {
+  const colors = getCurrentColors();
   return chalk.hex(colors.dim)(s);
 };
 
@@ -308,7 +313,7 @@ const firstHeading = (s: string) => {
 // Labels
 function label(key: string, value: string) {
   const colors = getCurrentColors();
-  const k = chalk.hex(colors.dim)(`[${key}]`);
+  const k = chalk.hex(colors.secondary)(`[${key}]`);
   const v = chalk.hex(colors.text)(value);
   return `${k} ${v}`;
 }
@@ -384,6 +389,7 @@ const theme = {
   brand,
   accent,
   dim,
+  muted,
   code,
   text,
   link,

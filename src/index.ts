@@ -6,10 +6,12 @@ import { setupConfigCommand } from "./commands/config.js";
 import { setupHistoryCommand } from "./commands/history.js";
 import { createHelpCommand } from "./commands/help.js";
 import { createSecurityCommand } from "./commands/security.js";
+import { createAnimationsCommand } from "./commands/animations.js";
 
 // Config initialization
 import { ensureConfigDirExists } from "./config/storage.js";
 import { isSetupNeeded, runSetupWizard } from "./config/setup.js";
+import { Config } from "./config/config.js";
 
 // Import Agent for system prompt command
 import { Agent } from "./mcp/agent.js";
@@ -26,6 +28,9 @@ export { Agent } from "./mcp/agent.js";
 
 // Import environment resolver for diagnostics
 import { envResolver } from "./utils/env-resolver.js";
+// Import ChatUI for default action
+import { ChatUI } from "./ui/chat.js";
+import inquirer from "inquirer";
 
 // Create CLI program
 const program = new Command();
@@ -34,7 +39,7 @@ const program = new Command();
 program
   .name("bibble")
   .description("CLI chatbot with MCP support")
-  .version("1.8.2");
+  .version("1.8.5");
 
 // Initialize configuration
 ensureConfigDirExists();
@@ -49,6 +54,9 @@ program.addCommand(createHelpCommand());
 
 // Add security command
 program.addCommand(createSecurityCommand());
+
+// Add animations command
+program.addCommand(createAnimationsCommand());
 
 // Setup command
 program
@@ -208,9 +216,66 @@ program.action(async () => {
   }
 
   // Default to starting chat when no arguments provided
-  const chatCommand = program.commands.find((cmd: any) => cmd.name() === "chat");
-  if (chatCommand) {
-    await chatCommand.parseAsync(process.argv);
+  // This ensures we get the animated banner!
+  try {
+    const config = Config.getInstance();
+    
+    // Get the default provider
+    const defaultProvider = config.getDefaultProvider();
+
+    // Check if we need to prompt for API key based on the provider
+    if (defaultProvider === "openai") {
+      // Check API key for OpenAI
+      const apiKey = config.getApiKey("openai");
+      if (!apiKey) {
+        // Prompt for API key
+        const { apiKey: newApiKey } = await inquirer.prompt([
+          {
+            type: "password",
+            name: "apiKey",
+            message: "Please enter your OpenAI API key:",
+            validate: (input) => input.trim().length > 0 || "API key is required",
+          },
+        ]);
+
+        // Save API key
+        config.setApiKey("openai", newApiKey);
+        console.log(terminal.success("API key saved successfully."));
+      }
+    } else if (defaultProvider === "openaiCompatible") {
+      // Check if the OpenAI-compatible endpoint requires an API key
+      const requiresApiKey = config.get("apis.openaiCompatible.requiresApiKey", true);
+
+      if (requiresApiKey) {
+        // Check API key for OpenAI-compatible endpoint
+        const apiKey = config.get("apis.openaiCompatible.apiKey");
+        if (!apiKey) {
+          // Prompt for API key
+          const { apiKey: newApiKey } = await inquirer.prompt([
+            {
+              type: "password",
+              name: "apiKey",
+              message: "Please enter your API key for the OpenAI-compatible endpoint:",
+              validate: (input) => input.trim().length > 0 || "API key is required",
+            },
+          ]);
+
+          // Save API key
+          config.set("apis.openaiCompatible.apiKey", newApiKey);
+          console.log(terminal.success("API key saved successfully."));
+        }
+      }
+    }
+
+    // Start chat UI with animated banner
+    const chatUI = new ChatUI({
+      model: config.getDefaultModel(),
+    });
+
+    await chatUI.start();
+  } catch (error) {
+    console.error(terminal.error("Error starting chat:"), error);
+    process.exit(1);
   }
 });
 
@@ -222,9 +287,14 @@ async function main(): Promise<void> {
     // If we reach here, the command completed successfully
     // For non-interactive commands, we should exit
     const args = process.argv.slice(2);
-    if (args.length > 0 && !args.includes('chat')) {
-      // This is a non-interactive command (not chat), so exit
-      process.exit(0);
+    if (args.length > 0) {
+      const firstCommand = args.find((arg) => !arg.startsWith('-'))?.toLowerCase();
+      const interactiveCommands = new Set(['chat', 'animations', 'anim']);
+
+      if (!firstCommand || !interactiveCommands.has(firstCommand)) {
+        // This is a non-interactive command (not chat/animations), so exit
+        process.exit(0);
+      }
     }
   } catch (error) {
     console.error(terminal.error("Error:"), 

@@ -5,7 +5,7 @@ import { ChatMessage, MessageRole } from "../types.js";
 import { Agent } from "../mcp/agent.js";
 import { chatHistory } from "../utils/history.js";
 import { Config } from "../config/config.js";
-import { createWelcomeBanner, createWorkspaceWelcomeBanner } from "./splash.js";
+import { createWelcomeBanner, createWorkspaceWelcomeBanner, Splash } from "./splash.js";
 import { gradient } from "./gradient.js";
 import { WorkspaceManager } from "../workspace/index.js";
 import { symbols, brandSymbols } from "./symbols.js";
@@ -13,6 +13,7 @@ import { EnhancedToolDisplay, ToolDisplayOptions } from "./tool-display.js";
 import { iconUtils, getContentIcon, roleIcons, statusIcons } from "./tool-icons.js";
 import { isSecurityError } from "../security/SecurityError.js";
 import { theme } from "./theme.js";
+import chalkAnimation from 'chalk-animation';
 
 // Create enhanced tool display instance
 const toolDisplay = new EnhancedToolDisplay();
@@ -90,17 +91,7 @@ export class ChatUI {
    */
   async start(): Promise<void> {
     try {
-      // Get workspace context for later use
-      const workspaceManager = WorkspaceManager.getInstance();
-      if (this.config.isWorkspaceEnabled()) {
-        try {
-          this.workspaceContext = await workspaceManager.detectWorkspace();
-        } catch (error) {
-          // Ignore workspace detection errors
-        }
-      }
-
-      // Display welcome message
+      // Display welcome message (this will handle workspace detection)
       await this.displayWelcome();
 
       // Initialize agent
@@ -129,19 +120,40 @@ export class ChatUI {
    */
   private async displayWelcome(): Promise<void> {
     try {
-      // Get workspace context if enabled
-      const workspaceManager = WorkspaceManager.getInstance();
-      let workspaceContext = null;
+      // Show the stunning BIBBLE banner with rainbow animation FIRST!
+      await Splash.createAnimatedWelcome({ duration: 2500 });
       
+      // THEN get and show workspace context if enabled
       if (this.config.isWorkspaceEnabled()) {
-        workspaceContext = await workspaceManager.detectWorkspace();
-      }
-      
-      // Show the stunning BIBBLE banner with workspace context
-      if (workspaceContext && this.config.shouldShowWelcomeMessage()) {
-        console.log(createWorkspaceWelcomeBanner(workspaceContext));
-      } else {
-        console.log(createWelcomeBanner());
+        const workspaceManager = WorkspaceManager.getInstance();
+        let workspaceContext = null;
+        
+        try {
+          workspaceContext = await workspaceManager.detectWorkspace();
+          this.workspaceContext = workspaceContext; // Store for later use
+        } catch (error) {
+          // Ignore workspace detection errors
+        }
+        
+        // Show workspace context if available
+        if (workspaceContext && this.config.shouldShowWelcomeMessage()) {
+          console.log('\n' + theme.accent('🎯 Project Context:'));
+          const projectIcon = workspaceContext.projectType === 'nodejs' ? '⚡' :
+                             workspaceContext.projectType === 'python' ? '🐍' :
+                             workspaceContext.projectType === 'rust' ? '🦀' :
+                             workspaceContext.projectType === 'web' ? '🌐' :
+                             workspaceContext.projectType === 'docs' ? '📚' : '📁';
+          
+          const projectName = workspaceContext.projectName || 'Current Project';
+          console.log(`${projectIcon} ${theme.cyan(projectName)} ${theme.dim('(' + workspaceContext.projectType.toUpperCase() + ')')}`);
+          
+          if (workspaceContext.features && workspaceContext.features.length > 0) {
+            const topFeatures = workspaceContext.features.slice(0, 3);
+            const featureStr = topFeatures.map(f => f.name).join(', ');
+            console.log(theme.dim('🔧 Stack: ') + theme.accent(featureStr));
+          }
+          console.log('');
+        }
       }
     } catch (error) {
       // Fallback to standard welcome if workspace detection fails
@@ -267,10 +279,10 @@ export class ChatUI {
                            this.workspaceContext.projectType === 'documentation' ? '📚' : '📁';
         
         const projectName = this.workspaceContext.projectName || 'Project';
-        contextIndicator = ` ${theme.dim('[' + projectIcon + ' ' + projectName + ']')}`;
+        contextIndicator = ` ${theme.info('[' + projectIcon + ' ' + projectName + ']')}`;
       }
-      
-      const prompt = `\n${userIcon} ${gradient.pinkCyan('You')}${contextIndicator}: `;
+      const youText = 'You';
+      const prompt = `\n${userIcon} ${gradient.pinkCyan(youText)}${contextIndicator}: `;
       
       this.rl.question(prompt, (answer) => {
         const trimmed = answer.trim();
@@ -377,18 +389,28 @@ export class ChatUI {
       return;
     }
 
+    const canAnimate = process.stdout.isTTY;
+    let thinkingAnimation: ReturnType<typeof chalkAnimation.pulse> | null = null;
+
     try {
       // Reset abort controller
       this.abortController = new AbortController();
 
-      // Show beautiful thinking indicator with enhanced icons
-      const thinkingIcon = iconUtils.coloredIcon(
+      // Show beautiful thinking indicator with pulse animation
+      const thinkingIcon = iconUtils.render(
         statusIcons.thinking.icon,
-        statusIcons.thinking.fallback,
-        theme.secondary
+        statusIcons.thinking.fallback
       );
-      const thinkingText = `\n${thinkingIcon} ${theme.cyan('Thinking...')}\n`;
-      process.stderr.write(thinkingText);
+
+      const thinkingText = `${thinkingIcon} Thinking...`;
+
+      if (canAnimate) {
+        process.stdout.write('\n');
+        thinkingAnimation = chalkAnimation.pulse(thinkingText, 1.2);
+        thinkingAnimation.start?.();
+      } else {
+        console.log(`\n${theme.cyan(thinkingText)}`);
+      }
 
       try {
         // Get response stream
@@ -397,15 +419,22 @@ export class ChatUI {
           model: this.model,
         });
 
-        // Clear the thinking message by writing to stderr
-        
+        // Stop thinking animation before showing assistant response
+        if (thinkingAnimation) {
+          thinkingAnimation.stop();
+          thinkingAnimation = null;
+          process.stdout.write('\n');
+        } else if (!canAnimate) {
+          console.log('');
+        }
+
         // Create beautiful assistant prompt with enhanced robot icon
         const assistantIcon = iconUtils.coloredIcon(
           roleIcons.assistant.icon,
           roleIcons.assistant.fallback,
           roleIcons.assistant.color
         );
-        const assistantPrompt = `${assistantIcon} ${gradient.ocean('Assistant')}: `;
+        const assistantPrompt = `${assistantIcon} ${gradient.ocean('Bibble')}: `;
         process.stdout.write(assistantPrompt);
 
         // Process stream with beautiful styling and real-time streaming
@@ -421,10 +450,10 @@ export class ChatUI {
             if (textBuffer.trim()) {
               try {
                 const renderedMarkdown = markdown.render(textBuffer);
-                process.stdout.write(renderedMarkdown);
+                process.stdout.write(theme.text(renderedMarkdown));
               } catch (markdownError) {
                 // If markdown rendering fails, output as plain text
-                process.stdout.write(textBuffer);
+                process.stdout.write(theme.text(textBuffer));
               }
               textBuffer = "";
             }
@@ -451,7 +480,7 @@ export class ChatUI {
                 roleIcons.assistant.fallback,
                 roleIcons.assistant.color
               );
-              const assistantPrompt = `${assistantIcon} ${gradient.ocean('Assistant')}: `;
+              const assistantPrompt = `${assistantIcon} ${gradient.ocean('Bibble')}: `;
               process.stdout.write('\n' + assistantPrompt);
               
             } catch (error) {
@@ -459,9 +488,8 @@ export class ChatUI {
               textBuffer += chunk;
             }
           } else {
-            // CRITICAL FIX: Stream text directly for immediate display
-            // Simple approach: just output text chunks directly for real-time feel
-            process.stdout.write(chunk);
+            // Stream text with theme styling for better visibility
+            process.stdout.write(theme.text(chunk));
           }
           
           fullResponse += chunk;
@@ -475,6 +503,14 @@ export class ChatUI {
         this.rl.prompt();
         
       } catch (streamError) {
+        // Ensure animation is stopped if an error occurs
+        if (thinkingAnimation) {
+          thinkingAnimation.stop();
+          thinkingAnimation = null;
+          process.stdout.write('\n');
+        } else if (!canAnimate) {
+          console.log('');
+        }
         // Handle stream error
         throw streamError;
       }
@@ -482,6 +518,13 @@ export class ChatUI {
       // Save full response for history
       // This will be handled by the agent internally
     } catch (error) {
+      if (thinkingAnimation) {
+        thinkingAnimation.stop();
+        thinkingAnimation = null;
+        process.stdout.write('\n');
+      } else if (!canAnimate) {
+        console.log('');
+      }
       // Handle security errors with clean display
       if (isSecurityError(error)) {
         const cleanMessage = "Tool blocked by security policy";
@@ -511,13 +554,19 @@ export class ChatUI {
   private displayMessage(message: ChatMessage): void {
     switch (message.role) {
       case MessageRole.User:
-        const userPrompt = `${iconUtils.roleHeader('user')}: ${this.enhanceMessageContent(message.content)}`;
-        console.log(`\n${userPrompt}`);
+        {
+          const userContent = theme.secondary(this.enhanceMessageContent(message.content));
+          const userPrompt = `${iconUtils.roleHeader('user')}: ${userContent}`;
+          console.log(`\n${userPrompt}`);
+        }
         break;
 
       case MessageRole.Assistant:
-        const assistantPrompt = `${iconUtils.roleHeader('assistant')}: `;
-        console.log(`\n${assistantPrompt}${markdown.render(this.enhanceMessageContent(message.content))}`);
+        {
+          const assistantPrompt = `${iconUtils.roleHeader('assistant')}: `;
+          const rendered = markdown.render(this.enhanceMessageContent(message.content));
+          console.log(`\n${assistantPrompt}${theme.text(rendered)}`);
+        }
         this.displayMessageSeparator();
         break;
 
@@ -568,30 +617,65 @@ export class ChatUI {
    * @param message Tool message to display
    */
   private displayToolCall(message: ChatMessage): void {
-    // Check if enhanced display is enabled (environment variable or config)
-    const useEnhanced = process.env.BIBBLE_ENHANCED_TOOLS !== 'false';
-    
-    if (useEnhanced) {
-      // Use the new enhanced tool display system
-      const displayOptions: Partial<ToolDisplayOptions> = {
-        showTimings: false, // We don't have timing info for completed calls
-        showParameters: false, // Parameters not available in this context
-        enableInteractive: process.stdin.isTTY,
-        maxJsonLines: 25,
-        maxTableRows: 15,
-      };
-      
-      toolDisplay.displayCall(message, displayOptions);
-      return;
+    // Show animated radar effect for tool execution
+    const toolName = message.toolName || 'tool';
+    const radarText = `🛠️  Running ${toolName}...`;
+
+    const showEnhanced = () => {
+      const useEnhanced = process.env.BIBBLE_ENHANCED_TOOLS !== 'false';
+      if (useEnhanced) {
+        const displayOptions: Partial<ToolDisplayOptions> = {
+          showTimings: false,
+          showParameters: false,
+          enableInteractive: process.stdin.isTTY,
+          maxJsonLines: 25,
+          maxTableRows: 15,
+        };
+
+        toolDisplay.displayCall(message, displayOptions);
+        return true;
+      }
+      return false;
+    };
+
+    const showFallback = () => {
+      this.displayToolCallFallback(message);
+    };
+
+    if (process.stdout.isTTY) {
+      console.log('');
+      const radarAnimation = chalkAnimation.radar(radarText, 1.8);
+      radarAnimation.start?.();
+
+      setTimeout(() => {
+        try {
+          radarAnimation.stop();
+        } catch {
+          // ignore stop errors
+        }
+        process.stdout.write('\n');
+
+        if (!showEnhanced()) {
+          showFallback();
+        }
+      }, 900);
+    } else {
+      console.log(`\n${radarText}`);
+      if (!showEnhanced()) {
+        showFallback();
+      }
     }
+  }
+  
+  private displayToolCallFallback(message: ChatMessage): void {
     
     // Fallback to legacy display for compatibility
     console.log(`${iconUtils.toolHeader(message.toolName || 'tool')}\n`);
     try {
       const pretty = markdown.render(message.content);
-      process.stdout.write(pretty + "\n");
+      process.stdout.write(theme.text(pretty) + "\n");
     } catch {
-      process.stdout.write(String(message.content) + "\n");
+      process.stdout.write(theme.text(String(message.content)) + "\n");
     }
   }
 

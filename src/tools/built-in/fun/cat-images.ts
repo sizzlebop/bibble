@@ -1,7 +1,7 @@
 /**
  * Random Cat Images Tool
  *
- * Fetches random cat images and renders the REAL image directly in the terminal
+ * Fetches random cat images and renders the image directly in the terminal
  * using ANSI image rendering (terminal-image). No more ASCII fallback – failures
  * are surfaced as errors so the user knows what went wrong.
  */
@@ -122,13 +122,13 @@ export async function getRandomCatImages(params: CatImageParams): Promise<string
     output += theme.subheading(`🐾 Cat ${i + 1}${count > 1 ? ` of ${count}` : ''}`) + '\n';
     output += rendered + '\n';
     output += theme.info(`🔗 ${url}`) + '\n';
-    output += theme.dim(`📦 Source: ${apiName}`) + '\n';
+    output += theme.secondary(`📦 Source: ${apiName}`) + '\n';
     if (i < count - 1) output += '\n' + theme.dim('─'.repeat(50)) + '\n\n';
   }
 
   output += '\n' + theme.dim('─'.repeat(50)) + '\n';
-  output += theme.accent('🎉 Real cat images fetched successfully!');
-  output += '\n' + theme.dim('Tip: Set THE_CAT_API_KEY for higher rate limits.');
+  output += theme.accent('🎉 Cat images fetched successfully!');
+  output += '\n' + theme.info('Tip: Set THE_CAT_API_KEY for higher rate limits.');
   return output;
 }
 
@@ -144,7 +144,7 @@ async function fetchImageBuffer(url: string): Promise<Buffer> {
  */
 export const catImagesTool = {
   name: 'random-cat-images',
-  description: '🐱 Fetch and display REAL random cat images in your terminal using ANSI rendering (no ASCII fallback).',
+  description: '🐱 Fetch and display random cat images in your terminal using ANSI rendering (no ASCII fallback).',
   category: 'fun' as const,
   parameters: catImageSchema,
   execute: async (params: CatImageParams) => {

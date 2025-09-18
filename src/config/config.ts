@@ -199,12 +199,10 @@ current = (current as any)[k];
    */
   public getModelConfig(modelId: string): any {
     const models = this.get("models", []);
-    const model = models.find((model: any) => model.id === modelId);
+    const model = models.find((model: any) => model.id === modelId) as Record<string, any> | undefined;
 
-    if (!model) {
-      // If model not found, try to determine the provider from the model ID
+    const baseConfig: Record<string, any> = (() => {
       if (modelId.startsWith("claude-")) {
-        // For Anthropic models, return default configuration
         const config = {
           provider: "anthropic",
           maxTokens: 20000,
@@ -213,7 +211,6 @@ current = (current as any)[k];
           topK: 40
         };
 
-        // Add thinking parameter for Claude 3.7 models
         if (modelId.includes("3-7")) {
           return {
             ...config,
@@ -226,8 +223,9 @@ current = (current as any)[k];
         }
 
         return config;
-      } else if (modelId.startsWith("gemini-")) {
-        // For Google Gemini models, return default configuration
+      }
+
+      if (modelId.startsWith("gemini-")) {
         return {
           provider: "google",
           maxTokens: 20000,
@@ -235,26 +233,49 @@ current = (current as any)[k];
           topP: 0.9,
           topK: 40
         };
-      } else if (modelId.startsWith("o")) {
-        // For OpenAI o-series models, return default configuration
+      }
+
+      if (modelId.startsWith("gpt-5")) {
+        return {
+          provider: "openai",
+          maxCompletionTokens: 20000,
+          temperature: 0.7,
+          isReasoningModel: false,
+          supportsTemperature: true,
+          supportsThinking: true,
+          thinkingLevel: "none",
+          requiresMaxCompletionTokens: true
+        };
+      }
+
+      if (modelId.startsWith("o")) {
         return {
           provider: "openai",
           maxCompletionTokens: 20000,
           reasoningEffort: "medium",
-          isReasoningModel: true
-        };
-      } else {
-        // For other OpenAI models, return default configuration
-        return {
-          provider: "openai",
-          maxTokens: 20000,
-          temperature: 0.7,
-          isReasoningModel: false
+          isReasoningModel: true,
+          supportsTemperature: false,
+          requiresMaxCompletionTokens: true
         };
       }
+
+      return {
+        provider: "openai",
+        maxTokens: 20000,
+        temperature: 0.7,
+        isReasoningModel: false,
+        supportsTemperature: true
+      };
+    })();
+
+    if (!model) {
+      return baseConfig;
     }
 
-    return model;
+    return {
+      ...baseConfig,
+      ...model
+    };
   }
 
   /**

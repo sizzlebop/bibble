@@ -32,6 +32,7 @@ export interface BibbleConfig {
       baseUrl: string;
       defaultModel: string;
       requiresApiKey: boolean;
+      referrer?: string;
     },
     anthropic?: {
       apiKey?: string;
@@ -91,6 +92,10 @@ export interface BibbleConfig {
     isReasoningModel?: boolean;
     topP?: number;
     topK?: number;
+    supportsTemperature?: boolean;
+    supportsThinking?: boolean;
+    thinkingLevel?: "none" | "low" | "medium" | "high";
+    requiresMaxCompletionTokens?: boolean;
   }>;
   // Web search engine configuration
   webSearch?: {
@@ -123,13 +128,14 @@ export const defaultConfig: BibbleConfig = {
     openai: {
       apiKey: undefined,
       baseUrl: "https://api.openai.com/v1",
-      defaultModel: "gpt-4.1"
+      defaultModel: "gpt-5"
     },
     openaiCompatible: {
       apiKey: undefined,
       baseUrl: "",
-      defaultModel: "gpt-4o",
-      requiresApiKey: false
+      defaultModel: "gpt-5",
+      requiresApiKey: false,
+      referrer: "bibble"
     },
     anthropic: {
       apiKey: undefined,
@@ -169,22 +175,81 @@ export const defaultConfig: BibbleConfig = {
     blockedTools: {}
   },
   models: [
-    // OpenAI models
+    // OpenAI models - ChatGPT Models (not recommended for API use)
     {
-      id: "gpt-4.1",
+      id: "gpt-5-chat-latest",
       provider: "openai",
-      name: "GPT-4.1",
-      maxTokens: 4096,
+      name: "GPT-5 Chat Latest (ChatGPT)",
+      maxCompletionTokens: 4096,
       temperature: 0.7,
-      isReasoningModel: false
+      isReasoningModel: false,
+      supportsTemperature: true,
+      supportsThinking: true,
+      thinkingLevel: "none",
+      requiresMaxCompletionTokens: true
     },
     {
-      id: "o4-mini",
+      id: "chatgpt-4o-latest",
       provider: "openai",
-      name: "o4-mini",
+      name: "ChatGPT-4o Latest",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
+    },
+    
+    // Core GPT-5 Series (support optional reasoning parameter)
+    {
+      id: "gpt-5",
+      provider: "openai",
+      name: "GPT-5",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      reasoningEffort: "low", // Optional reasoning parameter
+      isReasoningModel: false,
+      supportsTemperature: true,
+      supportsThinking: true,
+      thinkingLevel: "none",
+      requiresMaxCompletionTokens: true
+    },
+    {
+      id: "gpt-5-mini",
+      provider: "openai",
+      name: "GPT-5 Mini",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      reasoningEffort: "low", // Optional reasoning parameter
+      isReasoningModel: false,
+      supportsTemperature: true,
+      supportsThinking: true,
+      thinkingLevel: "none",
+      requiresMaxCompletionTokens: true
+    },
+    {
+      id: "gpt-5-nano",
+      provider: "openai",
+      name: "GPT-5 Nano",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      reasoningEffort: "low", // Optional reasoning parameter
+      isReasoningModel: false,
+      supportsTemperature: true,
+      supportsThinking: true,
+      thinkingLevel: "none",
+      requiresMaxCompletionTokens: true
+    },
+    
+    // Reasoning Models (use reasoning parameter, no temperature)
+    {
+      id: "o3-pro",
+      provider: "openai",
+      name: "o3-pro",
       maxCompletionTokens: 4096,
       reasoningEffort: "medium",
-      isReasoningModel: true
+      isReasoningModel: true,
+      supportsTemperature: false,
+      requiresMaxCompletionTokens: true
     },
     {
       id: "o3",
@@ -192,7 +257,19 @@ export const defaultConfig: BibbleConfig = {
       name: "o3",
       maxCompletionTokens: 4096,
       reasoningEffort: "medium",
-      isReasoningModel: true
+      isReasoningModel: true,
+      supportsTemperature: false,
+      requiresMaxCompletionTokens: true
+    },
+    {
+      id: "o4-mini",
+      provider: "openai",
+      name: "o4-mini",
+      maxCompletionTokens: 4096,
+      reasoningEffort: "medium",
+      isReasoningModel: true,
+      supportsTemperature: false,
+      requiresMaxCompletionTokens: true
     },
     {
       id: "o3-mini",
@@ -200,63 +277,93 @@ export const defaultConfig: BibbleConfig = {
       name: "o3-mini",
       maxCompletionTokens: 4096,
       reasoningEffort: "medium",
-      isReasoningModel: true
+      isReasoningModel: true,
+      supportsTemperature: false,
+      requiresMaxCompletionTokens: true
     },
     {
-      id: "o1",
+      id: "codex-mini-latest",
       provider: "openai",
-      name: "o1",
+      name: "Codex Mini Latest",
       maxCompletionTokens: 4096,
       reasoningEffort: "medium",
-      isReasoningModel: true
+      isReasoningModel: true,
+      supportsTemperature: false,
+      requiresMaxCompletionTokens: true
+    },
+    
+    // GPT-4 Series
+    {
+      id: "gpt-4.1",
+      provider: "openai",
+      name: "GPT-4.1",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
     },
     {
-      id: "o1-pro",
+      id: "gpt-4.1-mini",
       provider: "openai",
-      name: "o1-pro",
+      name: "GPT-4.1 Mini",
       maxCompletionTokens: 4096,
-      reasoningEffort: "medium",
-      isReasoningModel: true
+      temperature: 0.7,
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
+    },
+    {
+      id: "gpt-4.1-nano",
+      provider: "openai",
+      name: "GPT-4.1 Nano",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
     },
     {
       id: "gpt-4o",
       provider: "openai",
       name: "GPT-4o",
-      maxTokens: 4096,
+      maxCompletionTokens: 4096,
       temperature: 0.7,
-      isReasoningModel: false
-    },
-    {
-      id: "chatgpt-4o",
-      provider: "openai",
-      name: "ChatGPT-4o",
-      maxTokens: 4096,
-      temperature: 0.7,
-      isReasoningModel: false
-    },
-    {
-      id: "gpt-4.1-mini",
-      provider: "openai",
-      name: "GPT-4.1 mini",
-      maxTokens: 4096,
-      temperature: 0.7,
-      isReasoningModel: false
-    },
-    {
-      id: "gpt-4.1-nano",
-      provider: "openai",
-      name: "GPT-4.1 nano",
-      maxTokens: 4096,
-      temperature: 0.7,
-      isReasoningModel: false
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
     },
     {
       id: "gpt-4o-mini",
       provider: "openai",
-      name: "GPT-4o mini",
-      maxTokens: 4096,
+      name: "GPT-4o Mini",
+      maxCompletionTokens: 4096,
       temperature: 0.7,
-      isReasoningModel: false
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
+    },
+    
+    // Open-Weight OSS Models
+    {
+      id: "gpt-oss-120b",
+      provider: "openai",
+      name: "GPT-OSS-120b",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
+    },
+    {
+      id: "gpt-oss-20b",
+      provider: "openai",
+      name: "GPT-OSS-20b",
+      maxCompletionTokens: 4096,
+      temperature: 0.7,
+      isReasoningModel: false,
+      supportsTemperature: true,
+      requiresMaxCompletionTokens: true
     },
 
     // Anthropic models

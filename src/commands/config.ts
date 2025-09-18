@@ -246,8 +246,17 @@ export function setupConfigCommand(program: Command): Command {
           type: "input",
           name: "defaultModel",
           message: "Enter the default model ID for this endpoint:",
-          default: "gpt-3.5-turbo",
+          default: "gpt-5",
           validate: (input) => input.trim().length > 0 || "Model ID is required",
+        },
+      ]);
+
+      const { referrer } = await inquirer.prompt([
+        {
+          type: "input",
+          name: "referrer",
+          message: "Enter the referrer header value to send with requests:",
+          default: "bibble",
         },
       ]);
 
@@ -258,6 +267,7 @@ export function setupConfigCommand(program: Command): Command {
         config.set("apis.openaiCompatible.apiKey", apiKey);
       }
       config.set("apis.openaiCompatible.defaultModel", defaultModel);
+      config.set("apis.openaiCompatible.referrer", referrer);
 
       // Ask if the user wants to set this as the default provider
       const { setAsDefault } = await inquirer.prompt([
@@ -710,7 +720,7 @@ async function modelConfigurationWizard(): Promise<void> {
         type: "input",
         name: "customModel",
         message: "🎯 Enter Model ID:",
-        default: defaultModelForProvider || (provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'),
+        default: defaultModelForProvider || (provider === 'openai' ? 'gpt-5' : provider === 'anthropic' ? 'claude-sonnet-4-20250514' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-5'),
         validate: (input: string) => input.trim().length > 0 || "Model ID is required",
       },
     ] as any);
@@ -733,7 +743,7 @@ async function modelConfigurationWizard(): Promise<void> {
           type: "input",
           name: "customModel",
           message: "🎯 Enter Model ID:",
-          default: defaultModelForProvider || (provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'),
+          default: defaultModelForProvider || (provider === 'openai' ? 'gpt-5' : provider === 'anthropic' ? 'claude-sonnet-4-20250514' : provider === 'google' ? 'gemini-2.0-flash' : 'gpt-5'),
           validate: (input: string) => input.trim().length > 0 || "Model ID is required",
         },
       ] as any);
@@ -776,6 +786,7 @@ async function modelConfigurationWizard(): Promise<void> {
     if (modelConfig.topK !== undefined) console.log(t.cyan(`Top K: ${modelConfig.topK}`));
     if (modelConfig.reasoningEffort !== undefined) console.log(t.cyan(`Reasoning Effort: ${modelConfig.reasoningEffort}`));
     if (modelConfig.thinking !== undefined) console.log(t.cyan(`Thinking Mode: Enabled (${modelConfig.thinkingBudgetTokens} tokens)`));
+    if (modelConfig.thinkingLevel !== undefined) console.log(t.cyan(`Thinking Level: ${modelConfig.thinkingLevel}`));
   }
   
   process.exit(0);
@@ -1045,6 +1056,10 @@ async function configureModelParameters(provider: string, modelId: string, confi
   const modelConfig = config.getModelConfig(modelId);
   const isReasoningModel = modelConfig?.isReasoningModel || modelId.startsWith('o');
   const isClaudeThinking = modelId.includes('3-7');
+  const supportsThinking = modelConfig?.supportsThinking === true;
+  const supportsTemperature = modelConfig?.supportsTemperature !== false && !isReasoningModel;
+  const requiresMaxCompletionTokens = modelConfig?.requiresMaxCompletionTokens === true || isReasoningModel;
+  const existingThinkingLevel = modelConfig?.thinkingLevel || 'none';
   
   console.log(`\n${t.h2('⚙️ Model Parameters')}`);
   
@@ -1128,18 +1143,25 @@ async function configureModelParameters(provider: string, modelId: string, confi
   const questions: any[] = [];
   
   // Common parameters for most models
-  if (!isReasoningModel) {
+  if (supportsTemperature) {
     questions.push({
-      type: "number",
+      type: "input",
       name: "temperature",
       message: "🌡️ Temperature (0.0-2.0, controls randomness):",
-      default: modelConfig?.temperature || 0.7,
-      validate: (input: number) => (input >= 0 && input <= 2) || "Temperature must be between 0.0 and 2.0",
+      default: (modelConfig?.temperature ?? 0.7).toString(),
+      validate: (input: string) => {
+        const value = Number(input);
+        return (!Number.isNaN(value) && value >= 0 && value <= 2) || "Temperature must be between 0.0 and 2.0";
+      },
+      filter: (input: string) => {
+        const value = Number(input);
+        return Number.isNaN(value) ? input : value;
+      }
     });
   }
   
   // Max tokens (different for reasoning models)
-  if (isReasoningModel) {
+  if (requiresMaxCompletionTokens) {
     questions.push({
       type: "number",
       name: "maxCompletionTokens",
@@ -1147,7 +1169,17 @@ async function configureModelParameters(provider: string, modelId: string, confi
       default: modelConfig?.maxCompletionTokens || 4096,
       validate: (input: number) => input > 0 || "Max completion tokens must be positive",
     });
-    
+  } else {
+    questions.push({
+      type: "number",
+      name: "maxTokens",
+      message: "📝 Max Tokens (total context limit):",
+      default: modelConfig?.maxTokens || (provider === 'google' ? 8192 : 4096),
+      validate: (input: number) => input > 0 || "Max tokens must be positive",
+    });
+  }
+
+  if (isReasoningModel) {
     questions.push({
       type: "list",
       name: "reasoningEffort",
@@ -1158,14 +1190,6 @@ async function configureModelParameters(provider: string, modelId: string, confi
         { name: "High - Thorough reasoning", value: "high" }
       ],
       default: modelConfig?.reasoningEffort || "medium",
-    });
-  } else {
-    questions.push({
-      type: "number",
-      name: "maxTokens",
-      message: "📝 Max Tokens (total context limit):",
-      default: modelConfig?.maxTokens || (provider === 'google' ? 8192 : 4096),
-      validate: (input: number) => input > 0 || "Max tokens must be positive",
     });
   }
   
@@ -1206,15 +1230,33 @@ async function configureModelParameters(provider: string, modelId: string, confi
       validate: (input: number) => input > 0 || "Thinking budget must be positive",
     });
   }
+
+  if (supportsThinking) {
+    questions.push({
+      type: "list",
+      name: "thinkingLevel",
+      message: "🧠 Thinking level (optional reasoning assistance):",
+      choices: [
+        { name: "Disabled", value: "none" },
+        { name: "Low", value: "low" },
+        { name: "Medium", value: "medium" },
+        { name: "High", value: "high" }
+      ],
+      default: existingThinkingLevel,
+    });
+  }
   
   const answers = await inquirer.prompt(questions);
   
   // Build config object
   const config_obj: any = {
     provider,
-    isReasoningModel
+    isReasoningModel,
+    supportsThinking,
+    supportsTemperature,
+    requiresMaxCompletionTokens
   };
-  
+
   if (answers.temperature !== undefined) config_obj.temperature = answers.temperature;
   if (answers.maxTokens !== undefined) config_obj.maxTokens = answers.maxTokens;
   if (answers.maxCompletionTokens !== undefined) config_obj.maxCompletionTokens = answers.maxCompletionTokens;
@@ -1229,7 +1271,11 @@ async function configureModelParameters(provider: string, modelId: string, confi
     };
     config_obj.thinkingBudgetTokens = answers.thinkingBudgetTokens;
   }
-  
+
+  if (answers.thinkingLevel !== undefined) {
+    config_obj.thinkingLevel = answers.thinkingLevel;
+  }
+
   return config_obj;
 }
 

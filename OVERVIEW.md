@@ -2,10 +2,10 @@
 
 Bibble is a sophisticated command-line interface (CLI) chatbot application that integrates with multiple language model providers and supports the Model Context Protocol (MCP) for enhanced functionality through external tools. Built with TypeScript, it provides a robust terminal-based AI assistant experience with comprehensive tool integration.
 
-**Version**: 1.8.2
+**Version**: 1.8.5
 **Author**: Pink Pixel  
 **NPM Package**: @pinkpixel/bibble  
-*Last updated: September 17, 2025 - 20:38 UTC*
+*Last updated: September 18, 2025 - 03:06 UTC*
 
 **🏆 GitHub Hackathon Contender** - Strong candidate for GitHub hackathon submission (deadline: September 22, 2025)
 
@@ -14,11 +14,13 @@ Bibble is a sophisticated command-line interface (CLI) chatbot application that 
 Bibble provides a terminal-based interface for interacting with AI language models, with support for:
 
 - Chat sessions with multiple LLM providers:
-  - **OpenAI models**: GPT-4.1, GPT-4o, GPT-4.1 mini/nano, ChatGPT-4o, GPT-4o mini
-  - **OpenAI o-series (reasoning models)**: o1, o1-pro, o3, o3-mini, o4-mini
-  - **Anthropic Claude models**: Claude Opus 4, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku
-  - **Google Gemini models**: Gemini 2.5 Flash Preview, Gemini 2.5 Pro Preview, Gemini 2.0 Flash, Gemini 2.0 Flash Lite, Gemini 1.5 Flash, Gemini 1.5 Pro
-  - **OpenAI-compatible endpoints** for third-party services
+  - **🚀 GPT-5 Series**: GPT-5, GPT-5 Mini, GPT-5 Nano, GPT-5 Chat Latest, ChatGPT-4o Latest
+  - **🧠 Advanced Reasoning Models**: o3-pro, o3, o4-mini, o3-mini, codex-mini-latest
+  - **⚡ Updated GPT-4 Series**: GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, GPT-4o, GPT-4o Mini
+  - **🔓 Open-Weight OSS Models**: GPT-OSS-120b, GPT-OSS-20b
+  - **🧠 Anthropic Claude models**: Claude Opus 4, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku
+  - **🌟 Google Gemini models**: Gemini 2.5 Flash Preview, Gemini 2.5 Pro Preview, Gemini 2.0 Flash, Gemini 2.0 Flash Lite, Gemini 1.5 Flash, Gemini 1.5 Pro
+  - **🔗 OpenAI-compatible endpoints** for third-party services
 - **Tool use** through the Model Context Protocol (MCP) with user-configurable external tool integration
 - **🌐 Built-in web search & research tools** with multi-engine support (DuckDuckGo, Bing, Google, Brave) and AI-powered content analysis with CLI-configurable preferred engine
 - **⏰ Native datetime tools** with comprehensive timezone support and user configuration for time-aware conversations
@@ -28,6 +30,7 @@ Bibble provides a terminal-based interface for interacting with AI language mode
 - **Advanced research assistant** with event-driven research sessions and intelligent content extraction
 - **⚡ MCP Context Diet optimization** with on-demand tool discovery that dramatically reduces prompt size and improves performance
 - **🎭 Fun Tools for Hackathon** with ASCII art generation and random cat images for terminal entertainment
+- **🌈 Terminal Animations** with stunning visual effects using chalk-animation library - perfect for hackathon showcase
 - **Configuration management** with dot-notation access and JSON storage in ~/.bibble/
 - **Chat history** tracking, export, and import with persistent storage
 - **Rich terminal UI** with markdown rendering and colored text output
@@ -65,6 +68,7 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 /
 ├── src/                  # Main source code directory
 │   ├── commands/         # CLI command handlers
+│   │   ├── animations.ts # Animation demo command for terminal effects
 │   │   ├── chat.ts       # Chat command implementation
 │   │   ├── config.ts     # Configuration command implementation
 │   │   └── history.ts    # History command implementation
@@ -110,6 +114,7 @@ Bibble follows a sophisticated modular architecture with clear separation of con
 │   │   ├── gradient.ts   # Gradient text effects and styling
 │   │   ├── symbols.ts    # Cross-platform symbol system
 │   │   ├── splash.ts     # Stunning ASCII banner and startup system
+│   │   ├── animated-splash.ts  # Terminal animations with chalk-animation effects
 │   │   ├── spinners.ts   # Beautiful loading indicators
 │   │   ├── lists.ts      # Enhanced list displays and utilities
 │   │   └── markdown.ts   # Markdown rendering for terminal
@@ -146,6 +151,7 @@ Bibble uses Commander.js to create a command-line interface with several command
 - `bibble chat` - Start a chat session with an AI model
 - `bibble config` - Manage configuration settings
 - `bibble history` - Manage chat history
+- `bibble animations` (`bibble anim`) - Demo terminal animation effects (perfect for hackathon showcase)
 - `bibble setup` - Run the setup wizard
 - `bibble system-prompt` - View the system prompt with tools list
 
@@ -862,6 +868,48 @@ Version 1.3.8 represented a **MAJOR VISUAL TRANSFORMATION** that converted Bibbl
 
 ## Recent Development & Research
 
+### Terminal Animations System (v1.8.3) - September 8, 2025
+
+Version 1.8.3 introduces a **stunning terminal animation system** using the `chalk-animation` library, perfect for the GitHub hackathon's "Terminal Talent" category with mesmerizing visual effects.
+
+**🌈 Animation Features:**
+- **Comprehensive Animation System** (`src/ui/animated-splash.ts`): Multiple animation types including Rainbow, Pulse, Glitch, Radar, Neon, and Karaoke
+- **Animation Demo Command** (`bibble animations` or `bibble anim`): Complete showcase with options for different animation types, banners, and loading indicators
+- **Core UI Integration**: Rainbow welcome banner, pulse role labels, radar tool execution animations
+- **Pink Pixel Branding**: All animations integrate seamlessly with signature theming
+- **Cross-Platform Optimization**: Optimized for all terminal environments with proper fallbacks
+
+**🎭 Animation Types:**
+1. **Rainbow**: Smooth color cycling effect
+2. **Pulse**: Pulsating brightness animation  
+3. **Glitch**: Digital glitch/corruption effect
+4. **Radar**: Scanning radar-like animation
+5. **Neon**: Electric neon glow effect
+6. **Karaoke**: Letter-by-letter highlight animation
+
+**🏆 Hackathon Excellence:**
+- **Terminal Talent**: Mesmerizing visual effects that transform the terminal experience
+- **Interactive Demo**: Complete command suite for showcasing animation capabilities
+- **Professional Polish**: Smooth, synchronized animations with proper timing control
+- **Enhanced User Experience**: Eye-catching animations that make terminal interactions memorable
+
+### Animated Welcome Banner Fix (v1.8.4) - September 18, 2025
+
+Version 1.8.4 delivers a **critical user experience fix** ensuring the beautiful animated rainbow welcome banner is properly displayed to users.
+
+**🎯 Issue Resolved:**
+- **Missing Animated Banner**: Fixed console clearing that was hiding the rainbow "BIBBLE" animation before users could see it
+- **Execution Order**: Reordered startup sequence so workspace detection occurs AFTER the animated banner
+- **Enhanced Startup Flow**: Perfect visual sequencing from banner → workspace context → MCP loading → chat interface
+
+**🌈 Enhanced Startup Sequence:**
+1. **Rainbow Animated Banner** - Beautiful "BIBBLE" text animation (2.5s duration)
+2. **Workspace Context** - Project detection and information display  
+3. **MCP Tool Loading** - Server connections and tool initialization
+4. **Chat Interface** - Ready for user interaction
+
+**✨ Result**: Users now properly experience the stunning animated rainbow splash screen as intended, showcasing Bibble's visual sophistication perfectly for hackathon demos!
+
 ### Fun Tools for GitHub Hackathon (v1.8.2) - September 8, 2025
 
 Version 1.8.2 introduces **exciting fun tools** specifically designed for the "For the Love of Code" GitHub hackathon, perfect for the "Terminal Talent" and "Agents of Change" categories.
@@ -1008,6 +1056,7 @@ The recent versions of Bibble feature a comprehensive reimplementation of Anthro
 
 ### UI & Formatting
 - **chalk** (^5.4.1): Terminal string styling and colors
+- **chalk-animation** (^2.0.3): Terminal animation effects for stunning visual displays
 - **markdown-it** (^14.1.0): Markdown parsing and rendering
 - **boxen** (^8.0.1): Terminal box drawing for formatted output
 - **uuid** (^11.1.0): UUID generation for unique identifiers

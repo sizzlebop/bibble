@@ -195,7 +195,7 @@ export class StatusBadgeManager {
     }
     
     // Full badge with description
-    return `${coloredIcon} ${coloredText} ${theme.dim('—')} ${theme.dim(badge.description)}`;
+    return `${coloredIcon} ${coloredText} ${theme.accent('—')} ${theme.text(badge.description)}`;
   }
   
   /**
@@ -214,7 +214,7 @@ export class StatusBadgeManager {
   const coloredIcon = theme.hex(badge.color as any, animatedIcon);
   const coloredText = theme.hex(badge.color as any, badge.text);
     
-    return `${coloredIcon} ${coloredText} ${theme.dim('—')} ${theme.dim(badge.description)}`;
+    return `${coloredIcon} ${coloredText} ${theme.accent('—')} ${theme.text(badge.description)}`;
   }
   
   /**
@@ -272,7 +272,7 @@ export class StatusBadgeManager {
   renderFullStatus(): string {
     const currentBadge = this.renderAnimatedBadge(this.currentState);
     const priorityBadge = this.renderPriorityBadge(this.currentState);
-  const separator = theme.hex(theme.dim as any, '│');
+    const separator = theme.accent('│');
     
     return `${currentBadge} ${separator} ${priorityBadge}`;
   }

@@ -783,18 +783,7 @@ export class Agent extends McpClient {
     
 
     // Get model configuration
-    const models = this.configInstance.get<Array<{
-      id: string;
-      provider: string;
-      name: string;
-      maxTokens?: number;
-      temperature?: number;
-      maxCompletionTokens?: number;
-      reasoningEffort?: "low" | "medium" | "high";
-      isReasoningModel?: boolean;
-    }>>("models", []);
-
-    const modelConfig = models.find(m => m.id.toLowerCase() === options.model.toLowerCase());
+    const modelConfig = this.configInstance.getModelConfig(options.model);
 
     // Check if this is an Anthropic model
     const isAnthropicModel = modelConfig?.provider === "anthropic" || options.model.toLowerCase().includes("claude");
@@ -812,12 +801,26 @@ export class Agent extends McpClient {
 
     // Add model-specific parameters
     if (modelConfig) {
+      const requiresMaxCompletionTokens = modelConfig.requiresMaxCompletionTokens === true || modelConfig.isReasoningModel === true;
+
       if (modelConfig.isReasoningModel) {
         chatParams.reasoningEffort = modelConfig.reasoningEffort || "medium";
-        chatParams.maxCompletionTokens = modelConfig.maxCompletionTokens;
-      } else {
+      } else if (modelConfig.supportsTemperature !== false && modelConfig.temperature !== undefined) {
         chatParams.temperature = modelConfig.temperature;
+      }
+
+      if (requiresMaxCompletionTokens) {
+        if (modelConfig.maxCompletionTokens !== undefined) {
+          chatParams.maxCompletionTokens = modelConfig.maxCompletionTokens;
+        } else if (modelConfig.maxTokens !== undefined) {
+          chatParams.maxCompletionTokens = modelConfig.maxTokens;
+        }
+      } else if (modelConfig.maxTokens !== undefined) {
         chatParams.maxTokens = modelConfig.maxTokens;
+      }
+
+      if (modelConfig.supportsThinking && modelConfig.thinkingLevel && modelConfig.thinkingLevel !== "none") {
+        chatParams.thinkingLevel = modelConfig.thinkingLevel;
       }
     }
 

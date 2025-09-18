@@ -2,6 +2,207 @@
 
 All notable changes to the Bibble project will be documented in this file.
 
+## [1.8.5] - 2025-09-18
+
+### 🤖 OPENAI MODEL UPDATES - LATEST AI POWERHOUSE SUPPORT
+
+Updated Bibble with comprehensive support for the latest OpenAI models, including the groundbreaking GPT-5 series and advanced reasoning models!
+
+#### 🚀 **New GPT-5 Series Models**
+
+- **🌟 Core GPT-5 Models**:
+  - `gpt-5` - The flagship GPT-5 model with optional reasoning
+  - `gpt-5-mini` - Efficient GPT-5 variant for faster responses
+  - `gpt-5-nano` - Ultra-lightweight GPT-5 for resource-conscious usage
+  - `gpt-5-chat-latest` - Latest ChatGPT-powered GPT-5 variant
+  - `chatgpt-4o-latest` - Updated ChatGPT-4o with latest improvements
+
+#### 🧠 **Advanced Reasoning Models**
+
+- **🎯 o3/o4 Series**: Next-generation reasoning models
+  - `o3-pro` - Professional-grade reasoning with enhanced capabilities
+  - `o3` - Core o3 reasoning model with advanced problem-solving
+  - `o4-mini` - Efficient o4 reasoning for complex tasks
+  - `o3-mini` - Compact o3 variant for quick reasoning tasks
+  - `codex-mini-latest` - Latest coding-focused reasoning model
+
+#### 🔄 **Updated GPT-4 Series**
+
+- **⚡ Enhanced GPT-4 Models**:
+  - `gpt-4.1` - Updated GPT-4 with improved performance
+  - `gpt-4.1-mini` - Efficient GPT-4.1 variant
+  - `gpt-4.1-nano` - Ultra-lightweight GPT-4.1
+  - `gpt-4o` - Maintained with latest optimizations
+  - `gpt-4o-mini` - Continued support with improvements
+
+#### 🌐 **Open-Weight OSS Models**
+
+- **🔓 Open Source Variants**:
+  - `gpt-oss-120b` - Large-scale open-weight model (120B parameters)
+  - `gpt-oss-20b` - Efficient open-weight model (20B parameters)
+
+#### 🔧 **Model Configuration Updates**
+
+- **Parameter Support**: Enhanced parameter handling for reasoning models
+  - `max_completion_tokens` - Proper token limit handling for new models
+  - `reasoning_effort` - Configurable reasoning intensity (low/medium/high)
+  - Temperature support where appropriate (disabled for pure reasoning models)
+  - Optional thinking parameters for supported models
+
+- **Default Model Updates**:
+  - OpenAI: `gpt-5` (was `gpt-4o`)
+  - Anthropic: `claude-sonnet-4-20250514` (maintained)
+  - Google: `gemini-2.0-flash` (maintained)
+
+#### ⚙️ **Configuration Wizard Enhancement**
+
+- **Updated CLI**: `bibble config configure` now includes all new models
+- **Smart Categorization**: Models properly grouped by capabilities and type
+- **Reasoning Detection**: Automatic detection and parameter adjustment for reasoning models
+- **Legacy Cleanup**: Removed deprecated GPT-3.5 series and outdated models
+
+#### 📚 **Documentation & Help Updates**
+
+- **Help System**: Updated model lists in help documentation
+- **Examples**: Refreshed usage examples with latest model IDs
+- **Configuration**: Updated setup wizard with new default recommendations
+
+#### 🎯 **Breaking Changes**
+
+- **Deprecated Models Removed**: GPT-3.5 series and old o1-series models removed from defaults
+- **Config Migration**: Existing users will need to reset config or update manually to see new models
+- **Parameter Updates**: Some models now use `max_completion_tokens` instead of `max_tokens`
+
+#### ✨ **Enhanced User Experience**
+
+- **Latest AI**: Access to cutting-edge GPT-5 and o3/o4 reasoning capabilities
+- **Future-Ready**: Configuration system prepared for upcoming model releases
+- **Backward Compatible**: Existing configurations continue to work
+- **Smart Defaults**: New installations use the most capable models by default
+
+---
+
+## [1.8.4] - 2025-09-18
+
+### 🐛 BUG FIXES - ANIMATED WELCOME BANNER
+
+Fixed a critical issue where the animated rainbow welcome banner was being cleared away before users could see it.
+
+#### **🎯 Issue Resolved**
+
+- **Missing Animated Banner**: The `console.clear()` in the animated splash screen was clearing workspace context that was printed before the banner
+- **Execution Order**: Workspace detection and printing was happening before the animated banner display
+- **User Experience**: Users couldn't see the beautiful rainbow "BIBBLE" animation on startup
+
+#### **✅ Solution Applied**
+
+- **Reordered Display Logic**: In `displayWelcome()` method, moved workspace detection to occur AFTER the animated banner
+- **Removed Duplicate Code**: Eliminated redundant workspace detection in `start()` method
+- **Clean Flow**: Now the animated banner shows first, then workspace context, then MCP loading messages
+
+#### **🌈 Enhanced Startup Sequence**
+
+1. **Rainbow Animated Banner** - Beautiful "BIBBLE" text animation (2.5s duration)
+2. **Workspace Context** - Project detection and information display
+3. **MCP Tool Loading** - Server connections and tool initialization
+4. **Chat Interface** - Ready for user interaction
+
+#### **🔧 Technical Details**
+
+- **Files Modified**: `src/ui/chat.ts` - `displayWelcome()` and `start()` methods
+- **Animation Preserved**: Full chalk-animation rainbow effect with proper timing
+- **Context Maintained**: Workspace information still displays, just after the banner
+- **Performance**: No impact on startup performance, just better visual sequencing
+
+#### **✨ Result**
+
+Users running `bibble` or `bibble chat` will now properly see the stunning animated rainbow splash screen as intended, followed by clean workspace context and tool loading messages!
+
+---
+
+## [1.8.3] - 2025-09-08
+
+### 🎭 TERMINAL ANIMATIONS - HACKATHON VISUAL SPECTACLE
+
+Added stunning terminal animation system using `chalk-animation` library! Perfect showcase for the GitHub hackathon's "Terminal Talent" category with mesmerizing visual effects.
+
+#### 🌈 **New Animation Features**
+
+- **🎨 Animated Splash System** (`src/ui/animated-splash.ts`)
+  - Multiple animation types: Rainbow, Pulse, Glitch, Radar, Neon, Karaoke
+  - Animated BIBBLE banners with customizable duration and speed
+  - Multi-stage welcome sequences with coordinated effects
+  - Animated loading indicators with progress messages
+  - Pink Pixel signature animations with brand theming
+
+- **⚡ Animation Demo Command** (`bibble animations` or `bibble anim`)
+  - `--demo`: Full animation showcase with all effects
+  - `--banner [type]`: Animated BIBBLE banner with specified effect
+  - `--welcome`: Multi-stage animated welcome sequence
+  - `--signature`: Pink Pixel signature animation
+  - `--loading [msg]`: Loading animation with custom messages
+  - `--quick [text]`: Quick rainbow animation test
+
+#### 🎭 **Animation Types**
+
+1. **Rainbow**: Smooth color cycling effect
+2. **Pulse**: Pulsating brightness animation
+3. **Glitch**: Digital glitch/corruption effect
+4. **Radar**: Scanning radar-like animation
+5. **Neon**: Electric neon glow effect
+6. **Karaoke**: Letter-by-letter highlight animation
+
+#### 🏆 **Hackathon Excellence**
+
+- **Terminal Talent**: Mesmerizing visual effects that transform the terminal experience
+- **Professional Polish**: Smooth, synchronized animations with proper timing control
+- **Pink Pixel Branding**: All animations integrate seamlessly with signature theming
+- **Interactive Demo**: Complete command suite for showcasing animation capabilities
+- **Cross-Platform**: Optimized for all terminal environments and color support levels
+
+#### 🔧 **Technical Implementation**
+
+- **New Dependency**: Added `chalk-animation@2.0.3` for terminal animation effects
+- **Modular Design**: `AnimatedSplash` class with static methods for easy integration
+- **Theme Integration**: Full compatibility with existing Pink Pixel theme system
+- **Performance Optimized**: Lightweight animations with configurable duration and speed
+- **Error Handling**: Graceful fallbacks when animation features aren't supported
+- **CLI Integration**: New command registered in main CLI with comprehensive help system
+
+#### 📱 **Usage Examples**
+
+```bash
+# Full animation showcase
+bibble animations --demo
+
+# Glitch effect banner
+bibble anim --banner glitch
+
+# Custom loading animation
+bibble anim --loading "Preparing for hackathon demo..."
+
+# Quick test with custom text
+bibble anim --quick "Hello GitHub Hackathon!"
+```
+
+#### 🚀 **Core UI Animation Integration**
+
+- **Rainbow Welcome Banner**: Main BIBBLE startup uses animated rainbow effect (2.5s duration)
+- **Pulse Role Labels**: "You" and "Bibble" chat labels now pulse with animation effects
+- **Radar Tool Execution**: Tool calls display radar animation during execution with "🛠️ Running {tool}..." 
+- **Assistant → Bibble**: Changed "Assistant" to "Bibble" throughout chat interface for better branding
+- **Seamless Integration**: All animations integrate into existing UI without disrupting functionality
+
+#### ✨ **Enhanced User Experience**
+
+- **Visual Spectacle**: Eye-catching animations that make terminal interactions memorable
+- **Brand Recognition**: Consistent Pink Pixel signature animations across all effects
+- **Professional Demo**: Perfect showcase piece for hackathon judges and users
+- **Extensible System**: Easy to add new animation types and effects in the future
+- **Interactive Chat**: Animated role labels make conversations more engaging
+
+---
+
 ## [1.8.2] - 2025-09-08
 
 ### 🎉 HACKATHON FUN TOOLS - FOR THE LOVE OF CODE

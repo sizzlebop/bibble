@@ -10,6 +10,7 @@ import { statusManager, statusUtils } from './status-badges.js';
 import type { WorkspaceContext } from '../workspace/types.js';
 import { Config } from '../config/config.js';
 import { safeGradient, ensureAnsiCompatibility } from '../tools/built-in/utilities/text.js';
+import chalkAnimation from 'chalk-animation';
 
 /**
  * ASCII art banners for different occasions
@@ -80,12 +81,12 @@ export class Splash {
     
     // Add subtitle with enhanced styling
     if (subtitle) {
-      content += '\n' + theme.dim(subtitle);
+      content += '\n' + theme.text(subtitle);
     }
     
     // Add version info with status badge
     if (showVersion) {
-      const versionBadge = statusUtils.info('Version 1.8.2');
+      const versionBadge = statusUtils.info('Version 1.8.5');
       content += '\n' + versionBadge;
     }
     
@@ -108,6 +109,53 @@ export class Splash {
     }
     
     return content;
+  }
+  
+  /**
+   * Create animated BIBBLE welcome banner
+   */
+  static async createAnimatedWelcome(options: BannerOptions & { duration?: number } = {}): Promise<void> {
+    const {
+      subtitle = 'Your personal AI assistant/MCP tool calling agent that lives in your terminal',
+      showVersion = true,
+      duration = 3000,
+    } = options;
+
+    await new Promise<void>((resolve) => {
+      // Clear screen for clean animation
+      console.clear();
+
+      // Create animated rainbow BIBBLE banner
+      const animatedBanner = chalkAnimation.rainbow(ASCII_BANNERS.BIBBLE, 1.2);
+
+      const finish = () => {
+        animatedBanner.stop();
+
+        // Show subtitle and version info
+        console.log('');
+        if (subtitle) {
+          console.log(theme.text(subtitle));
+        }
+
+        if (showVersion) {
+          const versionBadge = statusUtils.info('Version 1.8.5');
+          console.log(versionBadge);
+        }
+
+        // Add status indicator
+        const statusBadge = statusManager.renderAnimatedBadge('ready');
+        console.log(statusBadge);
+
+        // Add helpful text
+        const helpText = statusUtils.branded('Type /help for chat commands');
+        console.log('\n' + helpText + '\n');
+
+        resolve();
+      };
+
+      const animationDuration = Number.isFinite(duration) ? duration : 3000;
+      setTimeout(finish, animationDuration);
+    });
   }
   
   /**

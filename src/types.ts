@@ -53,6 +53,7 @@ export interface ChatCompletionParams {
   maxCompletionTokens?: number;
   reasoningEffort?: "low" | "medium" | "high";
   isReasoningModel?: boolean;
+  thinkingLevel?: "none" | "low" | "medium" | "high";
 
   // Anthropic specific parameters
   thinking?: boolean | {

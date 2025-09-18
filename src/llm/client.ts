@@ -67,6 +67,8 @@ export class LlmClient {
       // Get base URL from options or config
       const baseURL = options.baseURL || this.config.get("apis.openaiCompatible.baseUrl", "");
       const requiresApiKey = this.config.get("apis.openaiCompatible.requiresApiKey", true);
+      const referrer = this.config.get("apis.openaiCompatible.referrer", "bibble");
+      const defaultHeaders = referrer ? { Referer: referrer } : undefined;
 
       if (!baseURL) {
         throw new Error("Base URL for OpenAI-compatible endpoint is required. Please configure it using 'bibble config openai-compatible'.");
@@ -84,13 +86,15 @@ export class LlmClient {
         this.openaiClient = new OpenAI({
           apiKey,
           baseURL,
+          defaultHeaders,
         });
       } else {
         // Create OpenAI client without API key
         this.openaiClient = new OpenAI({
           apiKey: "dummy-key", // OpenAI client requires a non-empty string
           baseURL,
-          dangerouslyAllowBrowser: true
+          dangerouslyAllowBrowser: true,
+          defaultHeaders,
         });
       }
     } else {
@@ -236,6 +240,11 @@ export class LlmClient {
 
       // Check if this is a reasoning model (o-series)
       const isReasoningModel = this.isReasoningModel(params.model);
+      const modelConfig = this.getModelConfig(params.model);
+      const requiresMaxCompletionTokens = isReasoningModel || modelConfig?.requiresMaxCompletionTokens === true;
+      const supportsTemperature = !isReasoningModel && (modelConfig?.supportsTemperature !== false);
+      const supportsThinking = modelConfig?.supportsThinking === true;
+      const thinkingLevel = (params.thinkingLevel ?? modelConfig?.thinkingLevel);
 
       // Prepare request parameters based on model type
       const requestParams: any = {
@@ -254,19 +263,29 @@ export class LlmClient {
         } else {
           requestParams.reasoning_effort = "medium"; // Default to medium if not specified
         }
+      }
 
-        if (params.maxCompletionTokens) {
-          requestParams.max_completion_tokens = params.maxCompletionTokens;
+      if (supportsTemperature) {
+        const temperature = params.temperature ?? modelConfig?.temperature;
+        if (temperature !== undefined) {
+          requestParams.temperature = temperature;
         }
-      } else {
-        // For GPT models, use temperature and max_tokens
-        if (params.temperature !== undefined) {
-          requestParams.temperature = params.temperature;
-        }
+      }
 
-        if (params.maxTokens !== undefined) {
-          requestParams.max_tokens = params.maxTokens;
+      if (requiresMaxCompletionTokens) {
+        const maxCompletionTokens = params.maxCompletionTokens
+          ?? (requiresMaxCompletionTokens ? params.maxTokens : undefined)
+          ?? modelConfig?.maxCompletionTokens;
+
+        if (maxCompletionTokens !== undefined) {
+          requestParams.max_completion_tokens = maxCompletionTokens;
         }
+      } else if (params.maxTokens !== undefined || modelConfig?.maxTokens !== undefined) {
+        requestParams.max_tokens = params.maxTokens ?? modelConfig?.maxTokens;
+      }
+
+      if (supportsThinking && thinkingLevel && thinkingLevel !== "none") {
+        requestParams.thinking = thinkingLevel;
       }
 
       // Send request to OpenAI
@@ -306,11 +325,7 @@ export class LlmClient {
    * @returns Model configuration or undefined if not found
    */
   private getModelConfig(modelId: string): any {
-    // Get models from config
-    const models = this.config.get("models", []);
-
-    // Find model configuration
-    return models.find((m: any) => m.id.toLowerCase() === modelId.toLowerCase());
+    return this.config.getModelConfig(modelId);
   }
 
   /**

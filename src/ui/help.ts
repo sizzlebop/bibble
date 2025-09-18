@@ -166,9 +166,9 @@ ${symbols.star} **Use /save to preserve important conversations**
 ## Model Information
 ${gradient.pinkCyan('Current model capabilities vary by provider')}
 
-- **OpenAI**: GPT-4o, o-series reasoning models
-- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus
-- **Google**: Gemini Pro, Gemini Flash
+- **OpenAI**: GPT-5, GPT-4 series, o-series reasoning models
+- **Anthropic**: Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 models
+- **Google**: Gemini 2.5 Pro, Gemini 2.0 Flash, Gemini models
 
 ## MCP Tools Available
 Bibble can use external tools through the Model Context Protocol. 
@@ -240,31 +240,36 @@ bibble config set ui.colors true
 ## Supported Providers
 
 ### OpenAI Models
-- **GPT-4o** - Most capable model, good for complex tasks
-- **GPT-4o Mini** - Faster, cost-effective for simpler tasks
-- **o1** - Advanced reasoning model for complex problems
-- **o1-mini** - Efficient reasoning model
+- **GPT-5** - Latest and most capable model
+- **GPT-5 Mini** - Efficient version of GPT-5
+- **GPT-4.1** - Advanced GPT-4 series model
+- **o3-pro** - Advanced reasoning model for complex problems
+- **o4-mini** - Fast reasoning model for coding tasks
 
 ### Anthropic Models  
+- **Claude Sonnet 4** - Latest and most capable Claude model
+- **Claude 3.7 Sonnet** - Advanced reasoning and coding
 - **Claude 3.5 Sonnet** - Excellent for analysis and coding
-- **Claude 3 Opus** - Most capable Claude model
-- **Claude 3 Haiku** - Fast and efficient
+- **Claude 3.5 Haiku** - Fast and efficient
 
 ### Google Models
-- **Gemini Pro** - Google's most capable model
-- **Gemini Flash** - Fast responses, good performance
+- **Gemini 2.5 Pro** - Google's most capable model
+- **Gemini 2.0 Flash** - Latest fast model with good performance
+- **Gemini 1.5 Pro** - Proven model for complex tasks
 
 ## Model Selection Tips
 
-${symbols.star} **For coding tasks**: Claude 3.5 Sonnet or GPT-4o  
-${symbols.star} **For reasoning**: o1 or Claude 3 Opus  
-${symbols.star} **For speed**: GPT-4o Mini or Gemini Flash  
-${symbols.star} **For cost-efficiency**: Haiku or Mini models  
+${symbols.star} **For coding tasks**: Claude Sonnet 4 or GPT-5  
+${symbols.star} **For reasoning**: o3-pro or Claude 3.7 Sonnet  
+${symbols.star} **For speed**: GPT-5 Mini or Gemini 2.0 Flash  
+${symbols.star} **For cost-efficiency**: GPT-5 Nano or Claude 3.5 Haiku
 
 ## Switching Models
 You can switch models during setup or by using:
 \`\`\`bash
-bibble chat --model claude-3-5-sonnet-20241022
+bibble chat --model gpt-5
+# or
+bibble chat --model claude-sonnet-4-20250514
 \`\`\`
     `;
 
